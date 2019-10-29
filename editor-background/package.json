@@ -1,0 +1,44 @@
+{
+  "name": "editor-background",
+  "main": "./lib/editor-background",
+  "version": "1.2.27",
+  "description": "Background image / animation changer. Change your mood by changing what you looking at most of the time. Background changer with some additional readability improvement and a lot of features... ",
+  "repository": "https://github.com/camel-chased/editor-background.git",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.174.0 <2.0.0"
+  },
+  "dependencies": {
+    "atom-space-pen-views": "^2.0.3",
+    "element-resize-event": "^2.0.7",
+    "event-kit": "^1.3.0",
+    "jquery": "^2.1.4",
+    "request": "^2.64.0"
+  },
+  "keywords": [
+    "background",
+    "editor",
+    "editor-background",
+    "backgrounds",
+    "image",
+    "animation",
+    "background animation",
+    "video",
+    "youtube",
+    "youtube background",
+    "background loop",
+    "style",
+    "custom",
+    "theme",
+    "wallpaper",
+    "3d",
+    "cube",
+    "box",
+    "bg",
+    "change",
+    "pattern",
+    "seamless",
+    "tileable",
+    "css"
+  ]
+}

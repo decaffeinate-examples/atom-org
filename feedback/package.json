@@ -1,0 +1,31 @@
+{
+  "name": "feedback",
+  "main": "./lib/feedback",
+  "version": "0.38.0",
+  "private": true,
+  "description": "Sends feedback to atom@github.com",
+  "repository": "https://github.com/atom/feedback",
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.50.0"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    },
+    "metrics-reporter": {
+      "versions": {
+        "^1.0.0": "consumeReporter"
+      }
+    }
+  },
+  "dependencies": {
+    "crc": "^3.1.0",
+    "jquery": "^2.0"
+  },
+  "devDependencies": {
+    "coffeelint": "^1.9.7"
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "sort-lines",
+  "main": "./lib/sort-lines",
+  "version": "0.19.0",
+  "description": "Sorts your lines. Never gets tired.",
+  "activationCommands": {
+    "atom-text-editor": [
+      "sort-lines:sort",
+      "sort-lines:case-insensitive-sort",
+      "sort-lines:natural",
+      "sort-lines:reverse-sort",
+      "sort-lines:by-length",
+      "sort-lines:shuffle",
+      "sort-lines:reverse",
+      "sort-lines:unique"
+    ]
+  },
+  "repository": "https://github.com/atom/sort-lines",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.4.0 <2.0.0"
+  },
+  "dependencies": {
+    "array-shuffle": "^1.0.1",
+    "javascript-natural-sort": "^0.7.1"
+  }
+}

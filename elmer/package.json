@@ -1,0 +1,42 @@
+{
+  "name": "elmer",
+  "version": "0.1.0",
+  "description": "Element helpers for Atom",
+  "main": "./lib/elmer",
+  "scripts": {
+    "prepublish": "grunt clean lint coffee",
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atom/elmer.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atom/elmer/issues"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/atom/elmer/raw/master/LICENSE.md"
+    }
+  ],
+  "dependencies": {
+    "Node-bind": "git://github.com/Polymer/NodeBind.git#0.4.2",
+    "observe-js": "git://github.com/Polymer/observe-js.git#0.4.2",
+    "polymer-expressions": "git://github.com/Polymer/polymer-expressions.git#0.4.2",
+    "TemplateBinding": "git://github.com/Polymer/TemplateBinding.git#0.4.2"
+  },
+  "devDependencies": {
+    "coffee-cache": "^0.2.0",
+    "coffee-script": "^1.7.0",
+    "grunt": "^0.4.1",
+    "grunt-atomdoc": "^1.0.0",
+    "grunt-cli": "^0.1.8",
+    "grunt-coffeelint": "^0.0.6",
+    "grunt-contrib-coffee": "^0.9.0",
+    "grunt-shell": "^0.2.2",
+    "jasmine-focused": "^1.0.4",
+    "rimraf": "^2.2.2",
+    "temp": "^0.6.0"
+  }
+}

@@ -1,0 +1,34 @@
+'menu': [
+	{
+		'label': 'Packages'
+		'submenu': [
+			'label': 'Project Ring'
+			'submenu': [
+				{ 'label': 'Add Project', 'command': 'project-ring:add-project' },
+				{ 'label': 'Rename Current Project', 'command': 'project-ring:rename-current-project' },
+				{ 'label': 'Delete Current Project', 'command': 'project-ring:delete-current-project' },
+				{ 'label': 'Toggle', 'command': 'project-ring:toggle' },
+				{ 'label': 'Open Project Files', 'command': 'project-ring:open-project-files' },
+				{ 'label': 'Open Multiple Projects', 'command': 'project-ring:open-multiple-projects' },
+				{ 'label': 'Add Current File To Current Project', 'command': 'project-ring:add-current-file-to-current-project' },
+				{ 'label': 'Add Files To Current Project', 'command': 'project-ring:add-files-to-current-project' },
+				{ 'label': 'Ban Current File From Project', 'command': 'project-ring:ban-current-file-from-current-project' },
+				{ 'label': 'Ban Files From Current Project', 'command': 'project-ring:ban-files-from-current-project' },
+				{ 'label': 'Always Open Current File', 'command': 'project-ring:always-open-current-file' },
+				{ 'label': 'Always Open Files', 'command': 'project-ring:always-open-files' },
+				{ 'label': 'Unload Current Project', 'command': 'project-ring:unload-current-project' },
+				{ 'label': 'Delete Current Project Ring', 'command': 'project-ring:delete-project-ring' },
+				{ 'label': 'Edit Key Bindings', 'command': 'project-ring:edit-key-bindings' }
+			]
+		]
+	}
+]
+'context-menu':
+	'.tab-bar': [
+		{ label: 'Close Project Unrelated Files', command: 'project-ring:close-project-unrelated-files' },
+		{ type: 'separator' }
+	]
+	'.tab': [
+		{ label: 'Close Project Unrelated Files', command: 'project-ring:close-project-unrelated-files' },
+		{ type: 'separator' }
+	]

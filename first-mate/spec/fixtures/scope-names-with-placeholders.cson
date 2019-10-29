@@ -1,0 +1,13 @@
+name: 'scope names with placeholders'
+scopeName: 'scope-names-with-placeholders'
+patterns: [
+  {
+    match: '(a) (b)'
+    name: '$1.$2'
+  }
+  {
+    begin: '(c) (d)'
+    end: 'e'
+    contentName: '$1.$2'
+  }
+]

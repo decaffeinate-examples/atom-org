@@ -1,0 +1,33 @@
+{
+  "name": "autocomplete-emojis",
+  "main": "./lib/autocomplete-emojis",
+  "version": "2.5.0",
+  "description": "Adds emoji autocompletion to autocomplete+",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atom/autocomplete-emojis"
+  },
+  "license": "MIT",
+  "engines": {
+    "atom": ">=0.189.0 <2.0.0"
+  },
+  "dependencies": {
+    "emoji-images": "^0.1.1",
+    "fuzzaldrin": "^2.1.0"
+  },
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-apm": "^1.0.1",
+    "grunt-contrib-watch": "^1.0.0",
+    "load-grunt-tasks": "^3.1.0",
+    "request": "^2.55.0",
+    "time-grunt": "^1.0.0"
+  },
+  "providedServices": {
+    "autocomplete.provider": {
+      "versions": {
+        "2.0.0": "getProvider"
+      }
+    }
+  }
+}

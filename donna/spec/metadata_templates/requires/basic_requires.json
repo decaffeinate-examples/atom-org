@@ -1,0 +1,123 @@
+{
+  "files": {
+    "basic_requires.coffee": {
+      "objects": {
+        "0": {
+          "1": {
+            "type": "import",
+            "range": [
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                3
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "foo",
+            "name": "Foo",
+            "exportsProperty": "Foo"
+          }
+        },
+        "1": {
+          "14": {
+            "type": "import",
+            "range": [
+              [
+                1,
+                14
+              ],
+              [
+                1,
+                28
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "defs2",
+            "name": "foof",
+            "exportsProperty": "defs"
+          }
+        },
+        "2": {
+          "1": {
+            "type": "import",
+            "range": [
+              [
+                2,
+                1
+              ],
+              [
+                2,
+                3
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "kaz",
+            "name": "faz",
+            "exportsProperty": "faz"
+          },
+          "6": {
+            "type": "import",
+            "range": [
+              [
+                2,
+                6
+              ],
+              [
+                2,
+                8
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "kaz",
+            "name": "baz",
+            "exportsProperty": "baz"
+          }
+        },
+        "3": {
+          "1": {
+            "type": "import",
+            "range": [
+              [
+                3,
+                1
+              ],
+              [
+                3,
+                3
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "hoo",
+            "name": "boo",
+            "exportsProperty": "boo"
+          }
+        },
+        "5": {
+          "0": {
+            "type": "class",
+            "name": "Bar",
+            "superClass": null,
+            "bindingType": null,
+            "classProperties": [],
+            "prototypeProperties": [],
+            "doc": null,
+            "range": [
+              [
+                5,
+                0
+              ],
+              [
+                5,
+                8
+              ]
+            ]
+          }
+        }
+      },
+      "exports": {}
+    }
+  }
+}

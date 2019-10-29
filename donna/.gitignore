@@ -1,0 +1,15 @@
+.DS_Store
+node_modules/**/*
+!/spec/metadata_templates/test_package/node_modules/grim
+Gemfile.lock
+.bundle
+.idea
+.sass-cache
+doc
+out.json
+atom_src
+npm-debug.log
+js_src/
+dummy/
+.grunt/
+metadata.json

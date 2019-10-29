@@ -1,0 +1,49 @@
+{
+  "files": {
+    "requires_with_colon.coffee": {
+      "objects": {
+        "0": {
+          "14": {
+            "type": "import",
+            "range": [
+              [
+                0,
+                14
+              ],
+              [
+                0,
+                28
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "defs2",
+            "name": "foof",
+            "exportsProperty": "defs"
+          }
+        },
+        "2": {
+          "0": {
+            "type": "class",
+            "name": "Bar",
+            "superClass": null,
+            "bindingType": null,
+            "classProperties": [],
+            "prototypeProperties": [],
+            "doc": null,
+            "range": [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                8
+              ]
+            ]
+          }
+        }
+      },
+      "exports": {}
+    }
+  }
+}
