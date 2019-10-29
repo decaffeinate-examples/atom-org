@@ -1,15 +1,21 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const fs = require('fs');
-const path = require('path');
-const temp = require('temp');
-const nof = require('../lib/nof');
+const fs = require('fs')
+const path = require('path')
+const temp = require('temp')
+const nof = require('../lib/nof')
 
-describe("nof", function() {
-  it("unfocuses all specs in CoffeeScript files", function() {
+describe('nof', function () {
+  it('unfocuses all specs in CoffeeScript files', function () {
     const focused = `\
 describe 'specs', ->
   fit 'works', ->
@@ -26,12 +32,12 @@ fdescribe 'more specs', ->
     fffdescribe 'even more', ->
       it 'works', ->
         expect(0).toBe 0\
-`;
+`
 
-    const specsDirectory = temp.mkdirSync('jasmine-focused-spec-');
-    const specPath = path.join(specsDirectory, 'a-spec.coffee');
-    fs.writeFileSync(specPath, focused);
-    nof(specsDirectory);
+    const specsDirectory = temp.mkdirSync('jasmine-focused-spec-')
+    const specPath = path.join(specsDirectory, 'a-spec.coffee')
+    fs.writeFileSync(specPath, focused)
+    nof(specsDirectory)
 
     return expect(fs.readFileSync(specPath, 'utf8')).toBe(`\
 describe 'specs', ->
@@ -50,10 +56,10 @@ describe 'more specs', ->
       it 'works', ->
         expect(0).toBe 0\
 `
-    );
-  });
+    )
+  })
 
-  return it("unfocuses all specs in JavaScript files", function() {
+  return it('unfocuses all specs in JavaScript files', function () {
     const focused = `\
 describe('specs', function() {
   fit('works', function() {
@@ -70,12 +76,12 @@ fdescribe('more specs', function() {
     });
   });
 });\
-`;
+`
 
-    const specsDirectory = temp.mkdirSync('jasmine-focused-spec-');
-    const specPath = path.join(specsDirectory, 'a-spec.js');
-    fs.writeFileSync(specPath, focused);
-    nof(specsDirectory);
+    const specsDirectory = temp.mkdirSync('jasmine-focused-spec-')
+    const specPath = path.join(specsDirectory, 'a-spec.js')
+    fs.writeFileSync(specPath, focused)
+    nof(specsDirectory)
 
     return expect(fs.readFileSync(specPath, 'utf8')).toBe(`\
 describe('specs', function() {
@@ -94,6 +100,6 @@ describe('more specs', function() {
   });
 });\
 `
-    );
-  });
-});
+    )
+  })
+})

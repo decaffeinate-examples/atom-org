@@ -1,16 +1,23 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-unreachable,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const path = require('path');
-const fs = require('fs-plus');
-const yargs = require('yargs');
-const Highlights = require('./highlights');
+const path = require('path')
+const fs = require('fs-plus')
+const yargs = require('yargs')
+const Highlights = require('./highlights')
 
-module.exports = function() {
-  let html;
+module.exports = function () {
+  let html
   const {
     argv
   } = yargs.describe('i', 'Path to file or folder of grammars to include').alias('i', 'include').string('i')
@@ -26,40 +33,40 @@ Output the syntax highlighted HTML for a file.
 If no input file is specified then the text to highlight is read from standard in.
 
 If no output file is specified then the HTML is written to standard out.\
-`).version().alias('v', 'version');
+`).version().alias('v', 'version')
 
-  let [filePath] = Array.from(argv._);
+  let [filePath] = Array.from(argv._)
 
-  let outputPath = argv.output;
-  if (outputPath) { outputPath = path.resolve(outputPath); }
+  let outputPath = argv.output
+  if (outputPath) { outputPath = path.resolve(outputPath) }
 
   if (filePath) {
-    filePath = path.resolve(filePath);
+    filePath = path.resolve(filePath)
     if (!fs.isFileSync(filePath)) {
-      console.error(`Specified path is not a file: ${filePath}`);
-      process.exit(1);
-      return;
+      console.error(`Specified path is not a file: ${filePath}`)
+      process.exit(1)
+      return
     }
 
-    html = new Highlights().highlightSync({filePath, scopeName: argv.scope});
+    html = new Highlights().highlightSync({ filePath, scopeName: argv.scope })
     if (outputPath) {
-      return fs.writeFileSync(outputPath, html);
+      return fs.writeFileSync(outputPath, html)
     } else {
-      return console.log(html);
+      return console.log(html)
     }
   } else {
-    filePath = argv.f;
-    process.stdin.resume();
-    process.stdin.setEncoding('utf8');
-    let fileContents = '';
-    process.stdin.on('data', chunk => fileContents += chunk.toString());
-    return process.stdin.on('end', function() {
-      html = new Highlights().highlightSync({filePath, fileContents, scopeName: argv.scope});
+    filePath = argv.f
+    process.stdin.resume()
+    process.stdin.setEncoding('utf8')
+    let fileContents = ''
+    process.stdin.on('data', chunk => fileContents += chunk.toString())
+    return process.stdin.on('end', function () {
+      html = new Highlights().highlightSync({ filePath, fileContents, scopeName: argv.scope })
       if (outputPath) {
-        return fs.writeFileSync(outputPath, html);
+        return fs.writeFileSync(outputPath, html)
       } else {
-        return console.log(html);
+        return console.log(html)
       }
-    });
+    })
   }
-};
+}

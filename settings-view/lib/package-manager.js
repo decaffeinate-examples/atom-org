@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -8,577 +15,577 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let PackageManager;
-const _ = require('underscore-plus');
-const {BufferedProcess, CompositeDisposable, Emitter} = require('atom');
-const semver = require('semver');
+let PackageManager
+const _ = require('underscore-plus')
+const { BufferedProcess, CompositeDisposable, Emitter } = require('atom')
+const semver = require('semver')
 
-const Client = require('./atom-io-client');
+const Client = require('./atom-io-client')
 
 module.exports =
-(PackageManager = (function() {
+(PackageManager = (function () {
   PackageManager = class PackageManager {
-    static initClass() {
+    static initClass () {
       // Millisecond expiry for cached loadOutdated, etc. values
-      this.prototype.CACHE_EXPIRY = 1000*60*10;
+      this.prototype.CACHE_EXPIRY = 1000 * 60 * 10
     }
 
-    constructor() {
-      this.setProxyServers = this.setProxyServers.bind(this);
-      this.setProxyServersAsync = this.setProxyServersAsync.bind(this);
-      this.packagePromises = [];
+    constructor () {
+      this.setProxyServers = this.setProxyServers.bind(this)
+      this.setProxyServersAsync = this.setProxyServersAsync.bind(this)
+      this.packagePromises = []
       this.apmCache = {
         loadOutdated: {
           value: null,
           expiry: 0
         }
-      };
+      }
 
-      this.emitter = new Emitter;
+      this.emitter = new Emitter()
     }
 
-    getClient() {
-      return this.client != null ? this.client : (this.client = new Client(this));
+    getClient () {
+      return this.client != null ? this.client : (this.client = new Client(this))
     }
 
-    isPackageInstalled(packageName) {
+    isPackageInstalled (packageName) {
       if (atom.packages.isPackageLoaded(packageName)) {
-        return true;
+        return true
       } else {
-        return atom.packages.getAvailablePackageNames().indexOf(packageName) > -1;
+        return atom.packages.getAvailablePackageNames().indexOf(packageName) > -1
       }
     }
 
-    packageHasSettings(packageName) {
-      let left;
-      const grammars = (left = atom.grammars.getGrammars()) != null ? left : [];
-      for (let grammar of Array.from(grammars)) {
+    packageHasSettings (packageName) {
+      let left
+      const grammars = (left = atom.grammars.getGrammars()) != null ? left : []
+      for (const grammar of Array.from(grammars)) {
         if (grammar.path) {
-          if (grammar.packageName === packageName) { return true; }
+          if (grammar.packageName === packageName) { return true }
         }
       }
 
-      const pack = atom.packages.getLoadedPackage(packageName);
-      if ((pack != null) && !atom.packages.isPackageActive(packageName)) { pack.activateConfig(); }
-      const schema = atom.config.getSchema(packageName);
-      return (schema != null) && (schema.type !== 'any');
+      const pack = atom.packages.getLoadedPackage(packageName)
+      if ((pack != null) && !atom.packages.isPackageActive(packageName)) { pack.activateConfig() }
+      const schema = atom.config.getSchema(packageName)
+      return (schema != null) && (schema.type !== 'any')
     }
 
-    setProxyServers(callback) {
+    setProxyServers (callback) {
       const {
         session
-      } = atom.getCurrentWindow().webContents;
+      } = atom.getCurrentWindow().webContents
       return session.resolveProxy('http://atom.io', httpProxy => {
-        this.applyProxyToEnv('http_proxy', httpProxy);
+        this.applyProxyToEnv('http_proxy', httpProxy)
         return session.resolveProxy('https://atom.io', httpsProxy => {
-          this.applyProxyToEnv('https_proxy', httpsProxy);
-          return callback();
-        });
-      });
+          this.applyProxyToEnv('https_proxy', httpsProxy)
+          return callback()
+        })
+      })
     }
 
-    setProxyServersAsync(callback) {
-      const httpProxyPromise = atom.resolveProxy('http://atom.io').then(proxy => this.applyProxyToEnv('http_proxy', proxy));
-      const httpsProxyPromise = atom.resolveProxy('https://atom.io').then(proxy => this.applyProxyToEnv('https_proxy', proxy));
-      return Promise.all([httpProxyPromise, httpsProxyPromise]).then(callback);
+    setProxyServersAsync (callback) {
+      const httpProxyPromise = atom.resolveProxy('http://atom.io').then(proxy => this.applyProxyToEnv('http_proxy', proxy))
+      const httpsProxyPromise = atom.resolveProxy('https://atom.io').then(proxy => this.applyProxyToEnv('https_proxy', proxy))
+      return Promise.all([httpProxyPromise, httpsProxyPromise]).then(callback)
     }
 
-    applyProxyToEnv(envName, proxy) {
+    applyProxyToEnv (envName, proxy) {
       if (proxy != null) {
-        proxy = proxy.split(' ');
+        proxy = proxy.split(' ')
         switch (proxy[0].trim().toUpperCase()) {
-          case 'DIRECT': delete process.env[envName]; break;
-          case 'PROXY':  process.env[envName] = 'http://' + proxy[1]; break;
+          case 'DIRECT': delete process.env[envName]; break
+          case 'PROXY': process.env[envName] = 'http://' + proxy[1]; break
         }
       }
     }
 
-    runCommand(args, callback) {
-      const command = atom.packages.getApmPath();
-      const outputLines = [];
-      const stdout = lines => outputLines.push(lines);
-      const errorLines = [];
-      const stderr = lines => errorLines.push(lines);
-      const exit = code => callback(code, outputLines.join('\n'), errorLines.join('\n'));
+    runCommand (args, callback) {
+      const command = atom.packages.getApmPath()
+      const outputLines = []
+      const stdout = lines => outputLines.push(lines)
+      const errorLines = []
+      const stderr = lines => errorLines.push(lines)
+      const exit = code => callback(code, outputLines.join('\n'), errorLines.join('\n'))
 
-      args.push('--no-color');
+      args.push('--no-color')
 
       if (atom.config.get('core.useProxySettingsWhenCallingApm')) {
-        const bufferedProcess = new BufferedProcess({command, args, stdout, stderr, exit, autoStart: false});
+        const bufferedProcess = new BufferedProcess({ command, args, stdout, stderr, exit, autoStart: false })
         if (atom.resolveProxy != null) {
-          this.setProxyServersAsync(() => bufferedProcess.start());
+          this.setProxyServersAsync(() => bufferedProcess.start())
         } else {
-          this.setProxyServers(() => bufferedProcess.start());
+          this.setProxyServers(() => bufferedProcess.start())
         }
-        return bufferedProcess;
+        return bufferedProcess
       } else {
-        return new BufferedProcess({command, args, stdout, stderr, exit});
+        return new BufferedProcess({ command, args, stdout, stderr, exit })
       }
     }
 
-    loadInstalled(callback) {
-      const args = ['ls', '--json'];
-      const errorMessage = 'Fetching local packages failed.';
-      const apmProcess = this.runCommand(args, function(code, stdout, stderr) {
-        let error;
+    loadInstalled (callback) {
+      const args = ['ls', '--json']
+      const errorMessage = 'Fetching local packages failed.'
+      const apmProcess = this.runCommand(args, function (code, stdout, stderr) {
+        let error
         if (code === 0) {
-          let packages;
+          let packages
           try {
-            let left;
-            packages = (left = JSON.parse(stdout)) != null ? left : [];
+            let left
+            packages = (left = JSON.parse(stdout)) != null ? left : []
           } catch (parseError) {
-            error = createJsonParseError(errorMessage, parseError, stdout);
-            return callback(error);
+            error = createJsonParseError(errorMessage, parseError, stdout)
+            return callback(error)
           }
-          return callback(null, packages);
+          return callback(null, packages)
         } else {
-          error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return callback(error);
+          error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return callback(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, callback);
+      return handleProcessErrors(apmProcess, errorMessage, callback)
     }
 
-    loadFeatured(loadThemes, callback) {
+    loadFeatured (loadThemes, callback) {
       if (!callback) {
-        callback = loadThemes;
-        loadThemes = false;
+        callback = loadThemes
+        loadThemes = false
       }
 
-      const args = ['featured', '--json'];
-      const version = atom.getVersion();
-      if (loadThemes) { args.push('--themes'); }
-      if (semver.valid(version)) { args.push('--compatible', version); }
-      const errorMessage = 'Fetching featured packages failed.';
+      const args = ['featured', '--json']
+      const version = atom.getVersion()
+      if (loadThemes) { args.push('--themes') }
+      if (semver.valid(version)) { args.push('--compatible', version) }
+      const errorMessage = 'Fetching featured packages failed.'
 
-      const apmProcess = this.runCommand(args, function(code, stdout, stderr) {
-        let error;
+      const apmProcess = this.runCommand(args, function (code, stdout, stderr) {
+        let error
         if (code === 0) {
-          let packages;
+          let packages
           try {
-            let left;
-            packages = (left = JSON.parse(stdout)) != null ? left : [];
+            let left
+            packages = (left = JSON.parse(stdout)) != null ? left : []
           } catch (parseError) {
-            error = createJsonParseError(errorMessage, parseError, stdout);
-            return callback(error);
+            error = createJsonParseError(errorMessage, parseError, stdout)
+            return callback(error)
           }
 
-          return callback(null, packages);
+          return callback(null, packages)
         } else {
-          error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return callback(error);
+          error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return callback(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, callback);
+      return handleProcessErrors(apmProcess, errorMessage, callback)
     }
 
-    loadOutdated(clearCache, callback) {
+    loadOutdated (clearCache, callback) {
       if (clearCache) {
-        this.clearOutdatedCache();
+        this.clearOutdatedCache()
       // Short circuit if we have cached data.
       } else if (this.apmCache.loadOutdated.value && (this.apmCache.loadOutdated.expiry > Date.now())) {
-        return callback(null, this.apmCache.loadOutdated.value);
+        return callback(null, this.apmCache.loadOutdated.value)
       }
 
-      const args = ['outdated', '--json'];
-      const version = atom.getVersion();
-      if (semver.valid(version)) { args.push('--compatible', version); }
-      const errorMessage = 'Fetching outdated packages and themes failed.';
+      const args = ['outdated', '--json']
+      const version = atom.getVersion()
+      if (semver.valid(version)) { args.push('--compatible', version) }
+      const errorMessage = 'Fetching outdated packages and themes failed.'
 
       const apmProcess = this.runCommand(args, (code, stdout, stderr) => {
-        let error;
-        let pack;
+        let error
+        let pack
         if (code === 0) {
-          let packages;
+          let packages
           try {
-            let left;
-            packages = (left = JSON.parse(stdout)) != null ? left : [];
+            let left
+            packages = (left = JSON.parse(stdout)) != null ? left : []
           } catch (parseError) {
-            error = createJsonParseError(errorMessage, parseError, stdout);
-            return callback(error);
+            error = createJsonParseError(errorMessage, parseError, stdout)
+            return callback(error)
           }
 
           const updatablePackages = ((() => {
-            const result = [];
-            for (pack of Array.from(packages)) {               if (!this.getVersionPinnedPackages().includes(pack != null ? pack.name : undefined)) {
-                result.push(pack);
+            const result = []
+            for (pack of Array.from(packages)) {
+              if (!this.getVersionPinnedPackages().includes(pack != null ? pack.name : undefined)) {
+                result.push(pack)
               }
             }
-            return result;
-          })());
+            return result
+          })())
 
           this.apmCache.loadOutdated = {
             value: updatablePackages,
             expiry: Date.now() + this.CACHE_EXPIRY
-          };
-
-          for (pack of Array.from(updatablePackages)) {
-            this.emitPackageEvent('update-available', pack);
           }
 
-          return callback(null, updatablePackages);
+          for (pack of Array.from(updatablePackages)) {
+            this.emitPackageEvent('update-available', pack)
+          }
+
+          return callback(null, updatablePackages)
         } else {
-          error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return callback(error);
+          error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return callback(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, callback);
+      return handleProcessErrors(apmProcess, errorMessage, callback)
     }
 
-    getVersionPinnedPackages() {
-      let left;
-      return (left = atom.config.get('core.versionPinnedPackages')) != null ? left : [];
+    getVersionPinnedPackages () {
+      let left
+      return (left = atom.config.get('core.versionPinnedPackages')) != null ? left : []
     }
 
-    clearOutdatedCache() {
+    clearOutdatedCache () {
       return this.apmCache.loadOutdated = {
         value: null,
         expiry: 0
-      };
+      }
     }
 
-    loadPackage(packageName, callback) {
-      const args = ['view', packageName, '--json'];
-      const errorMessage = `Fetching package '${packageName}' failed.`;
+    loadPackage (packageName, callback) {
+      const args = ['view', packageName, '--json']
+      const errorMessage = `Fetching package '${packageName}' failed.`
 
-      const apmProcess = this.runCommand(args, function(code, stdout, stderr) {
-        let error;
+      const apmProcess = this.runCommand(args, function (code, stdout, stderr) {
+        let error
         if (code === 0) {
-          let packages;
+          let packages
           try {
-            let left;
-            packages = (left = JSON.parse(stdout)) != null ? left : [];
+            let left
+            packages = (left = JSON.parse(stdout)) != null ? left : []
           } catch (parseError) {
-            error = createJsonParseError(errorMessage, parseError, stdout);
-            return callback(error);
+            error = createJsonParseError(errorMessage, parseError, stdout)
+            return callback(error)
           }
 
-          return callback(null, packages);
+          return callback(null, packages)
         } else {
-          error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return callback(error);
+          error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return callback(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, callback);
+      return handleProcessErrors(apmProcess, errorMessage, callback)
     }
 
-    loadCompatiblePackageVersion(packageName, callback) {
-      const args = ['view', packageName, '--json', '--compatible', this.normalizeVersion(atom.getVersion())];
-      const errorMessage = `Fetching package '${packageName}' failed.`;
+    loadCompatiblePackageVersion (packageName, callback) {
+      const args = ['view', packageName, '--json', '--compatible', this.normalizeVersion(atom.getVersion())]
+      const errorMessage = `Fetching package '${packageName}' failed.`
 
-      const apmProcess = this.runCommand(args, function(code, stdout, stderr) {
-        let error;
+      const apmProcess = this.runCommand(args, function (code, stdout, stderr) {
+        let error
         if (code === 0) {
-          let packages;
+          let packages
           try {
-            let left;
-            packages = (left = JSON.parse(stdout)) != null ? left : [];
+            let left
+            packages = (left = JSON.parse(stdout)) != null ? left : []
           } catch (parseError) {
-            error = createJsonParseError(errorMessage, parseError, stdout);
-            return callback(error);
+            error = createJsonParseError(errorMessage, parseError, stdout)
+            return callback(error)
           }
 
-          return callback(null, packages);
+          return callback(null, packages)
         } else {
-          error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return callback(error);
+          error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return callback(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, callback);
+      return handleProcessErrors(apmProcess, errorMessage, callback)
     }
 
-    getInstalled() {
+    getInstalled () {
       return new Promise((resolve, reject) => {
-        return this.loadInstalled(function(error, result) {
+        return this.loadInstalled(function (error, result) {
           if (error) {
-            return reject(error);
+            return reject(error)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        });
-      });
+        })
+      })
     }
 
-    getFeatured(loadThemes) {
+    getFeatured (loadThemes) {
       return new Promise((resolve, reject) => {
-        return this.loadFeatured(!!loadThemes, function(error, result) {
+        return this.loadFeatured(!!loadThemes, function (error, result) {
           if (error) {
-            return reject(error);
+            return reject(error)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        });
-      });
+        })
+      })
     }
 
-    getOutdated(clearCache) {
-      if (clearCache == null) { clearCache = false; }
+    getOutdated (clearCache) {
+      if (clearCache == null) { clearCache = false }
       return new Promise((resolve, reject) => {
-        return this.loadOutdated(clearCache, function(error, result) {
+        return this.loadOutdated(clearCache, function (error, result) {
           if (error) {
-            return reject(error);
+            return reject(error)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        });
-      });
+        })
+      })
     }
 
-    getPackage(packageName) {
+    getPackage (packageName) {
       return this.packagePromises[packageName] != null ? this.packagePromises[packageName] : (this.packagePromises[packageName] = new Promise((resolve, reject) => {
-        return this.loadPackage(packageName, function(error, result) {
+        return this.loadPackage(packageName, function (error, result) {
           if (error) {
-            return reject(error);
+            return reject(error)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        });
-      }));
+        })
+      }))
     }
 
-    satisfiesVersion(version, metadata) {
-      const engine = (metadata.engines != null ? metadata.engines.atom : undefined) != null ? (metadata.engines != null ? metadata.engines.atom : undefined) : '*';
-      if (!semver.validRange(engine)) { return false; }
-      return semver.satisfies(version, engine);
+    satisfiesVersion (version, metadata) {
+      const engine = (metadata.engines != null ? metadata.engines.atom : undefined) != null ? (metadata.engines != null ? metadata.engines.atom : undefined) : '*'
+      if (!semver.validRange(engine)) { return false }
+      return semver.satisfies(version, engine)
     }
 
-    normalizeVersion(version) {
-      if (typeof version === 'string') { [version] = Array.from(version.split('-')); }
-      return version;
+    normalizeVersion (version) {
+      if (typeof version === 'string') { [version] = Array.from(version.split('-')) }
+      return version
     }
 
-    update(pack, newVersion, callback) {
-      let args;
-      const {name, theme, apmInstallSource} = pack;
+    update (pack, newVersion, callback) {
+      let args
+      const { name, theme, apmInstallSource } = pack
 
-      const errorMessage = newVersion ?
-        `Updating to \u201C${name}@${newVersion}\u201D failed.`
-      :
-        "Updating to latest sha failed.";
+      const errorMessage = newVersion
+        ? `Updating to \u201C${name}@${newVersion}\u201D failed.`
+        : 'Updating to latest sha failed.'
       const onError = error => {
-        error.packageInstallError = !theme;
-        this.emitPackageEvent('update-failed', pack, error);
-        return (typeof callback === 'function' ? callback(error) : undefined);
-      };
+        error.packageInstallError = !theme
+        this.emitPackageEvent('update-failed', pack, error)
+        return (typeof callback === 'function' ? callback(error) : undefined)
+      }
 
       if ((apmInstallSource != null ? apmInstallSource.type : undefined) === 'git') {
-        args = ['install', apmInstallSource.source];
+        args = ['install', apmInstallSource.source]
       } else {
-        args = ['install', `${name}@${newVersion}`];
+        args = ['install', `${name}@${newVersion}`]
       }
 
       const exit = (code, stdout, stderr) => {
         if (code === 0) {
-          this.clearOutdatedCache();
+          this.clearOutdatedCache()
           if (typeof callback === 'function') {
-            callback();
+            callback()
           }
-          return this.emitPackageEvent('updated', pack);
+          return this.emitPackageEvent('updated', pack)
         } else {
-          const error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return onError(error);
+          const error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return onError(error)
         }
-      };
+      }
 
-      this.emitPackageEvent('updating', pack);
-      const apmProcess = this.runCommand(args, exit);
-      return handleProcessErrors(apmProcess, errorMessage, onError);
+      this.emitPackageEvent('updating', pack)
+      const apmProcess = this.runCommand(args, exit)
+      return handleProcessErrors(apmProcess, errorMessage, onError)
     }
 
-    unload(name) {
+    unload (name) {
       if (atom.packages.isPackageLoaded(name)) {
-        if (atom.packages.isPackageActive(name)) { atom.packages.deactivatePackage(name); }
-        return atom.packages.unloadPackage(name);
+        if (atom.packages.isPackageActive(name)) { atom.packages.deactivatePackage(name) }
+        return atom.packages.unloadPackage(name)
       }
     }
 
-    install(pack, callback) {
-      let {name, version, theme} = pack;
-      const activateOnSuccess = !theme && !atom.packages.isPackageDisabled(name);
-      const activateOnFailure = atom.packages.isPackageActive(name);
-      const nameWithVersion = (version != null) ? `${name}@${version}` : name;
+    install (pack, callback) {
+      let { name, version, theme } = pack
+      const activateOnSuccess = !theme && !atom.packages.isPackageDisabled(name)
+      const activateOnFailure = atom.packages.isPackageActive(name)
+      const nameWithVersion = (version != null) ? `${name}@${version}` : name
 
-      this.unload(name);
-      const args = ['install', nameWithVersion, '--json'];
+      this.unload(name)
+      const args = ['install', nameWithVersion, '--json']
 
-      const errorMessage = `Installing \u201C${nameWithVersion}\u201D failed.`;
+      const errorMessage = `Installing \u201C${nameWithVersion}\u201D failed.`
       const onError = error => {
-        error.packageInstallError = !theme;
-        this.emitPackageEvent('install-failed', pack, error);
-        return (typeof callback === 'function' ? callback(error) : undefined);
-      };
+        error.packageInstallError = !theme
+        this.emitPackageEvent('install-failed', pack, error)
+        return (typeof callback === 'function' ? callback(error) : undefined)
+      }
 
       const exit = (code, stdout, stderr) => {
         if (code === 0) {
           // get real package name from package.json
           try {
-            const packageInfo = JSON.parse(stdout)[0];
+            const packageInfo = JSON.parse(stdout)[0]
             pack = _.extend({}, pack, packageInfo.metadata);
             ({
               name
-            } = pack);
+            } = pack)
           } catch (err) {}
-            // using old apm without --json support
-          this.clearOutdatedCache();
+          // using old apm without --json support
+          this.clearOutdatedCache()
           if (activateOnSuccess) {
-            atom.packages.activatePackage(name);
+            atom.packages.activatePackage(name)
           } else {
-            atom.packages.loadPackage(name);
+            atom.packages.loadPackage(name)
           }
 
           if (typeof callback === 'function') {
-            callback();
+            callback()
           }
-          return this.emitPackageEvent('installed', pack);
+          return this.emitPackageEvent('installed', pack)
         } else {
-          if (activateOnFailure) { atom.packages.activatePackage(name); }
-          const error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return onError(error);
+          if (activateOnFailure) { atom.packages.activatePackage(name) }
+          const error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return onError(error)
         }
-      };
+      }
 
-      this.emitPackageEvent('installing', pack);
-      const apmProcess = this.runCommand(args, exit);
-      return handleProcessErrors(apmProcess, errorMessage, onError);
+      this.emitPackageEvent('installing', pack)
+      const apmProcess = this.runCommand(args, exit)
+      return handleProcessErrors(apmProcess, errorMessage, onError)
     }
 
-    uninstall(pack, callback) {
-      const {name} = pack;
+    uninstall (pack, callback) {
+      const { name } = pack
 
-      if (atom.packages.isPackageActive(name)) { atom.packages.deactivatePackage(name); }
+      if (atom.packages.isPackageActive(name)) { atom.packages.deactivatePackage(name) }
 
-      const errorMessage = `Uninstalling \u201C${name}\u201D failed.`;
+      const errorMessage = `Uninstalling \u201C${name}\u201D failed.`
       const onError = error => {
-        this.emitPackageEvent('uninstall-failed', pack, error);
-        return (typeof callback === 'function' ? callback(error) : undefined);
-      };
+        this.emitPackageEvent('uninstall-failed', pack, error)
+        return (typeof callback === 'function' ? callback(error) : undefined)
+      }
 
-      this.emitPackageEvent('uninstalling', pack);
+      this.emitPackageEvent('uninstalling', pack)
       const apmProcess = this.runCommand(['uninstall', '--hard', name], (code, stdout, stderr) => {
         if (code === 0) {
-          this.clearOutdatedCache();
-          this.unload(name);
-          this.removePackageNameFromDisabledPackages(name);
+          this.clearOutdatedCache()
+          this.unload(name)
+          this.removePackageNameFromDisabledPackages(name)
           if (typeof callback === 'function') {
-            callback();
+            callback()
           }
-          return this.emitPackageEvent('uninstalled', pack);
+          return this.emitPackageEvent('uninstalled', pack)
         } else {
-          const error = new Error(errorMessage);
-          error.stdout = stdout;
-          error.stderr = stderr;
-          return onError(error);
+          const error = new Error(errorMessage)
+          error.stdout = stdout
+          error.stderr = stderr
+          return onError(error)
         }
-      });
+      })
 
-      return handleProcessErrors(apmProcess, errorMessage, onError);
+      return handleProcessErrors(apmProcess, errorMessage, onError)
     }
 
-    installAlternative(pack, alternativePackageName, callback) {
-      const eventArg = {pack, alternative: alternativePackageName};
-      this.emitter.emit('package-installing-alternative', eventArg);
+    installAlternative (pack, alternativePackageName, callback) {
+      const eventArg = { pack, alternative: alternativePackageName }
+      this.emitter.emit('package-installing-alternative', eventArg)
 
       const uninstallPromise = new Promise((resolve, reject) => {
-        return this.uninstall(pack, function(error) {
-          if (error) { return reject(error); } else { return resolve(); }
-        });
-      });
+        return this.uninstall(pack, function (error) {
+          if (error) { return reject(error) } else { return resolve() }
+        })
+      })
 
       const installPromise = new Promise((resolve, reject) => {
-        return this.install({name: alternativePackageName}, function(error) {
-          if (error) { return reject(error); } else { return resolve(); }
-        });
-      });
+        return this.install({ name: alternativePackageName }, function (error) {
+          if (error) { return reject(error) } else { return resolve() }
+        })
+      })
 
       return Promise.all([uninstallPromise, installPromise]).then(() => {
-        callback(null, eventArg);
-        return this.emitter.emit('package-installed-alternative', eventArg);
-    }).catch(error => {
-        console.error(error.message, error.stack);
-        callback(error, eventArg);
-        eventArg.error = error;
-        return this.emitter.emit('package-install-alternative-failed', eventArg);
-      });
+        callback(null, eventArg)
+        return this.emitter.emit('package-installed-alternative', eventArg)
+      }).catch(error => {
+        console.error(error.message, error.stack)
+        callback(error, eventArg)
+        eventArg.error = error
+        return this.emitter.emit('package-install-alternative-failed', eventArg)
+      })
     }
 
-    canUpgrade(installedPackage, availableVersion) {
-      if (installedPackage == null) { return false; }
+    canUpgrade (installedPackage, availableVersion) {
+      if (installedPackage == null) { return false }
 
-      const installedVersion = installedPackage.metadata.version;
-      if (!semver.valid(installedVersion)) { return false; }
-      if (!semver.valid(availableVersion)) { return false; }
+      const installedVersion = installedPackage.metadata.version
+      if (!semver.valid(installedVersion)) { return false }
+      if (!semver.valid(availableVersion)) { return false }
 
-      return semver.gt(availableVersion, installedVersion);
+      return semver.gt(availableVersion, installedVersion)
     }
 
-    getPackageTitle({name}) {
-      return _.undasherize(_.uncamelcase(name));
+    getPackageTitle ({ name }) {
+      return _.undasherize(_.uncamelcase(name))
     }
 
-    getRepositoryUrl({metadata}) {
-      let left;
-      const {repository} = metadata;
-      let repoUrl = (left = (repository != null ? repository.url : undefined) != null ? (repository != null ? repository.url : undefined) : repository) != null ? left : '';
+    getRepositoryUrl ({ metadata }) {
+      let left
+      const { repository } = metadata
+      let repoUrl = (left = (repository != null ? repository.url : undefined) != null ? (repository != null ? repository.url : undefined) : repository) != null ? left : ''
       if (repoUrl.match('git@github')) {
-        const repoName = repoUrl.split(':')[1];
-        repoUrl = `https://github.com/${repoName}`;
+        const repoName = repoUrl.split(':')[1]
+        repoUrl = `https://github.com/${repoName}`
       }
-      return repoUrl.replace(/\.git$/, '').replace(/\/+$/, '').replace(/^git\+/, '');
+      return repoUrl.replace(/\.git$/, '').replace(/\/+$/, '').replace(/^git\+/, '')
     }
 
-    getRepositoryBugUri({metadata}) {
-      let bugUri;
-      const {bugs} = metadata;
+    getRepositoryBugUri ({ metadata }) {
+      let bugUri
+      const { bugs } = metadata
       if (typeof bugs === 'string') {
-        bugUri = bugs;
+        bugUri = bugs
       } else {
-        let left;
-        bugUri = (left = (bugs != null ? bugs.url : undefined) != null ? (bugs != null ? bugs.url : undefined) : (bugs != null ? bugs.email : undefined)) != null ? left : this.getRepositoryUrl({metadata}) + '/issues/new';
+        let left
+        bugUri = (left = (bugs != null ? bugs.url : undefined) != null ? (bugs != null ? bugs.url : undefined) : (bugs != null ? bugs.email : undefined)) != null ? left : this.getRepositoryUrl({ metadata }) + '/issues/new'
         if (bugUri.includes('@')) {
-          bugUri = 'mailto:' + bugUri;
+          bugUri = 'mailto:' + bugUri
         }
       }
-      return bugUri;
+      return bugUri
     }
 
-    checkNativeBuildTools() {
+    checkNativeBuildTools () {
       return new Promise((resolve, reject) => {
-        const apmProcess = this.runCommand(['install', '--check'], function(code, stdout, stderr) {
+        const apmProcess = this.runCommand(['install', '--check'], function (code, stdout, stderr) {
           if (code === 0) {
-            return resolve();
+            return resolve()
           } else {
-            return reject(new Error());
+            return reject(new Error())
           }
-        });
+        })
 
-        return apmProcess.onWillThrowError(function({error, handle}) {
-          handle();
-          return reject(error);
-        });
-      });
+        return apmProcess.onWillThrowError(function ({ error, handle }) {
+          handle()
+          return reject(error)
+        })
+      })
     }
 
-    removePackageNameFromDisabledPackages(packageName) {
-      return atom.config.removeAtKeyPath('core.disabledPackages', packageName);
+    removePackageNameFromDisabledPackages (packageName) {
+      return atom.config.removeAtKeyPath('core.disabledPackages', packageName)
     }
 
     // Emits the appropriate event for the given package.
@@ -591,39 +598,39 @@ module.exports =
     // eventName - The event name suffix {String} of the event to emit.
     // pack - The package for which the event is being emitted.
     // error - Any error information to be included in the case of an error.
-    emitPackageEvent(eventName, pack, error) {
-      const theme = pack.theme != null ? pack.theme : (pack.metadata != null ? pack.metadata.theme : undefined);
-      eventName = theme ? `theme-${eventName}` : `package-${eventName}`;
-      return this.emitter.emit(eventName, {pack, error});
+    emitPackageEvent (eventName, pack, error) {
+      const theme = pack.theme != null ? pack.theme : (pack.metadata != null ? pack.metadata.theme : undefined)
+      eventName = theme ? `theme-${eventName}` : `package-${eventName}`
+      return this.emitter.emit(eventName, { pack, error })
     }
 
-    on(selectors, callback) {
-      const subscriptions = new CompositeDisposable;
-      for (let selector of Array.from(selectors.split(" "))) {
-        subscriptions.add(this.emitter.on(selector, callback));
+    on (selectors, callback) {
+      const subscriptions = new CompositeDisposable()
+      for (const selector of Array.from(selectors.split(' '))) {
+        subscriptions.add(this.emitter.on(selector, callback))
       }
-      return subscriptions;
+      return subscriptions
     }
-  };
-  PackageManager.initClass();
-  return PackageManager;
-})());
+  }
+  PackageManager.initClass()
+  return PackageManager
+})())
 
-var createJsonParseError = function(message, parseError, stdout) {
-  const error = new Error(message);
-  error.stdout = '';
-  error.stderr = `${parseError.message}: ${stdout}`;
-  return error;
-};
+var createJsonParseError = function (message, parseError, stdout) {
+  const error = new Error(message)
+  error.stdout = ''
+  error.stderr = `${parseError.message}: ${stdout}`
+  return error
+}
 
-const createProcessError = function(message, processError) {
-  const error = new Error(message);
-  error.stdout = '';
-  error.stderr = processError.message;
-  return error;
-};
+const createProcessError = function (message, processError) {
+  const error = new Error(message)
+  error.stdout = ''
+  error.stderr = processError.message
+  return error
+}
 
-var handleProcessErrors = (apmProcess, message, callback) => apmProcess.onWillThrowError(function({error, handle}) {
-  handle();
-  return callback(createProcessError(message, error));
-});
+var handleProcessErrors = (apmProcess, message, callback) => apmProcess.onWillThrowError(function ({ error, handle }) {
+  handle()
+  return callback(createProcessError(message, error))
+})

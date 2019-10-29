@@ -1,55 +1,63 @@
+/** @babel */
+/* eslint-disable
+    prefer-promise-reject-errors,
+    standard/no-callback-literal,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let keytar;
+let keytar
 try {
-  keytar = require('keytar');
+  keytar = require('keytar')
 } catch (error) {
   // Gracefully handle keytar failing to load due to missing library on Linux
   if (process.platform === 'linux') {
     keytar = {
-      findPassword() { return Promise.reject(); },
-      setPassword() { return Promise.reject(); }
-    };
+      findPassword () { return Promise.reject() },
+      setPassword () { return Promise.reject() }
+    }
   } else {
-    throw error;
+    throw error
   }
 }
 
-const tokenName = 'Atom.io API Token';
+const tokenName = 'Atom.io API Token'
 
 module.exports = {
   // Get the Atom.io API token from the keychain.
   //
   // callback - A function to call with an error as the first argument and a
   //            string token as the second argument.
-  getToken(callback) {
+  getToken (callback) {
     return keytar.findPassword(tokenName)
-      .then(function(token) {
+      .then(function (token) {
         if (token) {
-          return callback(null, token);
+          return callback(null, token)
         } else {
-          return Promise.reject();
-        }}).catch(function() {
-        let token;
+          return Promise.reject()
+        }
+      }).catch(function () {
+        let token
         if ((token = process.env.ATOM_ACCESS_TOKEN)) {
-          return callback(null, token);
+          return callback(null, token)
         } else {
           return callback(`\
 No Atom.io API token in keychain
 Run \`apm login\` or set the \`ATOM_ACCESS_TOKEN\` environment variable.\
 `
-          );
+          )
         }
-    });
+      })
   },
 
   // Save the given token to the keychain.
   //
   // token - A string token to save.
-  saveToken(token) {
-    return keytar.setPassword(tokenName, 'atom.io', token);
+  saveToken (token) {
+    return keytar.setPassword(tokenName, 'atom.io', token)
   }
-};
+}

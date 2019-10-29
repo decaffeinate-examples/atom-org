@@ -1,9 +1,15 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const provider = require('./emojis-provider');
+const provider = require('./emojis-provider')
 
 module.exports = {
   config: {
@@ -17,16 +23,16 @@ module.exports = {
     }
   },
 
-  activate() {
-    provider.loadProperties();
+  activate () {
+    provider.loadProperties()
 
     return atom.commands.add('atom-workspace', {
-      'autocomplete-emojis:show-cheat-sheet'() {
-        return require('./emoji-cheat-sheet').show();
+      'autocomplete-emojis:show-cheat-sheet' () {
+        return require('./emoji-cheat-sheet').show()
       }
     }
-    );
+    )
   },
 
-  getProvider() { return provider; }
-};
+  getProvider () { return provider }
+}

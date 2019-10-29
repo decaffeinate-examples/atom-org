@@ -1,10 +1,13 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const NSLog = require('../build/Release/nslog.node');
-const util = require('util');
+const NSLog = require('../build/Release/nslog.node')
+const util = require('util')
 
-module.exports = (...args) => NSLog.log(util.format(...Array.from(args || [])));
+module.exports = (...args) => NSLog.log(util.format(...Array.from(args || [])))

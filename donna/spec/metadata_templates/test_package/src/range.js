@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,11 +12,11 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Range;
-const Grim = require('grim');
-const Point = require('./point');
-const {newlineRegex} = require('./helpers');
-const Fs = require('fs');
+let Range
+const Grim = require('grim')
+const Point = require('./point')
+const { newlineRegex } = require('./helpers')
+const Fs = require('fs')
 
 // Public: Represents a region in a buffer in row/column coordinates.
 //
@@ -24,15 +30,15 @@ const Fs = require('fs');
 // [[0, 1], [2, 3]]
 // ```
 module.exports =
-(Range = (function() {
+(Range = (function () {
   Range = class Range {
-    static initClass() {
-      this.prototype.grim = Grim;
+    static initClass () {
+      this.prototype.grim = Grim
     }
 
     // Public: Call this with the result of {Range::serialize} to construct a new Range.
-    static deserialize(array) {
-      return new (this)(...Array.from(array || []));
+    static deserialize (array) {
+      return new (this)(...Array.from(array || []))
     }
 
     // Public: Convert any range-compatible object to a {Range}.
@@ -46,15 +52,16 @@ module.exports =
     //     that are already ranges.
     //
     // Returns: A {Range} based on the given object.
-    static fromObject(object, copy) {
+    static fromObject (object, copy) {
       if (Array.isArray(object)) {
-        return new (this)(...Array.from(object || []));
+        return new (this)(...Array.from(object || []))
       } else if (object instanceof this) {
-        if (copy) { return object.copy(); } else { return object; }
+        if (copy) { return object.copy() } else { return object }
       } else {
-        return new (this)(object.start, object.end);
+        return new (this)(object.start, object.end)
       }
     }
+
     // Public: Returns a {Range} that starts at the given point and ends at the
     // start point plus the given row and column deltas.
     //
@@ -68,35 +75,35 @@ module.exports =
     //     the end point.
     //
     // Returns a {Range}
-    static fromPointWithDelta(startPoint, rowDelta, columnDelta) {
-      startPoint = Point.fromObject(startPoint);
-      const endPoint = new Point(startPoint.row + rowDelta, startPoint.column + columnDelta);
-      return new (this)(startPoint, endPoint);
+    static fromPointWithDelta (startPoint, rowDelta, columnDelta) {
+      startPoint = Point.fromObject(startPoint)
+      const endPoint = new Point(startPoint.row + rowDelta, startPoint.column + columnDelta)
+      return new (this)(startPoint, endPoint)
     }
 
-    constructor(pointA, pointB) {
-      if (pointA == null) { pointA = new Point(0, 0); }
-      if (pointB == null) { pointB = new Point(0, 0); }
-      pointA = Point.fromObject(pointA);
-      pointB = Point.fromObject(pointB);
+    constructor (pointA, pointB) {
+      if (pointA == null) { pointA = new Point(0, 0) }
+      if (pointB == null) { pointB = new Point(0, 0) }
+      pointA = Point.fromObject(pointA)
+      pointB = Point.fromObject(pointB)
 
       if (pointA.isLessThanOrEqual(pointB)) {
-        this.start = pointA;
-        this.end = pointB;
+        this.start = pointA
+        this.end = pointB
       } else {
-        this.start = pointB;
-        this.end = pointA;
+        this.start = pointB
+        this.end = pointA
       }
     }
 
     // Public: Returns a {Boolean} indicating whether this range has the same start
     // and end points as the given {Range} or range-compatible {Array}.
-    isEqual(other) {
-      if (other == null) { return false; }
-      other = this.constructor.fromObject(other);
-      return other.start.isEqual(this.start) && other.end.isEqual(this.end);
+    isEqual (other) {
+      if (other == null) { return false }
+      other = this.constructor.fromObject(other)
+      return other.start.isEqual(this.start) && other.end.isEqual(this.end)
     }
-  };
-  Range.initClass();
-  return Range;
-})());
+  }
+  Range.initClass()
+  return Range
+})())

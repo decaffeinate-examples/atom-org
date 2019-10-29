@@ -1,14 +1,22 @@
+/** @babel */
+/* eslint-disable
+    no-cond-assign,
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let DisplayMarkerLayer;
-const {Emitter, CompositeDisposable} = require('event-kit');
-const DisplayMarker = require('./display-marker');
-const Range = require('./range');
-const Point = require('./point');
+let DisplayMarkerLayer
+const { Emitter, CompositeDisposable } = require('event-kit')
+const DisplayMarker = require('./display-marker')
+const Range = require('./range')
+const Point = require('./point')
 
 // Public: *Experimental:* A container for a related set of markers at the
 // {DisplayLayer} level. Wraps an underlying {MarkerLayer} on the {TextBuffer}.
@@ -16,18 +24,18 @@ const Point = require('./point');
 // This API is experimental and subject to change on any release.
 module.exports =
 (DisplayMarkerLayer = class DisplayMarkerLayer {
-  constructor(displayLayer, bufferMarkerLayer, ownsBufferMarkerLayer) {
-    this.displayLayer = displayLayer;
-    this.bufferMarkerLayer = bufferMarkerLayer;
+  constructor (displayLayer, bufferMarkerLayer, ownsBufferMarkerLayer) {
+    this.displayLayer = displayLayer
+    this.bufferMarkerLayer = bufferMarkerLayer
     this.ownsBufferMarkerLayer = ownsBufferMarkerLayer;
-    ({id: this.id} = this.bufferMarkerLayer);
-    this.bufferMarkerLayer.displayMarkerLayers.add(this);
-    this.markersById = {};
-    this.destroyed = false;
-    this.emitter = new Emitter;
-    this.subscriptions = new CompositeDisposable;
-    this.markersWithDestroyListeners = new Set;
-    this.subscriptions.add(this.bufferMarkerLayer.onDidUpdate(this.emitDidUpdate.bind(this)));
+    ({ id: this.id } = this.bufferMarkerLayer)
+    this.bufferMarkerLayer.displayMarkerLayers.add(this)
+    this.markersById = {}
+    this.destroyed = false
+    this.emitter = new Emitter()
+    this.subscriptions = new CompositeDisposable()
+    this.markersWithDestroyListeners = new Set()
+    this.subscriptions.add(this.bufferMarkerLayer.onDidUpdate(this.emitDidUpdate.bind(this)))
   }
 
   /*
@@ -35,33 +43,33 @@ module.exports =
   */
 
   // Essential: Destroy this layer.
-  destroy() {
-    if (this.destroyed) { return; }
-    this.destroyed = true;
-    if (this.ownsBufferMarkerLayer) { this.clear(); }
-    this.subscriptions.dispose();
-    this.bufferMarkerLayer.displayMarkerLayers.delete(this);
-    if (this.ownsBufferMarkerLayer) { this.bufferMarkerLayer.destroy(); }
-    this.displayLayer.didDestroyMarkerLayer(this.id);
-    this.emitter.emit('did-destroy');
-    return this.emitter.clear();
+  destroy () {
+    if (this.destroyed) { return }
+    this.destroyed = true
+    if (this.ownsBufferMarkerLayer) { this.clear() }
+    this.subscriptions.dispose()
+    this.bufferMarkerLayer.displayMarkerLayers.delete(this)
+    if (this.ownsBufferMarkerLayer) { this.bufferMarkerLayer.destroy() }
+    this.displayLayer.didDestroyMarkerLayer(this.id)
+    this.emitter.emit('did-destroy')
+    return this.emitter.clear()
   }
 
   // Public: Destroy all markers in this layer.
-  clear() {
-    return this.bufferMarkerLayer.clear();
+  clear () {
+    return this.bufferMarkerLayer.clear()
   }
 
-  didClearBufferMarkerLayer() {
-    this.markersWithDestroyListeners.forEach(marker => marker.didDestroyBufferMarker());
-    return this.markersById = {};
+  didClearBufferMarkerLayer () {
+    this.markersWithDestroyListeners.forEach(marker => marker.didDestroyBufferMarker())
+    return this.markersById = {}
   }
 
   // Essential: Determine whether this layer has been destroyed.
   //
   // Returns a {Boolean}.
-  isDestroyed() {
-    return this.destroyed;
+  isDestroyed () {
+    return this.destroyed
   }
 
   /*
@@ -71,8 +79,8 @@ module.exports =
   // Public: Subscribe to be notified synchronously when this layer is destroyed.
   //
   // Returns a {Disposable}.
-  onDidDestroy(callback) {
-    return this.emitter.on('did-destroy', callback);
+  onDidDestroy (callback) {
+    return this.emitter.on('did-destroy', callback)
   }
 
   // Public: Subscribe to be notified asynchronously whenever markers are
@@ -90,8 +98,8 @@ module.exports =
   // events on individual markers, which are expensive to deliver.
   //
   // Returns a {Disposable}.
-  onDidUpdate(callback) {
-    return this.emitter.on('did-update', callback);
+  onDidUpdate (callback) {
+    return this.emitter.on('did-update', callback)
   }
 
   // Public: Subscribe to be notified synchronously whenever markers are created
@@ -105,10 +113,10 @@ module.exports =
   // absolutely necessary.
   //
   // Returns a {Disposable}.
-  onDidCreateMarker(callback) {
+  onDidCreateMarker (callback) {
     return this.bufferMarkerLayer.onDidCreateMarker(bufferMarker => {
-      return callback(this.getMarker(bufferMarker.id));
-    });
+      return callback(this.getMarker(bufferMarker.id))
+    })
   }
 
   /*
@@ -149,10 +157,10 @@ module.exports =
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
   //
   // Returns a {DisplayMarker}.
-  markScreenRange(screenRange, options) {
-    screenRange = Range.fromObject(screenRange);
-    const bufferRange = this.displayLayer.translateScreenRange(screenRange, options);
-    return this.getMarker(this.bufferMarkerLayer.markRange(bufferRange, options).id);
+  markScreenRange (screenRange, options) {
+    screenRange = Range.fromObject(screenRange)
+    const bufferRange = this.displayLayer.translateScreenRange(screenRange, options)
+    return this.getMarker(this.bufferMarkerLayer.markRange(bufferRange, options).id)
   }
 
   // Public: Create a marker on this layer with its head at the given screen
@@ -187,10 +195,10 @@ module.exports =
   //     Defaults to `'closest'`.
   //
   // Returns a {DisplayMarker}.
-  markScreenPosition(screenPosition, options) {
-    screenPosition = Point.fromObject(screenPosition);
-    const bufferPosition = this.displayLayer.translateScreenPosition(screenPosition, options);
-    return this.getMarker(this.bufferMarkerLayer.markPosition(bufferPosition, options).id);
+  markScreenPosition (screenPosition, options) {
+    screenPosition = Point.fromObject(screenPosition)
+    const bufferPosition = this.displayLayer.translateScreenPosition(screenPosition, options)
+    return this.getMarker(this.bufferMarkerLayer.markPosition(bufferPosition, options).id)
   }
 
   // Public: Create a marker with the given buffer range.
@@ -222,9 +230,9 @@ module.exports =
   //     behavior in all circumstances.
   //
   // Returns a {DisplayMarker}.
-  markBufferRange(bufferRange, options) {
-    bufferRange = Range.fromObject(bufferRange);
-    return this.getMarker(this.bufferMarkerLayer.markRange(bufferRange, options).id);
+  markBufferRange (bufferRange, options) {
+    bufferRange = Range.fromObject(bufferRange)
+    return this.getMarker(this.bufferMarkerLayer.markRange(bufferRange, options).id)
   }
 
   // Public: Create a marker on this layer with its head at the given buffer
@@ -254,8 +262,8 @@ module.exports =
   //     behavior in all circumstances.
   //
   // Returns a {DisplayMarker}.
-  markBufferPosition(bufferPosition, options) {
-    return this.getMarker(this.bufferMarkerLayer.markPosition(Point.fromObject(bufferPosition), options).id);
+  markBufferPosition (bufferPosition, options) {
+    return this.getMarker(this.bufferMarkerLayer.markPosition(Point.fromObject(bufferPosition), options).id)
   }
 
   /*
@@ -265,27 +273,27 @@ module.exports =
   // Essential: Get an existing marker by its id.
   //
   // Returns a {DisplayMarker}.
-  getMarker(id) {
-    let bufferMarker, displayMarker;
+  getMarker (id) {
+    let bufferMarker, displayMarker
     if (displayMarker = this.markersById[id]) {
-      return displayMarker;
+      return displayMarker
     } else if (bufferMarker = this.bufferMarkerLayer.getMarker(id)) {
-      return this.markersById[id] = new DisplayMarker(this, bufferMarker);
+      return this.markersById[id] = new DisplayMarker(this, bufferMarker)
     }
   }
 
   // Essential: Get all markers in the layer.
   //
   // Returns an {Array} of {DisplayMarker}s.
-  getMarkers() {
-    return this.bufferMarkerLayer.getMarkers().map(({id}) => this.getMarker(id));
+  getMarkers () {
+    return this.bufferMarkerLayer.getMarkers().map(({ id }) => this.getMarker(id))
   }
 
   // Public: Get the number of markers in the marker layer.
   //
   // Returns a {Number}.
-  getMarkerCount() {
-    return this.bufferMarkerLayer.getMarkerCount();
+  getMarkerCount () {
+    return this.bufferMarkerLayer.getMarkerCount()
   }
 
   // Public: Find markers in the layer conforming to the given parameters.
@@ -323,146 +331,146 @@ module.exports =
   //   * `intersectsScreenRange` Only include markers intersecting this {Range} in screen coordinates.
   //
   // Returns an {Array} of {DisplayMarker}s
-  findMarkers(params) {
-    params = this.translateToBufferMarkerLayerFindParams(params);
-    return this.bufferMarkerLayer.findMarkers(params).map(stringMarker => this.getMarker(stringMarker.id));
+  findMarkers (params) {
+    params = this.translateToBufferMarkerLayerFindParams(params)
+    return this.bufferMarkerLayer.findMarkers(params).map(stringMarker => this.getMarker(stringMarker.id))
   }
 
   /*
   Section: Private
   */
 
-  translateBufferPosition(bufferPosition, options) {
-    return this.displayLayer.translateBufferPosition(bufferPosition, options);
+  translateBufferPosition (bufferPosition, options) {
+    return this.displayLayer.translateBufferPosition(bufferPosition, options)
   }
 
-  translateBufferRange(bufferRange, options) {
-    return this.displayLayer.translateBufferRange(bufferRange, options);
+  translateBufferRange (bufferRange, options) {
+    return this.displayLayer.translateBufferRange(bufferRange, options)
   }
 
-  translateScreenPosition(screenPosition, options) {
-    return this.displayLayer.translateScreenPosition(screenPosition, options);
+  translateScreenPosition (screenPosition, options) {
+    return this.displayLayer.translateScreenPosition(screenPosition, options)
   }
 
-  translateScreenRange(screenRange, options) {
-    return this.displayLayer.translateScreenRange(screenRange, options);
+  translateScreenRange (screenRange, options) {
+    return this.displayLayer.translateScreenRange(screenRange, options)
   }
 
-  emitDidUpdate() {
-    return this.emitter.emit('did-update');
+  emitDidUpdate () {
+    return this.emitter.emit('did-update')
   }
 
-  notifyObserversIfMarkerScreenPositionsChanged() {
-    for (let marker of Array.from(this.getMarkers())) {
-      marker.notifyObservers(false);
+  notifyObserversIfMarkerScreenPositionsChanged () {
+    for (const marker of Array.from(this.getMarkers())) {
+      marker.notifyObservers(false)
     }
   }
 
-  destroyMarker(id) {
-    let marker;
+  destroyMarker (id) {
+    let marker
     if (marker = this.markersById[id]) {
-      return marker.didDestroyBufferMarker();
+      return marker.didDestroyBufferMarker()
     }
   }
 
-  didDestroyMarker(marker) {
-    this.markersWithDestroyListeners.delete(marker);
-    return delete this.markersById[marker.id];
+  didDestroyMarker (marker) {
+    this.markersWithDestroyListeners.delete(marker)
+    return delete this.markersById[marker.id]
   }
 
-  translateToBufferMarkerLayerFindParams(params) {
-    const bufferMarkerLayerFindParams = {};
+  translateToBufferMarkerLayerFindParams (params) {
+    const bufferMarkerLayerFindParams = {}
     for (let key in params) {
-      let value = params[key];
+      let value = params[key]
       switch (key) {
         case 'startBufferPosition':
-          key = 'startPosition';
-          break;
+          key = 'startPosition'
+          break
         case 'endBufferPosition':
-          key = 'endPosition';
-          break;
+          key = 'endPosition'
+          break
         case 'startScreenPosition':
-          key = 'startPosition';
-          value = this.displayLayer.translateScreenPosition(value);
-          break;
+          key = 'startPosition'
+          value = this.displayLayer.translateScreenPosition(value)
+          break
         case 'endScreenPosition':
-          key = 'endPosition';
-          value = this.displayLayer.translateScreenPosition(value);
-          break;
+          key = 'endPosition'
+          value = this.displayLayer.translateScreenPosition(value)
+          break
         case 'startsInBufferRange':
-          key = 'startsInRange';
-          break;
+          key = 'startsInRange'
+          break
         case 'endsInBufferRange':
-          key = 'endsInRange';
-          break;
+          key = 'endsInRange'
+          break
         case 'startsInScreenRange':
-          key = 'startsInRange';
-          value = this.displayLayer.translateScreenRange(value);
-          break;
+          key = 'startsInRange'
+          value = this.displayLayer.translateScreenRange(value)
+          break
         case 'endsInScreenRange':
-          key = 'endsInRange';
-          value = this.displayLayer.translateScreenRange(value);
-          break;
+          key = 'endsInRange'
+          value = this.displayLayer.translateScreenRange(value)
+          break
         case 'startBufferRow':
-          key = 'startRow';
-          break;
+          key = 'startRow'
+          break
         case 'endBufferRow':
-          key = 'endRow';
-          break;
+          key = 'endRow'
+          break
         case 'startScreenRow':
-          key = 'startsInRange';
-          var startBufferPosition = this.displayLayer.translateScreenPosition(Point(value, 0));
-          var endBufferPosition = this.displayLayer.translateScreenPosition(Point(value, Infinity));
-          value = Range(startBufferPosition, endBufferPosition);
-          break;
+          key = 'startsInRange'
+          var startBufferPosition = this.displayLayer.translateScreenPosition(Point(value, 0))
+          var endBufferPosition = this.displayLayer.translateScreenPosition(Point(value, Infinity))
+          value = Range(startBufferPosition, endBufferPosition)
+          break
         case 'endScreenRow':
-          key = 'endsInRange';
-          startBufferPosition = this.displayLayer.translateScreenPosition(Point(value, 0));
-          endBufferPosition = this.displayLayer.translateScreenPosition(Point(value, Infinity));
-          value = Range(startBufferPosition, endBufferPosition);
-          break;
+          key = 'endsInRange'
+          startBufferPosition = this.displayLayer.translateScreenPosition(Point(value, 0))
+          endBufferPosition = this.displayLayer.translateScreenPosition(Point(value, Infinity))
+          value = Range(startBufferPosition, endBufferPosition)
+          break
         case 'intersectsBufferRowRange':
-          key = 'intersectsRowRange';
-          break;
+          key = 'intersectsRowRange'
+          break
         case 'intersectsScreenRowRange':
-          key = 'intersectsRange';
-          var [startScreenRow, endScreenRow] = Array.from(value);
-          startBufferPosition = this.displayLayer.translateScreenPosition(Point(startScreenRow, 0));
-          endBufferPosition = this.displayLayer.translateScreenPosition(Point(endScreenRow, Infinity));
-          value = Range(startBufferPosition, endBufferPosition);
-          break;
+          key = 'intersectsRange'
+          var [startScreenRow, endScreenRow] = Array.from(value)
+          startBufferPosition = this.displayLayer.translateScreenPosition(Point(startScreenRow, 0))
+          endBufferPosition = this.displayLayer.translateScreenPosition(Point(endScreenRow, Infinity))
+          value = Range(startBufferPosition, endBufferPosition)
+          break
         case 'containsBufferRange':
-          key = 'containsRange';
-          break;
+          key = 'containsRange'
+          break
         case 'containsScreenRange':
-          key = 'containsRange';
-          value = this.displayLayer.translateScreenRange(value);
-          break;
+          key = 'containsRange'
+          value = this.displayLayer.translateScreenRange(value)
+          break
         case 'containsBufferPosition':
-          key = 'containsPosition';
-          break;
+          key = 'containsPosition'
+          break
         case 'containsScreenPosition':
-          key = 'containsPosition';
-          value = this.displayLayer.translateScreenPosition(value);
-          break;
+          key = 'containsPosition'
+          value = this.displayLayer.translateScreenPosition(value)
+          break
         case 'containedInBufferRange':
-          key = 'containedInRange';
-          break;
+          key = 'containedInRange'
+          break
         case 'containedInScreenRange':
-          key = 'containedInRange';
-          value = this.displayLayer.translateScreenRange(value);
-          break;
+          key = 'containedInRange'
+          value = this.displayLayer.translateScreenRange(value)
+          break
         case 'intersectsBufferRange':
-          key = 'intersectsRange';
-          break;
+          key = 'intersectsRange'
+          break
         case 'intersectsScreenRange':
-          key = 'intersectsRange';
-          value = this.displayLayer.translateScreenRange(value);
-          break;
+          key = 'intersectsRange'
+          value = this.displayLayer.translateScreenRange(value)
+          break
       }
-      bufferMarkerLayerFindParams[key] = value;
+      bufferMarkerLayerFindParams[key] = value
     }
 
-    return bufferMarkerLayerFindParams;
+    return bufferMarkerLayerFindParams
   }
-});
+})

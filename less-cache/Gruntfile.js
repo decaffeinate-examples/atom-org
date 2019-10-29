@@ -1,9 +1,12 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
@@ -41,14 +44,14 @@ module.exports = function(grunt) {
         }
       }
     }
-  });
+  })
 
-  grunt.loadNpmTasks('grunt-contrib-coffee');
-  grunt.loadNpmTasks('grunt-shell');
-  grunt.loadNpmTasks('grunt-coffeelint');
+  grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-shell')
+  grunt.loadNpmTasks('grunt-coffeelint')
 
-  grunt.registerTask('clean', () => require('fs-plus').removeSync('lib'));
-  grunt.registerTask('lint', ['coffeelint:src', 'coffeelint:test']);
-  grunt.registerTask('default', ['coffeelint', 'coffee']);
-  return grunt.registerTask('test', ['default', 'coffeelint:test', 'shell:test']);
-};
+  grunt.registerTask('clean', () => require('fs-plus').removeSync('lib'))
+  grunt.registerTask('lint', ['coffeelint:src', 'coffeelint:test'])
+  grunt.registerTask('default', ['coffeelint', 'coffee'])
+  return grunt.registerTask('test', ['default', 'coffeelint:test', 'shell:test'])
+}

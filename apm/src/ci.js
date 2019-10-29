@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-cond-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,32 +11,32 @@
  * DS206: Consider reworking classes to avoid initClass
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Ci;
-const path = require('path');
-const fs = require('./fs');
-const yargs = require('yargs');
-const async = require('async');
-const _ = require('underscore-plus');
+let Ci
+const path = require('path')
+const fs = require('./fs')
+const yargs = require('yargs')
+const async = require('async')
+const _ = require('underscore-plus')
 
-const config = require('./apm');
-const Command = require('./command');
+const config = require('./apm')
+const Command = require('./command')
 
 module.exports =
-(Ci = (function() {
+(Ci = (function () {
   Ci = class Ci extends Command {
-    static initClass() {
-      this.commandNames = ['ci'];
+    static initClass () {
+      this.commandNames = ['ci']
     }
 
-    constructor() {
-      super();
-      this.atomDirectory = config.getAtomDirectory();
-      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp');
-      this.atomNpmPath = require.resolve('npm/bin/npm-cli');
+    constructor () {
+      super()
+      this.atomDirectory = config.getAtomDirectory()
+      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp')
+      this.atomNpmPath = require.resolve('npm/bin/npm-cli')
     }
 
-    parseOptions(argv) {
-      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+    parseOptions (argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
       options.usage(`\
 Usage: apm ci
 
@@ -41,19 +47,19 @@ apm ci will install its locked contents exactly. It is substantially
 faster than apm install and produces consistently reproduceable builds,
 but cannot be used to install new packages or dependencies.\
 `
-      );
+      )
 
-      options.alias('h', 'help').describe('help', 'Print this usage message');
-      return options.boolean('verbose').default('verbose', false).describe('verbose', 'Show verbose debug information');
+      options.alias('h', 'help').describe('help', 'Print this usage message')
+      return options.boolean('verbose').default('verbose', false).describe('verbose', 'Show verbose debug information')
     }
 
-    installModules(options, callback) {
-      let vsArgs;
-      process.stdout.write('Installing locked modules');
+    installModules (options, callback) {
+      let vsArgs
+      process.stdout.write('Installing locked modules')
       if (options.argv.verbose) {
-        process.stdout.write('\n');
+        process.stdout.write('\n')
       } else {
-        process.stdout.write(' ');
+        process.stdout.write(' ')
       }
 
       const installArgs = [
@@ -61,41 +67,41 @@ but cannot be used to install new packages or dependencies.\
         '--globalconfig', config.getGlobalConfigPath(),
         '--userconfig', config.getUserConfigPath(),
         ...Array.from(this.getNpmBuildFlags())
-      ];
-      if (options.argv.verbose) { installArgs.push('--verbose'); }
+      ]
+      if (options.argv.verbose) { installArgs.push('--verbose') }
 
       if (vsArgs = this.getVisualStudioFlags()) {
-        installArgs.push(vsArgs);
+        installArgs.push(vsArgs)
       }
 
-      fs.makeTreeSync(this.atomDirectory);
+      fs.makeTreeSync(this.atomDirectory)
 
-      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
-      this.addBuildEnvVars(env);
+      const env = _.extend({}, process.env, { HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath() })
+      this.addBuildEnvVars(env)
 
-      const installOptions = {env, streaming: options.argv.verbose};
+      const installOptions = { env, streaming: options.argv.verbose }
 
       return this.fork(this.atomNpmPath, installArgs, installOptions, (...args) => {
-        return this.logCommandResults(callback, ...Array.from(args));
-      });
+        return this.logCommandResults(callback, ...Array.from(args))
+      })
     }
 
-    run(options) {
-      const {callback} = options;
-      const opts = this.parseOptions(options.commandArgs);
+    run (options) {
+      const { callback } = options
+      const opts = this.parseOptions(options.commandArgs)
 
-      const commands = [];
-      commands.push(callback => { return config.loadNpm((error, npm) => { this.npm = npm; return callback(error); }); });
-      commands.push(cb => this.loadInstalledAtomMetadata(cb));
-      commands.push(cb => this.installModules(opts, cb));
+      const commands = []
+      commands.push(callback => { return config.loadNpm((error, npm) => { this.npm = npm; return callback(error) }) })
+      commands.push(cb => this.loadInstalledAtomMetadata(cb))
+      commands.push(cb => this.installModules(opts, cb))
 
-      const iteratee = (item, next) => item(next);
-      return async.mapSeries(commands, iteratee, function(err) {
-        if (err) { return callback(err); }
-        return callback(null);
-      });
+      const iteratee = (item, next) => item(next)
+      return async.mapSeries(commands, iteratee, function (err) {
+        if (err) { return callback(err) }
+        return callback(null)
+      })
     }
-  };
-  Ci.initClass();
-  return Ci;
-})());
+  }
+  Ci.initClass()
+  return Ci
+})())

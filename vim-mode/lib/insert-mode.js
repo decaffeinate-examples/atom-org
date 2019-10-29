@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,27 +9,27 @@
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
 const copyCharacterFromAbove = (editor, vimState) => editor.transact(() => (() => {
-  const result = [];
-  for (let cursor of Array.from(editor.getCursors())) {
-    const {row, column} = cursor.getScreenPosition();
-    if (row === 0) { continue; }
-    const range = [[row-1, column], [row-1, column+1]];
-    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))));
+  const result = []
+  for (const cursor of Array.from(editor.getCursors())) {
+    const { row, column } = cursor.getScreenPosition()
+    if (row === 0) { continue }
+    const range = [[row - 1, column], [row - 1, column + 1]]
+    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))))
   }
-  return result;
-})());
+  return result
+})())
 
 const copyCharacterFromBelow = (editor, vimState) => editor.transact(() => (() => {
-  const result = [];
-  for (let cursor of Array.from(editor.getCursors())) {
-    const {row, column} = cursor.getScreenPosition();
-    const range = [[row+1, column], [row+1, column+1]];
-    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))));
+  const result = []
+  for (const cursor of Array.from(editor.getCursors())) {
+    const { row, column } = cursor.getScreenPosition()
+    const range = [[row + 1, column], [row + 1, column + 1]]
+    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))))
   }
-  return result;
-})());
+  return result
+})())
 
 module.exports = {
   copyCharacterFromAbove,
   copyCharacterFromBelow
-};
+}

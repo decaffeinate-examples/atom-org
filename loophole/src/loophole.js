@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-eval,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,36 +11,36 @@
  * DS201: Simplify complex destructure assignments
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const vm = require('vm');
+const vm = require('vm')
 
-exports.allowUnsafeEval = function(fn) {
-  const previousEval = global.eval;
+exports.allowUnsafeEval = function (fn) {
+  const previousEval = global.eval
   try {
-    global.eval = source => vm.runInThisContext(source);
-    return fn();
+    global.eval = source => vm.runInThisContext(source)
+    return fn()
   } finally {
-    global.eval = previousEval;
+    global.eval = previousEval
   }
-};
+}
 
-exports.allowUnsafeNewFunction = function(fn) {
-  const previousFunction = global.Function;
+exports.allowUnsafeNewFunction = function (fn) {
+  const previousFunction = global.Function
   try {
-    global.Function = exports.Function;
-    return fn();
+    global.Function = exports.Function
+    return fn()
   } finally {
-    global.Function = previousFunction;
+    global.Function = previousFunction
   }
-};
+}
 
-exports.Function = function(...args) {
-  const adjustedLength = Math.max(args.length, 1), paramLists = args.slice(0, adjustedLength - 1), body = args[adjustedLength - 1];
-  const params = [];
+exports.Function = function (...args) {
+  const adjustedLength = Math.max(args.length, 1); const paramLists = args.slice(0, adjustedLength - 1); const body = args[adjustedLength - 1]
+  const params = []
   for (let paramList of Array.from(paramLists)) {
     if (typeof paramList === 'string') {
-      paramList = paramList.split(/\s*,\s*/);
+      paramList = paramList.split(/\s*,\s*/)
     }
-    params.push(...Array.from(paramList || []));
+    params.push(...Array.from(paramList || []))
   }
 
   return vm.runInThisContext(`\
@@ -42,7 +48,7 @@ exports.Function = function(...args) {
   ${body}
 })\
 `
-  );
-};
+  )
+}
 
-exports.Function.prototype = global.Function.prototype;
+exports.Function.prototype = global.Function.prototype

@@ -1,9 +1,12 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
@@ -36,19 +39,19 @@ module.exports = function(grunt) {
         }
       }
     }
-  });
+  })
 
-  grunt.loadNpmTasks('grunt-contrib-coffee');
-  grunt.loadNpmTasks('grunt-shell');
-  grunt.loadNpmTasks('grunt-coffeelint');
+  grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-shell')
+  grunt.loadNpmTasks('grunt-coffeelint')
 
-  grunt.registerTask('clean', function() {
-    if (grunt.file.exists('lib')) { grunt.file.delete('lib'); }
-    if (grunt.file.exists('bin/node_darwin_x64')) { return grunt.file.delete('bin/node_darwin_x64'); }
-  });
+  grunt.registerTask('clean', function () {
+    if (grunt.file.exists('lib')) { grunt.file.delete('lib') }
+    if (grunt.file.exists('bin/node_darwin_x64')) { return grunt.file.delete('bin/node_darwin_x64') }
+  })
 
-  grunt.registerTask('lint', ['coffeelint']);
-  grunt.registerTask('default', ['coffee', 'lint']);
-  grunt.registerTask('test', ['clean', 'default', 'shell:test']);
-  return grunt.registerTask('prepublish', ['clean', 'coffee', 'lint']);
-};
+  grunt.registerTask('lint', ['coffeelint'])
+  grunt.registerTask('default', ['coffee', 'lint'])
+  grunt.registerTask('test', ['clean', 'default', 'shell:test'])
+  return grunt.registerTask('prepublish', ['clean', 'coffee', 'lint'])
+}

@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -39,25 +45,25 @@ const Template = `\
 <atom-text-editor mini></atom-text-editor>
 
 <p>Use <code>enter</code> to confirm. Confirmed <span>0</span> times</p>\
-`;
+`
 
 class AtomTextEditorExerciseView extends HTMLElement {
-  createdCallback() {
-    this.innerHTML = Template;
+  createdCallback () {
+    this.innerHTML = Template
 
     return atom.commands.add('atom-text-editor-exercise atom-text-editor', {
-      'core:confirm'(event) {
-        const span = this.nextSibling.nextSibling.querySelector('span');
-        span.textContent = parseInt(span.textContent) + 1;
-        return console.log('Confirmed', this, event, this.getModel().getText());
+      'core:confirm' (event) {
+        const span = this.nextSibling.nextSibling.querySelector('span')
+        span.textContent = parseInt(span.textContent) + 1
+        return console.log('Confirmed', this, event, this.getModel().getText())
       }
     }
-    );
+    )
   }
 
-  getTitle() {
-    return 'TextEditor Exercise';
+  getTitle () {
+    return 'TextEditor Exercise'
   }
 }
 
-module.exports = document.registerElement('atom-text-editor-exercise', {prototype: AtomTextEditorExerciseView.prototype});
+module.exports = document.registerElement('atom-text-editor-exercise', { prototype: AtomTextEditorExerciseView.prototype })

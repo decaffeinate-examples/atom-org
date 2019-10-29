@@ -1,23 +1,26 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const DecorationExampleView = require('./decoration-example-view');
+const DecorationExampleView = require('./decoration-example-view')
 
 module.exports = {
   decorationExampleView: null,
 
-  activate(state) {
-    this.decorationExampleView = new DecorationExampleView(state.decorationExampleViewState);
-    return this.decorationExampleView.attach();
+  activate (state) {
+    this.decorationExampleView = new DecorationExampleView(state.decorationExampleViewState)
+    return this.decorationExampleView.attach()
   },
 
-  deactivate() {
-    return this.decorationExampleView.destroy();
+  deactivate () {
+    return this.decorationExampleView.destroy()
   },
 
-  serialize() {
-    return {decorationExampleViewState: this.decorationExampleView.serialize()};
+  serialize () {
+    return { decorationExampleViewState: this.decorationExampleView.serialize() }
   }
-};
+}

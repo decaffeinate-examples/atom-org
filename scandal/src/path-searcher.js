@@ -1,3 +1,14 @@
+/** @babel */
+/* eslint-disable
+    constructor-super,
+    no-constant-condition,
+    no-eval,
+    no-this-before-super,
+    no-unused-vars,
+    no-useless-escape,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS001: Remove Babel/TypeScript constructor workaround
@@ -7,19 +18,19 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let PathSearcher;
-const fs = require("fs");
-const os = require("os");
-const {EventEmitter} = require("events");
-const ChunkedExecutor = require("./chunked-executor");
-const ChunkedLineReader = require("./chunked-line-reader");
+let PathSearcher
+const fs = require('fs')
+const os = require('os')
+const { EventEmitter } = require('events')
+const ChunkedExecutor = require('./chunked-executor')
+const ChunkedLineReader = require('./chunked-line-reader')
 
-const MAX_LINE_LENGTH = 100;
-const LINE_COUNT_BEFORE = 0;
-const LINE_COUNT_AFTER = 0;
-const WORD_BREAK_REGEX = /[ \r\n\t;:?=&\/]/;
-const LINE_END_REGEX = /\r\n|\n|\r/;
-const TRAILING_LINE_END_REGEX = /\r?\n?$/;
+const MAX_LINE_LENGTH = 100
+const LINE_COUNT_BEFORE = 0
+const LINE_COUNT_AFTER = 0
+const WORD_BREAK_REGEX = /[ \r\n\t;:?=&\/]/
+const LINE_END_REGEX = /\r\n|\n|\r/
+const TRAILING_LINE_END_REGEX = /\r?\n?$/
 
 // Public: Will search through paths specified for a regex.
 //
@@ -101,7 +112,6 @@ const TRAILING_LINE_END_REGEX = /\r?\n?$/;
 //
 module.exports =
 (PathSearcher = class PathSearcher extends EventEmitter {
-
   // Public: Construct a {PathSearcher} object.
   //
   // * `options` {Object}
@@ -115,24 +125,24 @@ module.exports =
   //      to the `maxLineLength` limit.
   //   * `wordBreakRegex` {RegExp} default `/[ \r\n\t;:?=&\/]/`;
   //      Used to break on a word when finding the context for a match.
-  constructor(param) {
+  constructor (param) {
     {
       // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
-      eval(`${thisName} = this;`);
+      if (false) { super() }
+      const thisFn = (() => { return this }).toString()
+      const thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1]
+      eval(`${thisName} = this;`)
     }
-    if (param == null) { param = {}; }
-    const {maxLineLength, leadingContextLineCount, trailingContextLineCount, wordBreakRegex} = param;
-    this.maxLineLength = maxLineLength;
-    this.leadingContextLineCount = leadingContextLineCount;
-    this.trailingContextLineCount = trailingContextLineCount;
-    this.wordBreakRegex = wordBreakRegex;
-    if (this.maxLineLength == null) { this.maxLineLength = MAX_LINE_LENGTH; }
-    if (this.leadingContextLineCount == null) { this.leadingContextLineCount = LINE_COUNT_BEFORE; }
-    if (this.trailingContextLineCount == null) { this.trailingContextLineCount = LINE_COUNT_AFTER; }
-    if (this.wordBreakRegex == null) { this.wordBreakRegex = WORD_BREAK_REGEX; }
+    if (param == null) { param = {} }
+    const { maxLineLength, leadingContextLineCount, trailingContextLineCount, wordBreakRegex } = param
+    this.maxLineLength = maxLineLength
+    this.leadingContextLineCount = leadingContextLineCount
+    this.trailingContextLineCount = trailingContextLineCount
+    this.wordBreakRegex = wordBreakRegex
+    if (this.maxLineLength == null) { this.maxLineLength = MAX_LINE_LENGTH }
+    if (this.leadingContextLineCount == null) { this.leadingContextLineCount = LINE_COUNT_BEFORE }
+    if (this.trailingContextLineCount == null) { this.trailingContextLineCount = LINE_COUNT_AFTER }
+    if (this.wordBreakRegex == null) { this.wordBreakRegex = WORD_BREAK_REGEX }
   }
 
   /*
@@ -152,27 +162,27 @@ module.exports =
   //      null when there are no results
   //   * `errors` {Array} of errors; null when there are no errors. Errors will
   //      be js Error objects with `message`, `stack`, etc.
-  searchPaths(regex, paths, doneCallback) {
-    let errors = null;
-    let results = null;
+  searchPaths (regex, paths, doneCallback) {
+    let errors = null
+    let results = null
 
     const searchPath = (filePath, pathCallback) => {
-      return this.searchPath(regex, filePath, function(pathResult, error) {
+      return this.searchPath(regex, filePath, function (pathResult, error) {
         if (pathResult) {
-          if (results == null) { results = []; }
-          results.push(pathResult);
+          if (results == null) { results = [] }
+          results.push(pathResult)
         }
 
         if (error) {
-          if (errors == null) { errors = []; }
-          errors.push(error);
+          if (errors == null) { errors = [] }
+          errors.push(error)
         }
 
-        return pathCallback();
-      });
-    };
+        return pathCallback()
+      })
+    }
 
-    return new ChunkedExecutor(paths, searchPath).execute(() => doneCallback(results, errors));
+    return new ChunkedExecutor(paths, searchPath).execute(() => doneCallback(results, errors))
   }
 
   // Public: Search a file path for a regex
@@ -183,106 +193,106 @@ module.exports =
   //   * `results` {Array} of Result objects in the format specified above;
   //      null when there are no results
   //   * `error` {Error}; null when there is no error
-  searchPath(regex, filePath, doneCallback) {
-    let matches = null;
-    let lineNumber = 0;
-    const reader = new ChunkedLineReader(filePath);
-    let error = null;
+  searchPath (regex, filePath, doneCallback) {
+    let matches = null
+    let lineNumber = 0
+    const reader = new ChunkedLineReader(filePath)
+    let error = null
 
     reader.on('error', e => {
-      error = e;
-      return this.emit('file-error', error);
-    });
+      error = e
+      return this.emit('file-error', error)
+    })
 
     // remember @leadingContextLineCount recent lines already truncated to @maxLineLength
-    const recentLines = [];
+    const recentLines = []
     // remember recent matches from the last @trailingContextLineCount lines
-    const recentMatches = [];
+    const recentMatches = []
 
     reader.on('end', () => {
-      let output;
+      let output
       if (matches != null ? matches.length : undefined) {
-        output = {filePath, matches};
-        this.emit('results-found', output);
+        output = { filePath, matches }
+        this.emit('results-found', output)
       } else {
-        this.emit('results-not-found', filePath);
+        this.emit('results-not-found', filePath)
       }
-      return doneCallback(output, error);
-    });
+      return doneCallback(output, error)
+    })
 
     reader.on('data', chunk => {
-      const lines = chunk.toString().replace(TRAILING_LINE_END_REGEX, '').split(LINE_END_REGEX);
+      const lines = chunk.toString().replace(TRAILING_LINE_END_REGEX, '').split(LINE_END_REGEX)
       return (() => {
-        const result = [];
-        for (let line of Array.from(lines)) {
+        const result = []
+        for (const line of Array.from(lines)) {
         // update trailingContextLines of recent matches
-          var match;
+          var match
           if (this.trailingContextLineCount > 0) {
             for (match of Array.from(recentMatches)) {
-              match.trailingContextLines.push(line.substr(0, this.maxLineLength));
+              match.trailingContextLines.push(line.substr(0, this.maxLineLength))
             }
           }
 
-          var lineMatches = this.searchLine(regex, line, lineNumber++);
+          var lineMatches = this.searchLine(regex, line, lineNumber++)
 
           if (lineMatches != null) {
-            if (matches == null) { matches = []; }
+            if (matches == null) { matches = [] }
             for (match of Array.from(lineMatches)) {
-              match.leadingContextLines = recentLines.slice(recentLines.length - this.leadingContextLineCount);
-              match.trailingContextLines = [];
-              matches.push(match);
+              match.leadingContextLines = recentLines.slice(recentLines.length - this.leadingContextLineCount)
+              match.trailingContextLines = []
+              matches.push(match)
             }
           }
 
           // remove obsolete lines from recentLines
           if (this.leadingContextLineCount > 0) {
             while (recentLines.length > this.leadingContextLineCount) {
-              recentLines.shift();
+              recentLines.shift()
             }
-            recentLines.push(line.substr(0, this.maxLineLength));
+            recentLines.push(line.substr(0, this.maxLineLength))
           }
 
           // remove obsolete matches from recentMatches
           if (this.trailingContextLineCount > 0) {
             while ((recentMatches.length > 0) && (recentMatches[0].range[0][0] < (lineNumber - this.trailingContextLineCount))) {
-              recentMatches.shift();
+              recentMatches.shift()
             }
             if (lineMatches != null) {
               result.push((() => {
-                const result1 = [];
-                for (match of Array.from(lineMatches)) {                   result1.push(recentMatches.push(match));
+                const result1 = []
+                for (match of Array.from(lineMatches)) {
+                  result1.push(recentMatches.push(match))
                 }
-                return result1;
-              })());
+                return result1
+              })())
             } else {
-              result.push(undefined);
+              result.push(undefined)
             }
           } else {
-            result.push(undefined);
+            result.push(undefined)
           }
         }
-        return result;
-      })();
-    });
-
+        return result
+      })()
+    })
   }
 
-  searchLine(regex, line, lineNumber) {
-    let matches = null;
-    let lineTextOffset = 0;
+  searchLine (regex, line, lineNumber) {
+    let matches = null
+    let lineTextOffset = 0
 
     while (regex.test(line)) {
-      var lineText;
-      lineTextOffset = 0;
-      let lineTextLength = line.length;
-      const matchText = RegExp.lastMatch;
-      const matchLength = matchText.length;
-      const matchIndex = regex.lastIndex - matchLength;
-      const matchEndIndex = regex.lastIndex;
+      var lineText
+      lineTextOffset = 0
+      let lineTextLength = line.length
+      const matchText = RegExp.lastMatch
+      const matchLength = matchText.length
+      const matchIndex = regex.lastIndex - matchLength
+      const matchEndIndex = regex.lastIndex
 
       if (lineTextLength < this.maxLineLength) {
         // The line is already short enough, we dont need to do any trimming
-        lineText = line;
+        lineText = line
       } else {
         // TODO: I want to break this into a function, but it needs to return the
         // new text and an offset, or an offset and a length. I am worried about
@@ -291,50 +301,50 @@ module.exports =
 
         // Find the initial context around the match. This will likely break on
         // words or be too short. We will fix in the subsequent lines.
-        lineTextOffset = Math.round(matchIndex - ((this.maxLineLength - matchLength) / 2));
-        let lineTextEndOffset = lineTextOffset + this.maxLineLength;
+        lineTextOffset = Math.round(matchIndex - ((this.maxLineLength - matchLength) / 2))
+        let lineTextEndOffset = lineTextOffset + this.maxLineLength
 
         if (lineTextOffset <= 0) {
           // The match is near the beginning of the line, so we expand the right
-          lineTextOffset = 0;
-          lineTextEndOffset = this.maxLineLength;
+          lineTextOffset = 0
+          lineTextEndOffset = this.maxLineLength
         } else if (lineTextEndOffset > (lineTextLength - 2)) {
           // The match is near the end of the line, so we expand to the left
-          lineTextEndOffset = lineTextLength - 1;
-          lineTextOffset = lineTextEndOffset - this.maxLineLength;
+          lineTextEndOffset = lineTextLength - 1
+          lineTextOffset = lineTextEndOffset - this.maxLineLength
         }
 
         // We dont want the line to break a word, so expand to the word boundaries
-        lineTextOffset = this.findWordBreak(line, lineTextOffset, -1);
-        lineTextEndOffset = this.findWordBreak(line, lineTextEndOffset, 1) + 1;
+        lineTextOffset = this.findWordBreak(line, lineTextOffset, -1)
+        lineTextEndOffset = this.findWordBreak(line, lineTextEndOffset, 1) + 1
 
         // Trim the text and give the contexualized line to the user
-        lineTextLength = lineTextEndOffset - lineTextOffset;
-        lineText = line.substr(lineTextOffset, lineTextLength);
+        lineTextLength = lineTextEndOffset - lineTextOffset
+        lineText = line.substr(lineTextOffset, lineTextLength)
       }
 
-      const range = [[lineNumber, matchIndex], [lineNumber, matchEndIndex]];
-      if (matches == null) { matches = []; }
-      matches.push({matchText, lineText, lineTextOffset, range});
+      const range = [[lineNumber, matchIndex], [lineNumber, matchEndIndex]]
+      if (matches == null) { matches = [] }
+      matches.push({ matchText, lineText, lineTextOffset, range })
     }
 
-    regex.lastIndex = 0;
-    return matches;
+    regex.lastIndex = 0
+    return matches
   }
 
-  findWordBreak(line, offset, increment) {
-    let i = offset;
-    const len = line.length;
-    const maxIndex = len - 1;
+  findWordBreak (line, offset, increment) {
+    let i = offset
+    const len = line.length
+    const maxIndex = len - 1
 
     while ((i < len) && (i >= 0)) {
-      const checkIndex = i + increment;
-      if (this.wordBreakRegex.test(line[checkIndex])) { return i; }
-      i = checkIndex;
+      const checkIndex = i + increment
+      if (this.wordBreakRegex.test(line[checkIndex])) { return i }
+      i = checkIndex
     }
 
-    if (i < 0) { return 0; }
-    if (i > maxIndex) { return maxIndex; }
-    return i;
+    if (i < 0) { return 0 }
+    if (i > maxIndex) { return maxIndex }
+    return i
   }
-});
+})

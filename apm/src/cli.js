@@ -1,11 +1,17 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const apm = require('./apm-cli');
+const apm = require('./apm-cli')
 
-process.title = 'apm';
+process.title = 'apm'
 
-apm.run(process.argv.slice(2), error => process.exitCode = (error != null) ? 1 : 0);
+apm.run(process.argv.slice(2), error => process.exitCode = (error != null) ? 1 : 0)

@@ -1,12 +1,14 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const path = require('path');
+const path = require('path')
 
-module.exports = function(grunt) {
-
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
@@ -48,14 +50,14 @@ module.exports = function(grunt) {
         }
       }
     }
-  });
+  })
 
-  grunt.loadNpmTasks('grunt-contrib-coffee');
-  grunt.loadNpmTasks('grunt-shell');
-  grunt.loadNpmTasks('grunt-coffeelint');
+  grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-shell')
+  grunt.loadNpmTasks('grunt-coffeelint')
 
-  grunt.registerTask('clean', () => require('rimraf').sync('lib'));
-  grunt.registerTask('lint', ['coffeelint']);
-  grunt.registerTask('default', ['coffee', 'lint']);
-  return grunt.registerTask('test', ['coffee', 'lint', 'shell:test']);
-};
+  grunt.registerTask('clean', () => require('rimraf').sync('lib'))
+  grunt.registerTask('lint', ['coffeelint'])
+  grunt.registerTask('default', ['coffee', 'lint'])
+  return grunt.registerTask('test', ['coffee', 'lint', 'shell:test'])
+}

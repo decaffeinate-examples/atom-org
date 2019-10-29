@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -8,19 +14,19 @@ module.exports = {
   queue: [],
   source: 'survey-2015-1',
 
-  setReporter(reporter) {
-    this.reporter = reporter;
-    for (let event of Array.from(this.queue)) {
-      this.reporter.sendEvent.apply(this.reporter, event);
+  setReporter (reporter) {
+    this.reporter = reporter
+    for (const event of Array.from(this.queue)) {
+      this.reporter.sendEvent.apply(this.reporter, event)
     }
-    return this.queue = null;
+    return this.queue = null
   },
 
-  sendEvent(action, label, value) {
+  sendEvent (action, label, value) {
     if (this.reporter) {
-      return this.reporter.sendEvent(this.source, action, label, value);
+      return this.reporter.sendEvent(this.source, action, label, value)
     } else {
-      return this.queue.push([this.source, action, label, value]);
+      return this.queue.push([this.source, action, label, value])
     }
   }
-};
+}

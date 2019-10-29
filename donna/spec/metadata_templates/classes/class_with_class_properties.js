@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS206: Consider reworking classes to avoid initClass
@@ -7,8 +10,8 @@
 // annotate logical regions in the text.
 //
 class TextBuffer {
-  static initClass() {
-    this.prop2 = "bar";
+  static initClass () {
+    this.prop2 = 'bar'
   }
 
   // Public: Takes an argument and does some stuff.
@@ -16,6 +19,6 @@ class TextBuffer {
   // a - A {String}
   //
   // Returns {Boolean}.
-  static method2(a) {}
+  static method2 (a) {}
 }
-TextBuffer.initClass();
+TextBuffer.initClass()

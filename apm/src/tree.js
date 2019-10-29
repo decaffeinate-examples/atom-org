@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -5,33 +8,33 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const _ = require('underscore-plus');
+const _ = require('underscore-plus')
 
-module.exports = function(items, options, callback) {
-  if (options == null) { options = {}; }
+module.exports = function (items, options, callback) {
+  if (options == null) { options = {} }
   if (_.isFunction(options)) {
-    callback = options;
-    options = {};
+    callback = options
+    options = {}
   }
-  if (callback == null) { callback = item => item; }
+  if (callback == null) { callback = item => item }
 
   if (items.length === 0) {
-    const emptyMessage = options.emptyMessage != null ? options.emptyMessage : '(empty)';
-    return console.log(`\u2514\u2500\u2500 ${emptyMessage}`);
+    const emptyMessage = options.emptyMessage != null ? options.emptyMessage : '(empty)'
+    return console.log(`\u2514\u2500\u2500 ${emptyMessage}`)
   } else {
     return (() => {
-      const result = [];
+      const result = []
       for (let index = 0; index < items.length; index++) {
-        var itemLine;
-        const item = items[index];
+        var itemLine
+        const item = items[index]
         if (index === (items.length - 1)) {
-          itemLine = '\u2514\u2500\u2500 ';
+          itemLine = '\u2514\u2500\u2500 '
         } else {
-          itemLine = '\u251C\u2500\u2500 ';
+          itemLine = '\u251C\u2500\u2500 '
         }
-        result.push(console.log(`${itemLine}${callback(item)}`));
+        result.push(console.log(`${itemLine}${callback(item)}`))
       }
-      return result;
-    })();
+      return result
+    })()
   }
-};
+}

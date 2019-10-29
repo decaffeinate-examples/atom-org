@@ -1,3 +1,9 @@
-const {faz, baz} = require('kaz');
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
+const { faz, baz } = require('kaz')
 
 class Bar {}

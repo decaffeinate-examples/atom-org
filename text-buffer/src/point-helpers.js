@@ -1,87 +1,90 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Point = require('./point');
+const Point = require('./point')
 
-exports.compare = function(a, b) {
+exports.compare = function (a, b) {
   if (a.row === b.row) {
-    return compareNumbers(a.column, b.column);
+    return compareNumbers(a.column, b.column)
   } else {
-    return compareNumbers(a.row, b.row);
+    return compareNumbers(a.row, b.row)
   }
-};
+}
 
-var compareNumbers = function(a, b) {
+var compareNumbers = function (a, b) {
   if (a < b) {
-    return -1;
+    return -1
   } else if (a > b) {
-    return 1;
+    return 1
   } else {
-    return 0;
+    return 0
   }
-};
+}
 
-exports.isEqual = (a, b) => (a.row === b.row) && (a.column === b.column);
+exports.isEqual = (a, b) => (a.row === b.row) && (a.column === b.column)
 
-exports.traverse = function(start, distance) {
+exports.traverse = function (start, distance) {
   if (distance.row === 0) {
-    return Point(start.row, start.column + distance.column);
+    return Point(start.row, start.column + distance.column)
   } else {
-    return Point(start.row + distance.row, distance.column);
+    return Point(start.row + distance.row, distance.column)
   }
-};
+}
 
-exports.traversal = function(end, start) {
+exports.traversal = function (end, start) {
   if (end.row === start.row) {
-    return Point(0, end.column - start.column);
+    return Point(0, end.column - start.column)
   } else {
-    return Point(end.row - start.row, end.column);
+    return Point(end.row - start.row, end.column)
   }
-};
+}
 
-const NEWLINE_REG_EXP = /\n/g;
+const NEWLINE_REG_EXP = /\n/g
 
-exports.characterIndexForPoint = function(text, point) {
+exports.characterIndexForPoint = function (text, point) {
   let {
     row
-  } = point;
+  } = point
   const {
     column
-  } = point;
-  NEWLINE_REG_EXP.lastIndex = 0;
+  } = point
+  NEWLINE_REG_EXP.lastIndex = 0
   while (row-- > 0) {
     if (!NEWLINE_REG_EXP.exec(text)) {
-      return text.length;
+      return text.length
     }
   }
 
-  return NEWLINE_REG_EXP.lastIndex + column;
-};
+  return NEWLINE_REG_EXP.lastIndex + column
+}
 
-exports.clipNegativePoint = function(point) {
+exports.clipNegativePoint = function (point) {
   if (point.row < 0) {
-    return Point(0, 0);
+    return Point(0, 0)
   } else if (point.column < 0) {
-    return Point(point.row, 0);
+    return Point(point.row, 0)
   } else {
-    return point;
+    return point
   }
-};
+}
 
-exports.max = function(a, b) {
+exports.max = function (a, b) {
   if (exports.compare(a, b) >= 0) {
-    return a;
+    return a
   } else {
-    return b;
+    return b
   }
-};
+}
 
-exports.min = function(a, b) {
+exports.min = function (a, b) {
   if (exports.compare(a, b) <= 0) {
-    return a;
+    return a
   } else {
-    return b;
+    return b
   }
-};
+}

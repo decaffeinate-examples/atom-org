@@ -1,10 +1,13 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-module.exports = function(grunt) {
-  grunt.loadTasks('tasks');
+module.exports = function (grunt) {
+  grunt.loadTasks('tasks')
   grunt.initConfig({
     releaseUrl: {
       hostname: 'api.github.com',
@@ -24,9 +27,10 @@ module.exports = function(grunt) {
     cuninst: {
       cmd: 'cuninst',
       args: ['Atom']
-    }});
+    }
+  })
 
-  grunt.registerTask('update', ['get-release', 'update-nuspec', 'update-install']);
-  grunt.registerTask('reinstall', ['pack', 'uninstall', 'install']);
-  return grunt.registerTask('default', ['update', 'pack']);
-};
+  grunt.registerTask('update', ['get-release', 'update-nuspec', 'update-install'])
+  grunt.registerTask('reinstall', ['pack', 'uninstall', 'install'])
+  return grunt.registerTask('default', ['update', 'pack'])
+}

@@ -1,12 +1,18 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const {getSettingDescription} = require('../lib/rich-description');
+const { getSettingDescription } = require('../lib/rich-description')
 
-describe("Rich descriptions", function() {
-  beforeEach(function() {
+describe('Rich descriptions', function () {
+  beforeEach(function () {
     const config = {
       type: 'object',
       properties: {
@@ -127,44 +133,44 @@ Description without table
           default: ''
         }
       }
-    };
+    }
 
-    return atom.config.setSchema("foo", config);
-  });
+    return atom.config.setSchema('foo', config)
+  })
 
-  describe('supported Markdown', function() {
-    it('handles plain text', () => expect(getSettingDescription('foo.plainText')).toEqual('Plain text description'));
+  describe('supported Markdown', function () {
+    it('handles plain text', () => expect(getSettingDescription('foo.plainText')).toEqual('Plain text description'))
 
-    it('handles italics', () => expect(getSettingDescription('foo.italics')).toEqual('Description <em>with</em> italics'));
+    it('handles italics', () => expect(getSettingDescription('foo.italics')).toEqual('Description <em>with</em> italics'))
 
-    it('handles bold', () => expect(getSettingDescription('foo.bold')).toEqual('Description <strong>with</strong> bold'));
+    it('handles bold', () => expect(getSettingDescription('foo.bold')).toEqual('Description <strong>with</strong> bold'))
 
-    it('handles links', () => expect(getSettingDescription('foo.link')).toEqual('Description <a href="http://www.example.com">with</a> link'));
+    it('handles links', () => expect(getSettingDescription('foo.link')).toEqual('Description <a href="http://www.example.com">with</a> link'))
 
-    it('handles inline code', () => expect(getSettingDescription('foo.inlineCode')).toEqual('Description <code>with</code> inline code'));
+    it('handles inline code', () => expect(getSettingDescription('foo.inlineCode')).toEqual('Description <code>with</code> inline code'))
 
-    it('handles line breaks', () => expect(getSettingDescription('foo.lineBreak')).toEqual('Description with<br/> line break'));
+    it('handles line breaks', () => expect(getSettingDescription('foo.lineBreak')).toEqual('Description with<br/> line break'))
 
-    return it('handles strikethrough', () => expect(getSettingDescription('foo.strikethrough')).toEqual('Description <del>with</del> strikethrough'));
-  });
+    return it('handles strikethrough', () => expect(getSettingDescription('foo.strikethrough')).toEqual('Description <del>with</del> strikethrough'))
+  })
 
-  return describe('unsupported Markdown', function() {
-    it('strips images', () => expect(getSettingDescription('foo.image')).toEqual('Description without  image'));
+  return describe('unsupported Markdown', function () {
+    it('strips images', () => expect(getSettingDescription('foo.image')).toEqual('Description without  image'))
 
-    it('strips fenced code blocks', () => expect(getSettingDescription('foo.fencedBlockCode')).toEqual('Description without fenced block code'));
+    it('strips fenced code blocks', () => expect(getSettingDescription('foo.fencedBlockCode')).toEqual('Description without fenced block code'))
 
-    it('strips indented code blocks', () => expect(getSettingDescription('foo.indentedBlockCode')).toEqual('Description without indented block code'));
+    it('strips indented code blocks', () => expect(getSettingDescription('foo.indentedBlockCode')).toEqual('Description without indented block code'))
 
-    it('strips blockquotes', () => expect(getSettingDescription('foo.blockquote')).toEqual('Description without blockquote'));
+    it('strips blockquotes', () => expect(getSettingDescription('foo.blockquote')).toEqual('Description without blockquote'))
 
-    it('strips html elements', () => expect(getSettingDescription('foo.html')).toEqual('Description without html'));
+    it('strips html elements', () => expect(getSettingDescription('foo.html')).toEqual('Description without html'))
 
-    it('strips headings', () => expect(getSettingDescription('foo.heading')).toEqual('Description without heading'));
+    it('strips headings', () => expect(getSettingDescription('foo.heading')).toEqual('Description without heading'))
 
-    it('strips ordered lists', () => expect(getSettingDescription('foo.orderedList')).toEqual('Description without ordered list'));
+    it('strips ordered lists', () => expect(getSettingDescription('foo.orderedList')).toEqual('Description without ordered list'))
 
-    it('strips unordered lists', () => expect(getSettingDescription('foo.unorderedList')).toEqual('Description without unordered list'));
+    it('strips unordered lists', () => expect(getSettingDescription('foo.unorderedList')).toEqual('Description without unordered list'))
 
-    return it('strips tables', () => expect(getSettingDescription('foo.table')).toEqual('Description without table'));
-  });
-});
+    return it('strips tables', () => expect(getSettingDescription('foo.table')).toEqual('Description without table'))
+  })
+})

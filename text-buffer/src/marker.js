@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,15 +12,15 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Marker;
-const {extend, isEqual, omit, pick, size} = require('underscore-plus');
-const {Emitter} = require('event-kit');
-const Delegator = require('delegato');
-const Point = require('./point');
-const Range = require('./range');
-const Grim = require('grim');
+let Marker
+const { extend, isEqual, omit, pick, size } = require('underscore-plus')
+const { Emitter } = require('event-kit')
+const Delegator = require('delegato')
+const Point = require('./point')
+const Range = require('./range')
+const Grim = require('grim')
 
-const OptionKeys = new Set(['reversed', 'tailed', 'invalidate', 'exclusive']);
+const OptionKeys = new Set(['reversed', 'tailed', 'invalidate', 'exclusive'])
 
 // Private: Represents a buffer annotation that remains logically stationary
 // even as the buffer changes. This is used to represent cursors, folds, snippet
@@ -35,29 +41,29 @@ const OptionKeys = new Set(['reversed', 'tailed', 'invalidate', 'exclusive']);
 // marker to become invalid, for example if the text surrounding the marker is
 // deleted. See {TextBuffer::markRange} for invalidation strategies.
 module.exports =
-(Marker = (function() {
+(Marker = (function () {
   Marker = class Marker {
-    static initClass() {
-      Delegator.includeInto(this);
-  
-      this.delegatesMethods('containsPoint', 'containsRange', 'intersectsRow', {toMethod: 'getRange'});
+    static initClass () {
+      Delegator.includeInto(this)
+
+      this.delegatesMethods('containsPoint', 'containsRange', 'intersectsRow', { toMethod: 'getRange' })
     }
 
-    static extractParams(inputParams) {
-      const outputParams = {};
-      let containsCustomProperties = false;
+    static extractParams (inputParams) {
+      const outputParams = {}
+      let containsCustomProperties = false
       if (inputParams != null) {
-        for (let key of Array.from(Object.keys(inputParams))) {
+        for (const key of Array.from(Object.keys(inputParams))) {
           if (OptionKeys.has(key)) {
-            outputParams[key] = inputParams[key];
+            outputParams[key] = inputParams[key]
           } else if ((key === 'clipDirection') || (key === 'skipSoftWrapIndentation')) {
             // TODO: Ignore these two keys for now. Eventually, when the
             // deprecation below will be gone, we can remove this conditional as
             // well, and just return standard marker properties.
           } else {
-            containsCustomProperties = true;
-            if (outputParams.properties == null) { outputParams.properties = {}; }
-            outputParams.properties[key] = inputParams[key];
+            containsCustomProperties = true
+            if (outputParams.properties == null) { outputParams.properties = {} }
+            outputParams.properties[key] = inputParams[key]
           }
         }
       }
@@ -69,26 +75,26 @@ module.exports =
 Assigning custom properties to a marker when creating/copying it is
 deprecated. Please, consider storing the custom properties you need in
 some other object in your package, keyed by the marker's id property.\
-`);
+`)
       }
 
-      return outputParams;
+      return outputParams
     }
 
-    constructor(id, layer, range, params, exclusivitySet) {
-      this.id = id;
-      this.layer = layer;
-      if (exclusivitySet == null) { exclusivitySet = false; }
-      ({tailed: this.tailed, reversed: this.reversed, valid: this.valid, invalidate: this.invalidate, exclusive: this.exclusive, properties: this.properties} = params);
-      this.emitter = new Emitter;
-      if (this.tailed == null) { this.tailed = true; }
-      if (this.reversed == null) { this.reversed = false; }
-      if (this.valid == null) { this.valid = true; }
-      if (this.invalidate == null) { this.invalidate = 'overlap'; }
-      if (this.properties == null) { this.properties = {}; }
-      this.hasChangeObservers = false;
-      Object.freeze(this.properties);
-      if (!exclusivitySet) { this.layer.setMarkerIsExclusive(this.id, this.isExclusive()); }
+    constructor (id, layer, range, params, exclusivitySet) {
+      this.id = id
+      this.layer = layer
+      if (exclusivitySet == null) { exclusivitySet = false }
+      ({ tailed: this.tailed, reversed: this.reversed, valid: this.valid, invalidate: this.invalidate, exclusive: this.exclusive, properties: this.properties } = params)
+      this.emitter = new Emitter()
+      if (this.tailed == null) { this.tailed = true }
+      if (this.reversed == null) { this.reversed = false }
+      if (this.valid == null) { this.valid = true }
+      if (this.invalidate == null) { this.invalidate = 'overlap' }
+      if (this.properties == null) { this.properties = {} }
+      this.hasChangeObservers = false
+      Object.freeze(this.properties)
+      if (!exclusivitySet) { this.layer.setMarkerIsExclusive(this.id, this.isExclusive()) }
     }
 
     /*
@@ -100,9 +106,9 @@ some other object in your package, keyed by the marker's id property.\
     // * `callback` {Function} to be called when the marker is destroyed.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidDestroy(callback) {
-      this.layer.markersWithDestroyListeners.add(this);
-      return this.emitter.on('did-destroy', callback);
+    onDidDestroy (callback) {
+      this.layer.markersWithDestroyListeners.add(this)
+      return this.emitter.on('did-destroy', callback)
     }
 
     // Public: Invoke the given callback when the state of the marker changes.
@@ -123,17 +129,17 @@ some other object in your package, keyed by the marker's id property.\
     //       to the buffer or whether the marker was manipulated directly via its public API.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidChange(callback) {
+    onDidChange (callback) {
       if (!this.hasChangeObservers) {
-        this.previousEventState = this.getSnapshot(this.getRange());
-        this.hasChangeObservers = true;
-        this.layer.markersWithChangeListeners.add(this);
+        this.previousEventState = this.getSnapshot(this.getRange())
+        this.hasChangeObservers = true
+        this.layer.markersWithChangeListeners.add(this)
       }
-      return this.emitter.on('did-change', callback);
+      return this.emitter.on('did-change', callback)
     }
 
     // Public: Returns the current {Range} of the marker. The range is immutable.
-    getRange() { return this.layer.getMarkerRange(this.id); }
+    getRange () { return this.layer.getMarkerRange(this.id) }
 
     // Public: Sets the range of the marker.
     //
@@ -146,17 +152,17 @@ some other object in your package, keyed by the marker's id property.\
     //     the marker will be considered *outside* the marker rather than inside.
     //     This defaults to `false` unless the marker's invalidation strategy is
     //     `inside` or the marker has no tail, in which case it defaults to `true`.
-    setRange(range, params) {
-      if (params == null) { params = {}; }
-      return this.update(this.getRange(), {reversed: params.reversed, tailed: true, range: Range.fromObject(range, true), exclusive: params.exclusive});
+    setRange (range, params) {
+      if (params == null) { params = {} }
+      return this.update(this.getRange(), { reversed: params.reversed, tailed: true, range: Range.fromObject(range, true), exclusive: params.exclusive })
     }
 
     // Public: Returns a {Point} representing the marker's current head position.
-    getHeadPosition() {
+    getHeadPosition () {
       if (this.reversed) {
-        return this.getStartPosition();
+        return this.getStartPosition()
       } else {
-        return this.getEndPosition();
+        return this.getEndPosition()
       }
     }
 
@@ -164,40 +170,40 @@ some other object in your package, keyed by the marker's id property.\
     //
     // * `position` A {Point} or point-compatible {Array}. The position will be
     //   clipped before it is assigned.
-    setHeadPosition(position) {
-      position = Point.fromObject(position);
-      const oldRange = this.getRange();
-      const params = {};
+    setHeadPosition (position) {
+      position = Point.fromObject(position)
+      const oldRange = this.getRange()
+      const params = {}
 
       if (this.hasTail()) {
         if (this.isReversed()) {
           if (position.isLessThan(oldRange.end)) {
-            params.range = new Range(position, oldRange.end);
+            params.range = new Range(position, oldRange.end)
           } else {
-            params.reversed = false;
-            params.range = new Range(oldRange.end, position);
+            params.reversed = false
+            params.range = new Range(oldRange.end, position)
           }
         } else {
           if (position.isLessThan(oldRange.start)) {
-            params.reversed = true;
-            params.range = new Range(position, oldRange.start);
+            params.reversed = true
+            params.range = new Range(position, oldRange.start)
           } else {
-            params.range = new Range(oldRange.start, position);
+            params.range = new Range(oldRange.start, position)
           }
         }
       } else {
-        params.range = new Range(position, position);
+        params.range = new Range(position, position)
       }
-      return this.update(oldRange, params);
+      return this.update(oldRange, params)
     }
 
     // Public: Returns a {Point} representing the marker's current tail position.
     // If the marker has no tail, the head position will be returned instead.
-    getTailPosition() {
+    getTailPosition () {
       if (this.reversed) {
-        return this.getEndPosition();
+        return this.getEndPosition()
       } else {
-        return this.getStartPosition();
+        return this.getStartPosition()
       }
     }
 
@@ -206,87 +212,87 @@ some other object in your package, keyed by the marker's id property.\
     //
     // * `position` A {Point} or point-compatible {Array}. The position will be
     //   clipped before it is assigned.
-    setTailPosition(position) {
-      position = Point.fromObject(position);
-      const oldRange = this.getRange();
-      const params = {tailed: true};
+    setTailPosition (position) {
+      position = Point.fromObject(position)
+      const oldRange = this.getRange()
+      const params = { tailed: true }
 
       if (this.reversed) {
         if (position.isLessThan(oldRange.start)) {
-          params.reversed = false;
-          params.range = new Range(position, oldRange.start);
+          params.reversed = false
+          params.range = new Range(position, oldRange.start)
         } else {
-          params.range = new Range(oldRange.start, position);
+          params.range = new Range(oldRange.start, position)
         }
       } else {
         if (position.isLessThan(oldRange.end)) {
-          params.range = new Range(position, oldRange.end);
+          params.range = new Range(position, oldRange.end)
         } else {
-          params.reversed = true;
-          params.range = new Range(oldRange.end, position);
+          params.reversed = true
+          params.range = new Range(oldRange.end, position)
         }
       }
 
-      return this.update(oldRange, params);
+      return this.update(oldRange, params)
     }
 
     // Public: Returns a {Point} representing the start position of the marker,
     // which could be the head or tail position, depending on its orientation.
-    getStartPosition() { return this.layer.getMarkerStartPosition(this.id); }
+    getStartPosition () { return this.layer.getMarkerStartPosition(this.id) }
 
     // Public: Returns a {Point} representing the end position of the marker,
     // which could be the head or tail position, depending on its orientation.
-    getEndPosition() { return this.layer.getMarkerEndPosition(this.id); }
+    getEndPosition () { return this.layer.getMarkerEndPosition(this.id) }
 
     // Public: Removes the marker's tail. After calling the marker's head position
     // will be reported as its current tail position until the tail is planted
     // again.
-    clearTail() {
-      const headPosition = this.getHeadPosition();
-      return this.update(this.getRange(), {tailed: false, reversed: false, range: Range(headPosition, headPosition)});
+    clearTail () {
+      const headPosition = this.getHeadPosition()
+      return this.update(this.getRange(), { tailed: false, reversed: false, range: Range(headPosition, headPosition) })
     }
 
     // Public: Plants the marker's tail at the current head position. After calling
     // the marker's tail position will be its head position at the time of the
     // call, regardless of where the marker's head is moved.
-    plantTail() {
+    plantTail () {
       if (!this.hasTail()) {
-        const headPosition = this.getHeadPosition();
-        return this.update(this.getRange(), {tailed: true, range: new Range(headPosition, headPosition)});
+        const headPosition = this.getHeadPosition()
+        return this.update(this.getRange(), { tailed: true, range: new Range(headPosition, headPosition) })
       }
     }
 
     // Public: Returns a {Boolean} indicating whether the head precedes the tail.
-    isReversed() {
-      return this.tailed && this.reversed;
+    isReversed () {
+      return this.tailed && this.reversed
     }
 
     // Public: Returns a {Boolean} indicating whether the marker has a tail.
-    hasTail() {
-      return this.tailed;
+    hasTail () {
+      return this.tailed
     }
 
     // Public: Is the marker valid?
     //
     // Returns a {Boolean}.
-    isValid() {
-      return !this.isDestroyed() && this.valid;
+    isValid () {
+      return !this.isDestroyed() && this.valid
     }
 
     // Public: Is the marker destroyed?
     //
     // Returns a {Boolean}.
-    isDestroyed() {
-      return !this.layer.hasMarker(this.id);
+    isDestroyed () {
+      return !this.layer.hasMarker(this.id)
     }
 
     // Public: Returns a {Boolean} indicating whether changes that occur exactly at
     // the marker's head or tail cause it to move.
-    isExclusive() {
+    isExclusive () {
       if (this.exclusive != null) {
-        return this.exclusive;
+        return this.exclusive
       } else {
-        return (this.getInvalidationStrategy() === 'inside') || !this.hasTail();
+        return (this.getInvalidationStrategy() === 'inside') || !this.hasTail()
       }
     }
 
@@ -294,13 +300,13 @@ some other object in your package, keyed by the marker's id property.\
     // another marker, meaning they have the same range and options.
     //
     // * `other` {Marker} other marker
-    isEqual(other) {
+    isEqual (other) {
       return (this.invalidate === other.invalidate) &&
         (this.tailed === other.tailed) &&
         (this.reversed === other.reversed) &&
         (this.exclusive === other.exclusive) &&
         isEqual(this.properties, other.properties) &&
-        this.getRange().isEqual(other.getRange());
+        this.getRange().isEqual(other.getRange())
     }
 
     // Public: Get the invalidation strategy for this marker.
@@ -308,211 +314,217 @@ some other object in your package, keyed by the marker's id property.\
     // Valid values include: `never`, `surround`, `overlap`, `inside`, and `touch`.
     //
     // Returns a {String}.
-    getInvalidationStrategy() {
-      return this.invalidate;
+    getInvalidationStrategy () {
+      return this.invalidate
     }
 
     // Public: Returns an {Object} containing any custom properties associated with
     // the marker.
-    getProperties() {
-      return this.properties;
+    getProperties () {
+      return this.properties
     }
 
     // Public: Merges an {Object} containing new properties into the marker's
     // existing properties.
     //
     // * `properties` {Object}
-    setProperties(properties) {
-      return this.update(this.getRange(), {properties: extend({}, this.properties, properties)});
+    setProperties (properties) {
+      return this.update(this.getRange(), { properties: extend({}, this.properties, properties) })
     }
 
     // Public: Creates and returns a new {Marker} with the same properties as this
     // marker.
     //
     // * `params` {Object}
-    copy(options) {
-      if (options == null) { options = {}; }
-      const snapshot = this.getSnapshot();
-      options = Marker.extractParams(options);
+    copy (options) {
+      if (options == null) { options = {} }
+      const snapshot = this.getSnapshot()
+      options = Marker.extractParams(options)
       return this.layer.createMarker(this.getRange(), extend(
         {},
         snapshot,
         options,
-        {properties: extend({}, snapshot.properties, options.properties)}
-      ));
+        { properties: extend({}, snapshot.properties, options.properties) }
+      ))
     }
 
     // Public: Destroys the marker, causing it to emit the 'destroyed' event.
-    destroy(suppressMarkerLayerUpdateEvents) {
-      if (this.isDestroyed()) { return; }
+    destroy (suppressMarkerLayerUpdateEvents) {
+      if (this.isDestroyed()) { return }
 
       if (this.trackDestruction) {
-        const error = new Error;
-        Error.captureStackTrace(error);
-        this.destroyStackTrace = error.stack;
+        const error = new Error()
+        Error.captureStackTrace(error)
+        this.destroyStackTrace = error.stack
       }
 
-      this.layer.destroyMarker(this, suppressMarkerLayerUpdateEvents);
-      this.emitter.emit('did-destroy');
-      return this.emitter.clear();
+      this.layer.destroyMarker(this, suppressMarkerLayerUpdateEvents)
+      this.emitter.emit('did-destroy')
+      return this.emitter.clear()
     }
 
     // Public: Compares this marker to another based on their ranges.
     //
     // * `other` {Marker}
-    compare(other) {
-      return this.layer.compareMarkers(this.id, other.id);
+    compare (other) {
+      return this.layer.compareMarkers(this.id, other.id)
     }
 
     // Returns whether this marker matches the given parameters. The parameters
     // are the same as {MarkerLayer::findMarkers}.
-    matchesParams(params) {
-      for (let key of Array.from(Object.keys(params))) {
-        if (!this.matchesParam(key, params[key])) { return false; }
+    matchesParams (params) {
+      for (const key of Array.from(Object.keys(params))) {
+        if (!this.matchesParam(key, params[key])) { return false }
       }
-      return true;
+      return true
     }
 
     // Returns whether this marker matches the given parameter name and value.
     // The parameters are the same as {MarkerLayer::findMarkers}.
-    matchesParam(key, value) {
+    matchesParam (key, value) {
       switch (key) {
         case 'startPosition':
-          return this.getStartPosition().isEqual(value);
+          return this.getStartPosition().isEqual(value)
         case 'endPosition':
-          return this.getEndPosition().isEqual(value);
+          return this.getEndPosition().isEqual(value)
         case 'containsPoint': case 'containsPosition':
-          return this.containsPoint(value);
+          return this.containsPoint(value)
         case 'containsRange':
-          return this.containsRange(value);
+          return this.containsRange(value)
         case 'startRow':
-          return this.getStartPosition().row === value;
+          return this.getStartPosition().row === value
         case 'endRow':
-          return this.getEndPosition().row === value;
+          return this.getEndPosition().row === value
         case 'intersectsRow':
-          return this.intersectsRow(value);
+          return this.intersectsRow(value)
         case 'invalidate': case 'reversed': case 'tailed':
-          return isEqual(this[key], value);
+          return isEqual(this[key], value)
         case 'valid':
-          return this.isValid() === value;
+          return this.isValid() === value
         default:
-          return isEqual(this.properties[key], value);
+          return isEqual(this.properties[key], value)
       }
     }
 
-    update(oldRange, {range, reversed, tailed, valid, exclusive, properties}, textChanged, suppressMarkerLayerUpdateEvents) {
-      let propertiesChanged;
-      if (textChanged == null) { textChanged = false; }
-      if (suppressMarkerLayerUpdateEvents == null) { suppressMarkerLayerUpdateEvents = false; }
-      if (this.isDestroyed()) { return; }
+    update (oldRange, { range, reversed, tailed, valid, exclusive, properties }, textChanged, suppressMarkerLayerUpdateEvents) {
+      let propertiesChanged
+      if (textChanged == null) { textChanged = false }
+      if (suppressMarkerLayerUpdateEvents == null) { suppressMarkerLayerUpdateEvents = false }
+      if (this.isDestroyed()) { return }
 
-      oldRange = Range.fromObject(oldRange);
-      if (range != null) { range = Range.fromObject(range); }
+      oldRange = Range.fromObject(oldRange)
+      if (range != null) { range = Range.fromObject(range) }
 
-      const wasExclusive = this.isExclusive();
-      let updated = (propertiesChanged = false);
+      const wasExclusive = this.isExclusive()
+      let updated = (propertiesChanged = false)
 
       if ((range != null) && !range.isEqual(oldRange)) {
-        this.layer.setMarkerRange(this.id, range);
-        updated = true;
+        this.layer.setMarkerRange(this.id, range)
+        updated = true
       }
 
       if ((reversed != null) && (reversed !== this.reversed)) {
-        this.reversed = reversed;
-        updated = true;
+        this.reversed = reversed
+        updated = true
       }
 
       if ((tailed != null) && (tailed !== this.tailed)) {
-        this.tailed = tailed;
-        updated = true;
+        this.tailed = tailed
+        updated = true
       }
 
       if ((valid != null) && (valid !== this.valid)) {
-        this.valid = valid;
-        updated = true;
+        this.valid = valid
+        updated = true
       }
 
       if ((exclusive != null) && (exclusive !== this.exclusive)) {
-        this.exclusive = exclusive;
-        updated = true;
+        this.exclusive = exclusive
+        updated = true
       }
 
       if (wasExclusive !== this.isExclusive()) {
-        this.layer.setMarkerIsExclusive(this.id, this.isExclusive());
-        updated = true;
+        this.layer.setMarkerIsExclusive(this.id, this.isExclusive())
+        updated = true
       }
 
       if ((properties != null) && !isEqual(properties, this.properties)) {
-        this.properties = Object.freeze(properties);
-        propertiesChanged = true;
-        updated = true;
+        this.properties = Object.freeze(properties)
+        propertiesChanged = true
+        updated = true
       }
 
-      this.emitChangeEvent(range != null ? range : oldRange, textChanged, propertiesChanged);
-      if (updated && !suppressMarkerLayerUpdateEvents) { this.layer.markerUpdated(); }
-      return updated;
+      this.emitChangeEvent(range != null ? range : oldRange, textChanged, propertiesChanged)
+      if (updated && !suppressMarkerLayerUpdateEvents) { this.layer.markerUpdated() }
+      return updated
     }
 
-    getSnapshot(range, includeMarker) {
-      if (includeMarker == null) { includeMarker = true; }
-      const snapshot = {range, properties: this.properties, reversed: this.reversed, tailed: this.tailed, valid: this.valid, invalidate: this.invalidate, exclusive: this.exclusive};
-      if (includeMarker) { snapshot.marker = this; }
-      return Object.freeze(snapshot);
+    getSnapshot (range, includeMarker) {
+      if (includeMarker == null) { includeMarker = true }
+      const snapshot = { range, properties: this.properties, reversed: this.reversed, tailed: this.tailed, valid: this.valid, invalidate: this.invalidate, exclusive: this.exclusive }
+      if (includeMarker) { snapshot.marker = this }
+      return Object.freeze(snapshot)
     }
 
-    toString() {
-      return `[Marker ${this.id}, ${this.getRange()}]`;
+    toString () {
+      return `[Marker ${this.id}, ${this.getRange()}]`
     }
 
     /*
     Section: Private
     */
 
-    inspect() {
-      return this.toString();
+    inspect () {
+      return this.toString()
     }
 
-    emitChangeEvent(currentRange, textChanged, propertiesChanged) {
-      let newHeadPosition, newTailPosition, oldHeadPosition, oldTailPosition;
-      if (!this.hasChangeObservers) { return; }
-      const oldState = this.previousEventState;
+    emitChangeEvent (currentRange, textChanged, propertiesChanged) {
+      let newHeadPosition, newTailPosition, oldHeadPosition, oldTailPosition
+      if (!this.hasChangeObservers) { return }
+      const oldState = this.previousEventState
 
-      if (currentRange == null) { currentRange = this.getRange(); }
+      if (currentRange == null) { currentRange = this.getRange() }
 
       if (!propertiesChanged &&
         (oldState.valid === this.valid) &&
         (oldState.tailed === this.tailed) &&
         (oldState.reversed === this.reversed) &&
-        (oldState.range.compare(currentRange) === 0)) { return false; }
+        (oldState.range.compare(currentRange) === 0)) { return false }
 
-      const newState = (this.previousEventState = this.getSnapshot(currentRange));
+      const newState = (this.previousEventState = this.getSnapshot(currentRange))
 
       if (oldState.reversed) {
-        oldHeadPosition = oldState.range.start;
-        oldTailPosition = oldState.range.end;
+        oldHeadPosition = oldState.range.start
+        oldTailPosition = oldState.range.end
       } else {
-        oldHeadPosition = oldState.range.end;
-        oldTailPosition = oldState.range.start;
+        oldHeadPosition = oldState.range.end
+        oldTailPosition = oldState.range.start
       }
 
       if (newState.reversed) {
-        newHeadPosition = newState.range.start;
-        newTailPosition = newState.range.end;
+        newHeadPosition = newState.range.start
+        newTailPosition = newState.range.end
       } else {
-        newHeadPosition = newState.range.end;
-        newTailPosition = newState.range.start;
+        newHeadPosition = newState.range.end
+        newTailPosition = newState.range.start
       }
 
-      this.emitter.emit("did-change", {
-        wasValid: oldState.valid, isValid: newState.valid,
-        hadTail: oldState.tailed, hasTail: newState.tailed,
-        oldProperties: oldState.properties, newProperties: newState.properties,
-        oldHeadPosition, newHeadPosition, oldTailPosition, newTailPosition,
+      this.emitter.emit('did-change', {
+        wasValid: oldState.valid,
+        isValid: newState.valid,
+        hadTail: oldState.tailed,
+        hasTail: newState.tailed,
+        oldProperties: oldState.properties,
+        newProperties: newState.properties,
+        oldHeadPosition,
+        newHeadPosition,
+        oldTailPosition,
+        newTailPosition,
         textChanged
-      });
-      return true;
+      })
+      return true
     }
-  };
-  Marker.initClass();
-  return Marker;
-})());
+  }
+  Marker.initClass()
+  return Marker
+})())
