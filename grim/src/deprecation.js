@@ -1,93 +1,132 @@
-SourceMapCache = {}
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Deprecation;
+const SourceMapCache = {};
 
 module.exports =
-class Deprecation
-  @getFunctionNameFromCallsite: (callsite) ->
+(Deprecation = class Deprecation {
+  static getFunctionNameFromCallsite(callsite) {}
 
-  @deserialize: ({message, fileName, lineNumber, stacks}) ->
-    deprecation = new Deprecation(message, fileName, lineNumber)
-    deprecation.addStack(stack, stack.metadata) for stack in stacks
-    deprecation
+  static deserialize({message, fileName, lineNumber, stacks}) {
+    const deprecation = new Deprecation(message, fileName, lineNumber);
+    for (let stack of Array.from(stacks)) { deprecation.addStack(stack, stack.metadata); }
+    return deprecation;
+  }
 
-  constructor: (@message, @fileName, @lineNumber) ->
-    @callCount = 0
-    @stackCount = 0
-    @stacks = {}
-    @stackCallCounts = {}
+  constructor(message, fileName, lineNumber) {
+    this.message = message;
+    this.fileName = fileName;
+    this.lineNumber = lineNumber;
+    this.callCount = 0;
+    this.stackCount = 0;
+    this.stacks = {};
+    this.stackCallCounts = {};
+  }
 
-  getFunctionNameFromCallsite: (callsite) ->
-    return callsite.functionName if callsite.functionName?
+  getFunctionNameFromCallsite(callsite) {
+    if (callsite.functionName != null) { return callsite.functionName; }
 
-    if callsite.isToplevel()
-      callsite.getFunctionName() ? '<unknown>'
-    else
-      if callsite.isConstructor()
-        "new #{callsite.getFunctionName()}"
-      else if callsite.getMethodName() and not callsite.getFunctionName()
-        callsite.getMethodName()
-      else
-        "#{callsite.getTypeName()}.#{callsite.getMethodName() ? callsite.getFunctionName() ? '<anonymous>'}"
+    if (callsite.isToplevel()) {
+      let left;
+      return (left = callsite.getFunctionName()) != null ? left : '<unknown>';
+    } else {
+      if (callsite.isConstructor()) {
+        return `new ${callsite.getFunctionName()}`;
+      } else if (callsite.getMethodName() && !callsite.getFunctionName()) {
+        return callsite.getMethodName();
+      } else {
+        let left1, left2;
+        return `${callsite.getTypeName()}.${(left1 = (left2 = callsite.getMethodName()) != null ? left2 : callsite.getFunctionName()) != null ? left1 : '<anonymous>'}`;
+      }
+    }
+  }
 
-  getLocationFromCallsite: (callsite) ->
-    return "unknown" unless callsite?
-    return callsite.location if callsite.location?
+  getLocationFromCallsite(callsite) {
+    if (callsite == null) { return "unknown"; }
+    if (callsite.location != null) { return callsite.location; }
 
-    if callsite.isNative()
-      "native"
-    else if callsite.isEval()
-      "eval at #{@getLocationFromCallsite(callsite.getEvalOrigin())}"
-    else
-      fileName = callsite.getFileName()
-      line = callsite.getLineNumber()
-      column = callsite.getColumnNumber()
-      "#{fileName}:#{line}:#{column}"
+    if (callsite.isNative()) {
+      return "native";
+    } else if (callsite.isEval()) {
+      return `eval at ${this.getLocationFromCallsite(callsite.getEvalOrigin())}`;
+    } else {
+      const fileName = callsite.getFileName();
+      const line = callsite.getLineNumber();
+      const column = callsite.getColumnNumber();
+      return `${fileName}:${line}:${column}`;
+    }
+  }
 
-  getFileNameFromCallSite: (callsite) ->
-    callsite.fileName ? callsite.getFileName()
+  getFileNameFromCallSite(callsite) {
+    return callsite.fileName != null ? callsite.fileName : callsite.getFileName();
+  }
 
-  getOriginName: ->
-    @originName
+  getOriginName() {
+    return this.originName;
+  }
 
-  getMessage: ->
-    @message
+  getMessage() {
+    return this.message;
+  }
 
-  getStacks: ->
-    parsedStacks = []
-    for location, stack of @stacks
-      parsedStack = @parseStack(stack)
-      parsedStack.callCount = @stackCallCounts[location]
-      parsedStack.metadata = stack.metadata
-      parsedStacks.push(parsedStack)
-    parsedStacks
+  getStacks() {
+    const parsedStacks = [];
+    for (let location in this.stacks) {
+      const stack = this.stacks[location];
+      const parsedStack = this.parseStack(stack);
+      parsedStack.callCount = this.stackCallCounts[location];
+      parsedStack.metadata = stack.metadata;
+      parsedStacks.push(parsedStack);
+    }
+    return parsedStacks;
+  }
 
-  getStackCount: ->
-    @stackCount
+  getStackCount() {
+    return this.stackCount;
+  }
 
-  getCallCount: ->
-    @callCount
+  getCallCount() {
+    return this.callCount;
+  }
 
-  addStack: (stack, metadata) ->
-    @originName ?= @getFunctionNameFromCallsite(stack[0])
-    @fileName ?= @getFileNameFromCallSite(stack[0])
-    @lineNumber ?= stack[0].getLineNumber?()
-    @callCount++
+  addStack(stack, metadata) {
+    if (this.originName == null) { this.originName = this.getFunctionNameFromCallsite(stack[0]); }
+    if (this.fileName == null) { this.fileName = this.getFileNameFromCallSite(stack[0]); }
+    if (this.lineNumber == null) { this.lineNumber = typeof stack[0].getLineNumber === 'function' ? stack[0].getLineNumber() : undefined; }
+    this.callCount++;
 
-    stack.metadata = metadata
-    callerLocation = @getLocationFromCallsite(stack[1])
-    unless @stacks[callerLocation]?
-      @stacks[callerLocation] = stack
-      @stackCount++
-    @stackCallCounts[callerLocation] ?= 0
-    @stackCallCounts[callerLocation]++
+    stack.metadata = metadata;
+    const callerLocation = this.getLocationFromCallsite(stack[1]);
+    if (this.stacks[callerLocation] == null) {
+      this.stacks[callerLocation] = stack;
+      this.stackCount++;
+    }
+    if (this.stackCallCounts[callerLocation] == null) { this.stackCallCounts[callerLocation] = 0; }
+    return this.stackCallCounts[callerLocation]++;
+  }
 
-  parseStack: (stack) ->
-    stack.map (callsite) =>
-      functionName: @getFunctionNameFromCallsite(callsite)
-      location: @getLocationFromCallsite(callsite)
-      fileName: @getFileNameFromCallSite(callsite)
+  parseStack(stack) {
+    return stack.map(callsite => {
+      return {
+        functionName: this.getFunctionNameFromCallsite(callsite),
+        location: this.getLocationFromCallsite(callsite),
+        fileName: this.getFileNameFromCallSite(callsite)
+      };
+    });
+  }
 
-  serialize: ->
-    message: @getMessage()
-    lineNumber: @lineNumber
-    fileName: @fileName
-    stacks: @getStacks()
+  serialize() {
+    return {
+      message: this.getMessage(),
+      lineNumber: this.lineNumber,
+      fileName: this.fileName,
+      stacks: this.getStacks()
+    };
+  }
+});

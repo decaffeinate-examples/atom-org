@@ -1,59 +1,74 @@
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
 
-# 1. Example ----------------------------------
+// 1. Example ----------------------------------
 
-class Animal
-  constructor: (@name) ->
+class Animal {
+  constructor(name) {
+    this.name = name;
+  }
 
-  move: (meters) ->
-    alert @name + " moved #{meters}m."
+  move(meters) {
+    return alert(this.name + ` moved ${meters}m.`);
+  }
+}
 
-class Snake extends Animal
-  move: ->
-    alert "Slithering..."
-    super 5
+class Snake extends Animal {
+  move() {
+    alert("Slithering...");
+    return super.move(5);
+  }
+}
 
-class Horse extends Animal
-  move: ->
-    alert "Galloping..."
-    super 45
+class Horse extends Animal {
+  move() {
+    alert("Galloping...");
+    return super.move(45);
+  }
+}
 
-sam = new Snake "Sammy the Python"
-tom = new Horse "Tommy the Palomino"
+const sam = new Snake("Sammy the Python");
+const tom = new Horse("Tommy the Palomino");
 
-sam.move()
-tom.move()
-
-
-# 2. Tests ----------------------------------
+sam.move();
+tom.move();
 
 
-$controls = $("##{chartId}")
+// 2. Tests ----------------------------------
 
-# Assignment:
-number   = 42
-opposite = true
 
-# Conditions:
-number = -42 if opposite
+const $controls = $(`#${chartId}`);
 
-# Functions:
-square = (x) -> x * x
+// Assignment:
+let number   = 42;
+const opposite = true;
 
-# Arrays:
-list = [1, 2, 3, 4, 5]
+// Conditions:
+if (opposite) { number = -42; }
 
-# Objects:
-math =
-  root:   Math.sqrt
-  square: square
-  cube:   (x) -> x * square x
+// Functions:
+const square = x => x * x;
 
-# Splats:
-race = (winner, runners...) ->
-  print winner, runners
+// Arrays:
+const list = [1, 2, 3, 4, 5];
 
-# Existence:
-alert "I knew it!" if elvis?
+// Objects:
+const math = {
+  root:   Math.sqrt,
+  square,
+  cube(x) { return x * square(x); }
+};
 
-# Array comprehensions:
-cubes = (math.cube num for num in list)
+// Splats:
+const race = (winner, ...runners) => print(winner, runners);
+
+// Existence:
+if (typeof elvis !== 'undefined' && elvis !== null) { alert("I knew it!"); }
+
+// Array comprehensions:
+const cubes = (Array.from(list).map((num) => math.cube(num)));

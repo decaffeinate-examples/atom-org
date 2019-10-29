@@ -1,27 +1,48 @@
-CompositeRegion = require './composite-region'
-Point = require './point'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Transform;
+const CompositeRegion = require('./composite-region');
+const Point = require('./point');
 
 module.exports =
-class Transform
-  source: null
+(Transform = (function() {
+  Transform = class Transform {
+    static initClass() {
+      this.prototype.source = null;
+    }
 
-  constructor: (origin) ->
-    @setOrigin(origin) if origin?
+    constructor(origin) {
+      if (origin != null) { this.setOrigin(origin); }
+    }
 
-  setOrigin: (origin) ->
-    if @source?
-      @source.setOrigin(origin)
-    else
-      @source = origin
+    setOrigin(origin) {
+      if (this.source != null) {
+        return this.source.setOrigin(origin);
+      } else {
+        return this.source = origin;
+      }
+    }
 
-  getRegion: ->
-    sourcePosition = Point(0, 0)
-    subregions = []
+    getRegion() {
+      let subregion;
+      let sourcePosition = Point(0, 0);
+      const subregions = [];
 
-    while subregion = @getSubregion(sourcePosition)
-      nextSourcePosition = sourcePosition.add(subregion.getSourceSpan())
-      break if nextSourcePosition.isEqual(sourcePosition)
-      subregions.push(subregion)
-      sourcePosition = nextSourcePosition
+      while ((subregion = this.getSubregion(sourcePosition))) {
+        const nextSourcePosition = sourcePosition.add(subregion.getSourceSpan());
+        if (nextSourcePosition.isEqual(sourcePosition)) { break; }
+        subregions.push(subregion);
+        sourcePosition = nextSourcePosition;
+      }
 
-    new CompositeRegion(subregions)
+      return new CompositeRegion(subregions);
+    }
+  };
+  Transform.initClass();
+  return Transform;
+})());

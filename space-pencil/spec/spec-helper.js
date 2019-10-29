@@ -1,23 +1,31 @@
-require 'coffee-cache'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+require('coffee-cache');
 
-{jsdom} = require 'jsdom'
+const {jsdom} = require('jsdom');
 
-beforeEach ->
-  browser = jsdom()
-  global.window = browser.parentWindow
-  global.document = window.document
+beforeEach(function() {
+  const browser = jsdom();
+  global.window = browser.parentWindow;
+  global.document = window.document;
 
-  @addMatchers
-    toMatchMarkup: (expected) ->
-      notText = if @isNot then " not" else ""
+  return this.addMatchers({
+    toMatchMarkup(expected) {
+      const notText = this.isNot ? " not" : "";
 
-      @message = -> """
-        Expected markup to#{notText} match.
-        Actual: #{actualMarkup}
-        Expected: #{expectedMarkup}
-      """
+      this.message = () => `\
+Expected markup to${notText} match.
+Actual: ${actualMarkup}
+Expected: ${expectedMarkup}\
+`;
 
-      actual = @actual.cloneNode(true)
-      actualMarkup = actual.outerHTML
-      expectedMarkup = expected.replace(/\n\s*/g, '')
-      actualMarkup is expectedMarkup
+      const actual = this.actual.cloneNode(true);
+      var actualMarkup = actual.outerHTML;
+      var expectedMarkup = expected.replace(/\n\s*/g, '');
+      return actualMarkup === expectedMarkup;
+    }
+  });
+});

@@ -1,28 +1,39 @@
-jasmine.getEnv().setIncludedTags([process.platform])
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+jasmine.getEnv().setIncludedTags([process.platform]);
 
-global.waitsForPromise = (args...) ->
-  if args.length > 1
-    {shouldReject} = args[0]
-  else
-    shouldReject = false
-  fn = args[args.length - 1]
+global.waitsForPromise = function(...args) {
+  let shouldReject;
+  if (args.length > 1) {
+    ({shouldReject} = args[0]);
+  } else {
+    shouldReject = false;
+  }
+  const fn = args[args.length - 1];
 
-  promiseFinished = false
+  let promiseFinished = false;
 
-  process.nextTick ->
-    promise = fn()
-    if shouldReject
-      promise.catch ->
-        promiseFinished = true
-      promise.then ->
-        jasmine.getEnv().currentSpec.fail("Expected promise to be rejected, but it was resolved")
-        promiseFinished = true
-    else
-      promise.then -> promiseFinished = true
-      promise.catch (error) ->
-        jasmine.getEnv().currentSpec.fail("Expected promise to be resolved, but it was rejected with #{jasmine.pp(error)}")
-        promiseFinished = true
+  process.nextTick(function() {
+    const promise = fn();
+    if (shouldReject) {
+      promise.catch(() => promiseFinished = true);
+      return promise.then(function() {
+        jasmine.getEnv().currentSpec.fail("Expected promise to be rejected, but it was resolved");
+        return promiseFinished = true;
+      });
+    } else {
+      promise.then(() => promiseFinished = true);
+      return promise.catch(function(error) {
+        jasmine.getEnv().currentSpec.fail(`Expected promise to be resolved, but it was rejected with ${jasmine.pp(error)}`);
+        return promiseFinished = true;
+      });
+    }
+  });
 
-  global.waitsFor "promise to complete", -> promiseFinished
+  return global.waitsFor("promise to complete", () => promiseFinished);
+};
 
-require('grim').includeDeprecatedAPIs = false
+require('grim').includeDeprecatedAPIs = false;

@@ -1,6 +1,7 @@
-provider = require './provider'
+const provider = require('./provider');
 
-module.exports =
-  activate: -> provider.load()
+module.exports = {
+  activate() { return provider.load(); },
 
-  getProvider: -> provider
+  getProvider() { return provider; }
+};

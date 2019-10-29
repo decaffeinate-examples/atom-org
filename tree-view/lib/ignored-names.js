@@ -1,22 +1,41 @@
-Minimatch = null  # Defer requiring until actually needed
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let IgnoredNames;
+let Minimatch = null;  // Defer requiring until actually needed
 
 module.exports =
-class IgnoredNames
-  constructor: ->
-    @ignoredPatterns = []
+(IgnoredNames = class IgnoredNames {
+  constructor() {
+    let left;
+    this.ignoredPatterns = [];
 
-    Minimatch ?= require('minimatch').Minimatch
+    if (Minimatch == null) { ({
+      Minimatch
+    } = require('minimatch')); }
 
-    ignoredNames = atom.config.get('core.ignoredNames') ? []
-    ignoredNames = [ignoredNames] if typeof ignoredNames is 'string'
-    for ignoredName in ignoredNames when ignoredName
-      try
-        @ignoredPatterns.push(new Minimatch(ignoredName, matchBase: true, dot: true))
-      catch error
-        atom.notifications.addWarning("Error parsing ignore pattern (#{ignoredName})", detail: error.message)
+    let ignoredNames = (left = atom.config.get('core.ignoredNames')) != null ? left : [];
+    if (typeof ignoredNames === 'string') { ignoredNames = [ignoredNames]; }
+    for (let ignoredName of Array.from(ignoredNames)) {
+      if (ignoredName) {
+        try {
+          this.ignoredPatterns.push(new Minimatch(ignoredName, {matchBase: true, dot: true}));
+        } catch (error) {
+          atom.notifications.addWarning(`Error parsing ignore pattern (${ignoredName})`, {detail: error.message});
+        }
+      }
+    }
+  }
 
-  matches: (filePath) ->
-    for ignoredPattern in @ignoredPatterns
-      return true if ignoredPattern.match(filePath)
+  matches(filePath) {
+    for (let ignoredPattern of Array.from(this.ignoredPatterns)) {
+      if (ignoredPattern.match(filePath)) { return true; }
+    }
 
-    return false
+    return false;
+  }
+});

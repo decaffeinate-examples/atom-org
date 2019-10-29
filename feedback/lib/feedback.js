@@ -1,87 +1,126 @@
-{CompositeDisposable} = require 'atom'
-FeedbackAPI = null
-Reporter = null
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {CompositeDisposable} = require('atom');
+let FeedbackAPI = null;
+let Reporter = null;
 
-module.exports =
-  config:
-    alwaysShowInDevMode:
-      type: 'boolean'
+module.exports = {
+  config: {
+    alwaysShowInDevMode: {
+      type: 'boolean',
       default: false
+    }
+  },
 
-  feedbackSource: 'survey-2015-1'
+  feedbackSource: 'survey-2015-1',
 
-  activate: ->
-    @statusBarPromise = new Promise (resolve) =>
-      @resolveStatusBarPromise = resolve
+  activate() {
+    this.statusBarPromise = new Promise(resolve => {
+      return this.resolveStatusBarPromise = resolve;
+    });
 
-    process.nextTick =>
-      FeedbackAPI = require './feedback-api'
-      @checkShouldRequestFeedback().then (shouldRequestFeedback) =>
-        Reporter ?= require './reporter'
-        if shouldRequestFeedback
-          @addStatusBarItem()
-          @subscriptions = new CompositeDisposable
-          @subscriptions.add atom.commands.add 'atom-workspace', 'feedback:show', => @showModal()
-          Reporter.sendEvent('did-show-status-bar-link')
+    return process.nextTick(() => {
+      FeedbackAPI = require('./feedback-api');
+      return this.checkShouldRequestFeedback().then(shouldRequestFeedback => {
+        if (Reporter == null) { Reporter = require('./reporter'); }
+        if (shouldRequestFeedback) {
+          this.addStatusBarItem();
+          this.subscriptions = new CompositeDisposable;
+          this.subscriptions.add(atom.commands.add('atom-workspace', 'feedback:show', () => this.showModal()));
+          return Reporter.sendEvent('did-show-status-bar-link');
+        }
+      });
+    });
+  },
 
-  consumeStatusBar: (statusBar) ->
-    @resolveStatusBarPromise(statusBar)
+  consumeStatusBar(statusBar) {
+    return this.resolveStatusBarPromise(statusBar);
+  },
 
-  consumeReporter: (realReporter) ->
-    Reporter ?= require './reporter'
-    Reporter.setReporter(realReporter)
+  consumeReporter(realReporter) {
+    if (Reporter == null) { Reporter = require('./reporter'); }
+    return Reporter.setReporter(realReporter);
+  },
 
-  getStatusBar: ->
-    @statusBarPromise
+  getStatusBar() {
+    return this.statusBarPromise;
+  },
 
-  addStatusBarItem: ->
-    return if @statusBarTile?
-    FeedbackStatusElement = require './feedback-status-element'
-    workspaceElement = atom.views.getView(atom.workspace)
+  addStatusBarItem() {
+    if (this.statusBarTile != null) { return; }
+    const FeedbackStatusElement = require('./feedback-status-element');
+    const workspaceElement = atom.views.getView(atom.workspace);
 
-    @getStatusBar().then (statusBar) =>
-      item = new FeedbackStatusElement()
-      item.initialize({@feedbackSource})
-      @statusBarTile = statusBar.addRightTile {item, priority: -1}
+    return this.getStatusBar().then(statusBar => {
+      const item = new FeedbackStatusElement();
+      item.initialize({feedbackSource: this.feedbackSource});
+      return this.statusBarTile = statusBar.addRightTile({item, priority: -1});
+  });
+  },
 
-  showModal: ->
-    unless @modal?
-      FeedbackModalElement = require './feedback-modal-element'
-      @modal = new FeedbackModalElement()
-      @modal.initialize({@feedbackSource})
-      @modal.onDidStartSurvey => @detectCompletedSurvey()
-    @modal.show()
+  showModal() {
+    if (this.modal == null) {
+      const FeedbackModalElement = require('./feedback-modal-element');
+      this.modal = new FeedbackModalElement();
+      this.modal.initialize({feedbackSource: this.feedbackSource});
+      this.modal.onDidStartSurvey(() => this.detectCompletedSurvey());
+    }
+    return this.modal.show();
+  },
 
-  checkShouldRequestFeedback: ->
-    client = FeedbackAPI.getClientID()
-    FeedbackAPI.fetchSurveyMetadata(@feedbackSource).then (metadata) =>
-      new Promise (resolve) =>
-        shouldRequest = if atom.inSpecMode() or (atom.inDevMode() and atom.config.get('feedback.alwaysShowInDevMode'))
-          true
-        else if client
-          {crc32} = require 'crc'
-          checksum = crc32(client + @feedbackSource + metadata.display_seed)
-          checksum % 100 < (metadata.display_percent ? 0)
-        else
-          false
+  checkShouldRequestFeedback() {
+    const client = FeedbackAPI.getClientID();
+    return FeedbackAPI.fetchSurveyMetadata(this.feedbackSource).then(metadata => {
+      return new Promise(resolve => {
+        const shouldRequest = (() => {
+          if (atom.inSpecMode() || (atom.inDevMode() && atom.config.get('feedback.alwaysShowInDevMode'))) {
+          return true;
+        } else if (client) {
+          const {crc32} = require('crc');
+          const checksum = crc32(client + this.feedbackSource + metadata.display_seed);
+          return (checksum % 100) < (metadata.display_percent != null ? metadata.display_percent : 0);
+        } else {
+          return false;
+        }
+        })();
 
-        if shouldRequest
-          FeedbackAPI.fetchDidCompleteFeedback(@feedbackSource).then (didCompleteSurvey) ->
-            Reporter ?= require './reporter'
-            Reporter.sendEvent('already-finished-survey') if didCompleteSurvey
-            resolve(not didCompleteSurvey)
-        else
-          resolve(false)
+        if (shouldRequest) {
+          return FeedbackAPI.fetchDidCompleteFeedback(this.feedbackSource).then(function(didCompleteSurvey) {
+            if (Reporter == null) { Reporter = require('./reporter'); }
+            if (didCompleteSurvey) { Reporter.sendEvent('already-finished-survey'); }
+            return resolve(!didCompleteSurvey);
+          });
+        } else {
+          return resolve(false);
+        }
+      });
+    });
+  },
 
-  detectCompletedSurvey: ->
-    FeedbackAPI.detectDidCompleteFeedback(@feedbackSource).then =>
-      Reporter ?= require './reporter'
-      Reporter.sendEvent('did-finish-survey')
-      @statusBarTile.destroy()
+  detectCompletedSurvey() {
+    return FeedbackAPI.detectDidCompleteFeedback(this.feedbackSource).then(() => {
+      if (Reporter == null) { Reporter = require('./reporter'); }
+      Reporter.sendEvent('did-finish-survey');
+      return this.statusBarTile.destroy();
+    });
+  },
 
-  deactivate: ->
-    @subscriptions?.dispose()
-    @statusBarTile?.destroy()
-    @statusBarTile = null
-    @modal?.destroy()
-    @modal = null
+  deactivate() {
+    if (this.subscriptions != null) {
+      this.subscriptions.dispose();
+    }
+    if (this.statusBarTile != null) {
+      this.statusBarTile.destroy();
+    }
+    this.statusBarTile = null;
+    if (this.modal != null) {
+      this.modal.destroy();
+    }
+    return this.modal = null;
+  }
+};

@@ -1,1 +1,1 @@
-require 'coffee-cache'
+require('coffee-cache');

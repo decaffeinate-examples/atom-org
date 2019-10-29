@@ -1,4 +1,5 @@
-try
-  1 + 1
-catch error
-  throw error
+try {
+  1 + 1;
+} catch (error) {
+  throw error;
+}

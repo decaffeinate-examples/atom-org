@@ -149,11 +149,11 @@ module.exports = {
   },
   "Minus": {
     "unmodified": "=",
-    "withShift": null # TODO: What is this?
+    "withShift": null // TODO: What is this?
   },
   "Equal": {
     "unmodified": "/",
-    "withShift": null # TODO: What is this?
+    "withShift": null // TODO: What is this?
   },
   "BracketLeft": {
     "unmodified": "[",
@@ -165,7 +165,7 @@ module.exports = {
   },
   "Backslash": {
     "unmodified": "`",
-    "withShift": null # TODO: What is this?
+    "withShift": null // TODO: What is this?
   },
   "Semicolon": {
     "unmodified": ";",
@@ -177,7 +177,7 @@ module.exports = {
   },
   "Backquote": {
     "unmodified": "\\",
-    "withShift": null # TODO: What is this?
+    "withShift": null // TODO: What is this?
   },
   "Comma": {
     "unmodified": ",",
@@ -189,7 +189,7 @@ module.exports = {
   },
   "Slash": {
     "unmodified": "-",
-    "withShift": null # TODO: What is this?
+    "withShift": null // TODO: What is this?
   },
   "NumpadDivide": {
     "unmodified": "/",
@@ -263,4 +263,4 @@ module.exports = {
     "unmodified": null,
     "withShift": "="
   }
-}
+};

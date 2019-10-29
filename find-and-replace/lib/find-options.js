@@ -1,83 +1,114 @@
-_ = require 'underscore-plus'
-{Emitter} = require 'atom'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS202: Simplify dynamic range loops
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let FindOptions;
+const _ = require('underscore-plus');
+const {Emitter} = require('atom');
 
-Params = [
-  'findPattern'
-  'replacePattern'
-  'pathsPattern'
-  'useRegex'
-  'wholeWord'
-  'caseSensitive'
-  'inCurrentSelection'
-  'leadingContextLineCount'
+const Params = [
+  'findPattern',
+  'replacePattern',
+  'pathsPattern',
+  'useRegex',
+  'wholeWord',
+  'caseSensitive',
+  'inCurrentSelection',
+  'leadingContextLineCount',
   'trailingContextLineCount'
-]
+];
 
 module.exports =
-class FindOptions
-  constructor: (state={}) ->
-    @emitter = new Emitter
+(FindOptions = class FindOptions {
+  constructor(state) {
+    let left, left1, left2, left3, left4, left5;
+    if (state == null) { state = {}; }
+    this.emitter = new Emitter;
 
-    @findPattern = ''
-    @replacePattern = state.replacePattern ? ''
-    @pathsPattern = state.pathsPattern ? ''
-    @useRegex = state.useRegex ? atom.config.get('find-and-replace.useRegex') ? false
-    @caseSensitive = state.caseSensitive ? atom.config.get('find-and-replace.caseSensitive') ? false
-    @wholeWord = state.wholeWord ? atom.config.get('find-and-replace.wholeWord') ? false
-    @inCurrentSelection = state.inCurrentSelection ? atom.config.get('find-and-replace.inCurrentSelection') ? false
-    @leadingContextLineCount = state.leadingContextLineCount ? atom.config.get('find-and-replace.leadingContextLineCount') ? 0
-    @trailingContextLineCount = state.trailingContextLineCount ? atom.config.get('find-and-replace.trailingContextLineCount') ? 0
+    this.findPattern = '';
+    this.replacePattern = state.replacePattern != null ? state.replacePattern : '';
+    this.pathsPattern = state.pathsPattern != null ? state.pathsPattern : '';
+    this.useRegex = (left = state.useRegex != null ? state.useRegex : atom.config.get('find-and-replace.useRegex')) != null ? left : false;
+    this.caseSensitive = (left1 = state.caseSensitive != null ? state.caseSensitive : atom.config.get('find-and-replace.caseSensitive')) != null ? left1 : false;
+    this.wholeWord = (left2 = state.wholeWord != null ? state.wholeWord : atom.config.get('find-and-replace.wholeWord')) != null ? left2 : false;
+    this.inCurrentSelection = (left3 = state.inCurrentSelection != null ? state.inCurrentSelection : atom.config.get('find-and-replace.inCurrentSelection')) != null ? left3 : false;
+    this.leadingContextLineCount = (left4 = state.leadingContextLineCount != null ? state.leadingContextLineCount : atom.config.get('find-and-replace.leadingContextLineCount')) != null ? left4 : 0;
+    this.trailingContextLineCount = (left5 = state.trailingContextLineCount != null ? state.trailingContextLineCount : atom.config.get('find-and-replace.trailingContextLineCount')) != null ? left5 : 0;
+  }
 
-  onDidChange: (callback) ->
-    @emitter.on('did-change', callback)
+  onDidChange(callback) {
+    return this.emitter.on('did-change', callback);
+  }
 
-  onDidChangeUseRegex: (callback) ->
-    @emitter.on('did-change-useRegex', callback)
+  onDidChangeUseRegex(callback) {
+    return this.emitter.on('did-change-useRegex', callback);
+  }
 
-  onDidChangeReplacePattern: (callback) ->
-    @emitter.on('did-change-replacePattern', callback)
+  onDidChangeReplacePattern(callback) {
+    return this.emitter.on('did-change-replacePattern', callback);
+  }
 
-  serialize: ->
-    result = {}
-    for param in Params
-      result[param] = this[param]
-    result
+  serialize() {
+    const result = {};
+    for (let param of Array.from(Params)) {
+      result[param] = this[param];
+    }
+    return result;
+  }
 
-  set: (newParams={}) ->
-    changedParams = {}
-    for key in Params
-      if newParams[key]? and newParams[key] isnt this[key]
-        changedParams ?= {}
-        this[key] = changedParams[key] = newParams[key]
+  set(newParams) {
+    if (newParams == null) { newParams = {}; }
+    let changedParams = {};
+    for (let key of Array.from(Params)) {
+      if ((newParams[key] != null) && (newParams[key] !== this[key])) {
+        if (changedParams == null) { changedParams = {}; }
+        this[key] = (changedParams[key] = newParams[key]);
+      }
+    }
 
-    if Object.keys(changedParams).length
-      for param, val of changedParams
-        @emitter.emit("did-change-#{param}")
-      @emitter.emit('did-change', changedParams)
-    return changedParams
+    if (Object.keys(changedParams).length) {
+      for (let param in changedParams) {
+        const val = changedParams[param];
+        this.emitter.emit(`did-change-${param}`);
+      }
+      this.emitter.emit('did-change', changedParams);
+    }
+    return changedParams;
+  }
 
-  getFindPatternRegex: (forceUnicode = false) ->
-    for i in [0..@findPattern.length]
-      if @findPattern.charCodeAt(i) > 128
-        forceUnicode = true
-        break
+  getFindPatternRegex(forceUnicode) {
+    let expression;
+    if (forceUnicode == null) { forceUnicode = false; }
+    for (let i = 0, end = this.findPattern.length, asc = 0 <= end; asc ? i <= end : i >= end; asc ? i++ : i--) {
+      if (this.findPattern.charCodeAt(i) > 128) {
+        forceUnicode = true;
+        break;
+      }
+    }
 
-    flags = 'gm'
-    flags += 'i' unless @caseSensitive
-    flags += 'u' if forceUnicode
+    let flags = 'gm';
+    if (!this.caseSensitive) { flags += 'i'; }
+    if (forceUnicode) { flags += 'u'; }
 
-    if @useRegex
-      expression = @findPattern
-    else
-      expression = escapeRegExp(@findPattern)
+    if (this.useRegex) {
+      expression = this.findPattern;
+    } else {
+      expression = escapeRegExp(this.findPattern);
+    }
 
-    expression = "\\b#{expression}\\b" if @wholeWord
+    if (this.wholeWord) { expression = `\\b${expression}\\b`; }
 
-    new RegExp(expression, flags)
+    return new RegExp(expression, flags);
+  }
+});
 
-# This is different from _.escapeRegExp, which escapes dashes. Escaped dashes
-# are not allowed outside of character classes in RegExps with the `u` flag.
-#
-# See atom/find-and-replace#1022
-escapeRegExp = (string) ->
-  string.replace(/[\/\\^$*+?.()|[\]{}]/g, '\\$&')
+// This is different from _.escapeRegExp, which escapes dashes. Escaped dashes
+// are not allowed outside of character classes in RegExps with the `u` flag.
+//
+// See atom/find-and-replace#1022
+var escapeRegExp = string => string.replace(/[\/\\^$*+?.()|[\]{}]/g, '\\$&');

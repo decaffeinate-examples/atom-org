@@ -1,5 +1,18 @@
-{getTextOG} = require './helpers'
+/*
+ * decaffeinate suggestions:
+ * DS206: Consider reworking classes to avoid initClass
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let TextBuffer;
+const {getTextOG} = require('./helpers');
 
 module.exports =
-class TextBuffer
-  getText: getTextOG
+(TextBuffer = (function() {
+  TextBuffer = class TextBuffer {
+    static initClass() {
+      this.prototype.getText = getTextOG;
+    }
+  };
+  TextBuffer.initClass();
+  return TextBuffer;
+})());

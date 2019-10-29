@@ -1,30 +1,44 @@
-# Run this to update the static list of properties stored in the properties.json
-# file at the root of this repository.
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+// Run this to update the static list of properties stored in the properties.json
+// file at the root of this repository.
 
-path = require 'path'
-fs = require 'fs'
-request = require 'request'
+const path = require('path');
+const fs = require('fs');
+const request = require('request');
 
-requestOptions =
-  url: 'https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json'
+const requestOptions = {
+  url: 'https://raw.githubusercontent.com/github/gemoji/master/db/emoji.json',
   json: true
+};
 
-request requestOptions, (error, response, items) ->
-  if error?
-    console.error(error.message)
-    return process.exit(1)
+request(requestOptions, function(error, response, items) {
+  if (error != null) {
+    console.error(error.message);
+    return process.exit(1);
+  }
 
-  if response.statusCode isnt 200
-    console.error("Request for emoji.json failed: #{response.statusCode}")
-    return process.exit(1)
+  if (response.statusCode !== 200) {
+    console.error(`Request for emoji.json failed: ${response.statusCode}`);
+    return process.exit(1);
+  }
 
-  properties = {}
-  for item in items
-    if item.emoji?
-      for alias in item.aliases
+  const properties = {};
+  for (let item of Array.from(items)) {
+    if (item.emoji != null) {
+      for (let alias of Array.from(item.aliases)) {
         properties[alias] =
-          emoji: item.emoji
-          # description: item.description
-          # tags: item.tags if item.tags?.length > 1
+          {emoji: item.emoji};
+      }
+    }
+  }
+          // description: item.description
+          // tags: item.tags if item.tags?.length > 1
 
-  fs.writeFileSync(path.join(__dirname, 'properties.json'), "#{JSON.stringify(properties, null, 0)}\n")
+  return fs.writeFileSync(path.join(__dirname, 'properties.json'), `${JSON.stringify(properties, null, 0)}\n`);
+});

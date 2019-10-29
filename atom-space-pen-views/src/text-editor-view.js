@@ -1,47 +1,72 @@
-{View, $} = require 'space-pen'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let TextEditorView;
+const {View, $} = require('space-pen');
 
 module.exports =
-class TextEditorView extends View
-  # The constructor for setting up an `TextEditorView` instance.
-  constructor: (params={}) ->
-    {mini, placeholderText, attributes, editor} = params
-    attributes ?= {}
-    attributes['mini'] = mini if mini?
-    attributes['placeholder-text'] = placeholderText if placeholderText?
+(TextEditorView = class TextEditorView extends View {
+  // The constructor for setting up an `TextEditorView` instance.
+  constructor(params) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    if (params == null) { params = {}; }
+    let {mini, placeholderText, attributes, editor} = params;
+    if (attributes == null) { attributes = {}; }
+    if (mini != null) { attributes['mini'] = mini; }
+    if (placeholderText != null) { attributes['placeholder-text'] = placeholderText; }
 
-    if editor?
-      @element = atom.views.getView(editor)
-    else
-      @element = document.createElement('atom-text-editor')
+    if (editor != null) {
+      this.element = atom.views.getView(editor);
+    } else {
+      this.element = document.createElement('atom-text-editor');
+    }
 
-    @element.setAttribute(name, value) for name, value of attributes
-    if @element.__spacePenView?
-      @element.__spacePenView = this
-      @element.__allowViewAccess = true
+    for (let name in attributes) { const value = attributes[name]; this.element.setAttribute(name, value); }
+    if (this.element.__spacePenView != null) {
+      this.element.__spacePenView = this;
+      this.element.__allowViewAccess = true;
+    }
 
-    super
+    super(...arguments);
 
-    @setModel(@element.getModel())
+    this.setModel(this.element.getModel());
+  }
 
-  setModel: (@model) ->
+  setModel(model) {
+    this.model = model;
+  }
 
-  # Public: Get the underlying editor model for this view.
-  #
-  # Returns a `TextEditor`
-  getModel: -> @model
+  // Public: Get the underlying editor model for this view.
+  //
+  // Returns a `TextEditor`
+  getModel() { return this.model; }
 
-  # Public: Get the text of the editor.
-  #
-  # Returns a `String`.
-  getText: ->
-    @model.getText()
+  // Public: Get the text of the editor.
+  //
+  // Returns a `String`.
+  getText() {
+    return this.model.getText();
+  }
 
-  # Public: Set the text of the editor as a `String`.
-  setText: (text) ->
-    @model.setText(text)
+  // Public: Set the text of the editor as a `String`.
+  setText(text) {
+    return this.model.setText(text);
+  }
 
-  # Public: Determine whether the editor is or contains the active element.
-  #
-  # Returns a `Boolean`.
-  hasFocus: ->
-    @element.hasFocus()
+  // Public: Determine whether the editor is or contains the active element.
+  //
+  // Returns a `Boolean`.
+  hasFocus() {
+    return this.element.hasFocus();
+  }
+});

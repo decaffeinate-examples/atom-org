@@ -1,194 +1,256 @@
-crypto = require 'crypto'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const crypto = require('crypto');
+const path = require('path');
 
-fs = require 'fs-plus'
-CSON = null # defer until used
+const fs = require('fs-plus');
+let CSON = null; // defer until used
 
-csonCache = null
+let csonCache = null;
 
-stats =
-  hits: 0
+let stats = {
+  hits: 0,
   misses: 0
+};
 
-getCachePath = (cson) ->
-  digest = crypto.createHash('sha1').update(cson, 'utf8').digest('hex')
-  path.join(csonCache, "#{digest}.json")
+const getCachePath = function(cson) {
+  const digest = crypto.createHash('sha1').update(cson, 'utf8').digest('hex');
+  return path.join(csonCache, `${digest}.json`);
+};
 
-writeCacheFileSync = (cachePath, object) ->
-  try
-    fs.writeFileSync(cachePath, JSON.stringify(object))
+const writeCacheFileSync = function(cachePath, object) {
+  try {
+    return fs.writeFileSync(cachePath, JSON.stringify(object));
+  } catch (error) {}
+};
 
-writeCacheFile = (cachePath, object) ->
-  fs.writeFile cachePath, JSON.stringify(object), ->
+const writeCacheFile = (cachePath, object) => fs.writeFile(cachePath, JSON.stringify(object), function() {});
 
-parseObject = (objectPath, contents, options) ->
-  if path.extname(objectPath) is '.cson'
-    CSON ?= require 'cson-parser'
-    try
-      parsed = CSON.parse(contents, detectDuplicateKeys if options?.allowDuplicateKeys is false)
-      stats.misses++
-      return parsed
-    catch error
-      if isAllCommentsAndWhitespace(contents)
-        return null
-      else
-        throw error
-  else
-    JSON.parse(contents)
+const parseObject = function(objectPath, contents, options) {
+  if (path.extname(objectPath) === '.cson') {
+    if (CSON == null) { CSON = require('cson-parser'); }
+    try {
+      const parsed = CSON.parse(contents, (options != null ? options.allowDuplicateKeys : undefined) === false ? detectDuplicateKeys : undefined);
+      stats.misses++;
+      return parsed;
+    } catch (error) {
+      if (isAllCommentsAndWhitespace(contents)) {
+        return null;
+      } else {
+        throw error;
+      }
+    }
+  } else {
+    return JSON.parse(contents);
+  }
+};
 
-parseCacheContents = (contents) ->
-  parsed = JSON.parse(contents)
-  stats.hits++
-  parsed
+const parseCacheContents = function(contents) {
+  const parsed = JSON.parse(contents);
+  stats.hits++;
+  return parsed;
+};
 
-parseContentsSync = (objectPath, cachePath, contents, options) ->
-  try
-    object = parseObject(objectPath, contents, options)
-  catch parseError
-    parseError.path ?= objectPath
-    parseError.filename ?= objectPath
-    throw parseError
+const parseContentsSync = function(objectPath, cachePath, contents, options) {
+  let object;
+  try {
+    object = parseObject(objectPath, contents, options);
+  } catch (parseError) {
+    if (parseError.path == null) { parseError.path = objectPath; }
+    if (parseError.filename == null) { parseError.filename = objectPath; }
+    throw parseError;
+  }
 
-  writeCacheFileSync(cachePath, object) if cachePath
-  object
+  if (cachePath) { writeCacheFileSync(cachePath, object); }
+  return object;
+};
 
-isAllCommentsAndWhitespace = (contents) ->
-  lines = contents.split('\n')
-  while lines.length > 0
-    line = lines[0].trim()
-    if line.length is 0 or line[0] is '#'
-      lines.shift()
-    else
-      return false
-  true
+var isAllCommentsAndWhitespace = function(contents) {
+  const lines = contents.split('\n');
+  while (lines.length > 0) {
+    const line = lines[0].trim();
+    if ((line.length === 0) || (line[0] === '#')) {
+      lines.shift();
+    } else {
+      return false;
+    }
+  }
+  return true;
+};
 
-parseContents = (objectPath, cachePath, contents, options, callback) ->
-  try
-    object = parseObject(objectPath, contents, options)
-  catch parseError
-    parseError.path = objectPath
-    parseError.filename ?= objectPath
-    parseError.message = "#{objectPath}: #{parseError.message}"
-    callback?(parseError)
-    return
+const parseContents = function(objectPath, cachePath, contents, options, callback) {
+  let object;
+  try {
+    object = parseObject(objectPath, contents, options);
+  } catch (parseError) {
+    parseError.path = objectPath;
+    if (parseError.filename == null) { parseError.filename = objectPath; }
+    parseError.message = `${objectPath}: ${parseError.message}`;
+    if (typeof callback === 'function') {
+      callback(parseError);
+    }
+    return;
+  }
 
-  writeCacheFile(cachePath, object) if cachePath
-  callback?(null, object)
-  return
+  if (cachePath) { writeCacheFile(cachePath, object); }
+  if (typeof callback === 'function') {
+    callback(null, object);
+  }
+};
 
-module.exports =
-  setCacheDir: (cacheDirectory) -> csonCache = cacheDirectory
+module.exports = {
+  setCacheDir(cacheDirectory) { return csonCache = cacheDirectory; },
 
-  isObjectPath: (objectPath) ->
-    return false unless objectPath
+  isObjectPath(objectPath) {
+    if (!objectPath) { return false; }
 
-    extension = path.extname(objectPath)
-    extension is '.cson' or extension is '.json'
+    const extension = path.extname(objectPath);
+    return (extension === '.cson') || (extension === '.json');
+  },
 
-  resolve: (objectPath='') ->
-    return null unless objectPath
+  resolve(objectPath) {
+    if (objectPath == null) { objectPath = ''; }
+    if (!objectPath) { return null; }
 
-    return objectPath if @isObjectPath(objectPath) and fs.isFileSync(objectPath)
+    if (this.isObjectPath(objectPath) && fs.isFileSync(objectPath)) { return objectPath; }
 
-    jsonPath = "#{objectPath}.json"
-    return jsonPath if fs.isFileSync(jsonPath)
+    const jsonPath = `${objectPath}.json`;
+    if (fs.isFileSync(jsonPath)) { return jsonPath; }
 
-    csonPath = "#{objectPath}.cson"
-    return csonPath if fs.isFileSync(csonPath)
+    const csonPath = `${objectPath}.cson`;
+    if (fs.isFileSync(csonPath)) { return csonPath; }
 
-    null
+    return null;
+  },
 
-  readFileSync: (objectPath, options = {}) ->
-    parseOptions =
-      allowDuplicateKeys: options.allowDuplicateKeys
-    delete options.allowDuplicateKeys
+  readFileSync(objectPath, options) {
+    let cachePath;
+    if (options == null) { options = {}; }
+    const parseOptions =
+      {allowDuplicateKeys: options.allowDuplicateKeys};
+    delete options.allowDuplicateKeys;
 
-    fsOptions = Object.assign({encoding: 'utf8'}, options)
+    const fsOptions = Object.assign({encoding: 'utf8'}, options);
 
-    contents = fs.readFileSync(objectPath, fsOptions)
-    return null if contents.trim().length is 0
-    if csonCache and path.extname(objectPath) is '.cson'
-      cachePath = getCachePath(contents)
-      if fs.isFileSync(cachePath)
-        try
-          return parseCacheContents(fs.readFileSync(cachePath, 'utf8'))
+    const contents = fs.readFileSync(objectPath, fsOptions);
+    if (contents.trim().length === 0) { return null; }
+    if (csonCache && (path.extname(objectPath) === '.cson')) {
+      cachePath = getCachePath(contents);
+      if (fs.isFileSync(cachePath)) {
+        try {
+          return parseCacheContents(fs.readFileSync(cachePath, 'utf8'));
+        } catch (error) {}
+      }
+    }
 
-    parseContentsSync(objectPath, cachePath, contents, parseOptions)
+    return parseContentsSync(objectPath, cachePath, contents, parseOptions);
+  },
 
-  readFile: (objectPath, options, callback) ->
-    if arguments.length < 3
-      callback = options
-      options = {}
+  readFile(objectPath, options, callback) {
+    if (arguments.length < 3) {
+      callback = options;
+      options = {};
+    }
 
-    parseOptions =
-      allowDuplicateKeys: options.allowDuplicateKeys
-    delete options.allowDuplicateKeys
+    const parseOptions =
+      {allowDuplicateKeys: options.allowDuplicateKeys};
+    delete options.allowDuplicateKeys;
 
-    fsOptions = Object.assign({encoding: 'utf8'}, options)
+    const fsOptions = Object.assign({encoding: 'utf8'}, options);
 
-    fs.readFile objectPath, fsOptions, (error, contents) =>
-      return callback?(error) if error?
-      return callback?(null, null) if contents.trim().length is 0
+    return fs.readFile(objectPath, fsOptions, (error, contents) => {
+      if (error != null) { return (typeof callback === 'function' ? callback(error) : undefined); }
+      if (contents.trim().length === 0) { return (typeof callback === 'function' ? callback(null, null) : undefined); }
 
-      if csonCache and path.extname(objectPath) is '.cson'
-        cachePath = getCachePath(contents)
-        fs.stat cachePath, (error, stat) ->
-          if stat?.isFile()
-            fs.readFile cachePath, 'utf8', (error, cached) ->
-              try
-                parsed = parseCacheContents(cached)
-              catch error
-                try
-                  parseContents(objectPath, cachePath, contents, parseOptions, callback)
-                return
-              callback?(null, parsed)
-          else
-            parseContents(objectPath, cachePath, contents, parseOptions, callback)
-      else
-        parseContents(objectPath, null, contents, parseOptions, callback)
+      if (csonCache && (path.extname(objectPath) === '.cson')) {
+        const cachePath = getCachePath(contents);
+        return fs.stat(cachePath, function(error, stat) {
+          if ((stat != null ? stat.isFile() : undefined)) {
+            return fs.readFile(cachePath, 'utf8', function(error, cached) {
+              let parsed;
+              try {
+                parsed = parseCacheContents(cached);
+              } catch (error1) {
+                error = error1;
+                try {
+                  parseContents(objectPath, cachePath, contents, parseOptions, callback);
+                } catch (error2) {}
+                return;
+              }
+              return (typeof callback === 'function' ? callback(null, parsed) : undefined);
+            });
+          } else {
+            return parseContents(objectPath, cachePath, contents, parseOptions, callback);
+          }
+        });
+      } else {
+        return parseContents(objectPath, null, contents, parseOptions, callback);
+      }
+    });
+  },
 
-  writeFile: (objectPath, object, options, callback) ->
-    if arguments.length < 4
-      callback = options
-      options = {}
-    callback ?= ->
+  writeFile(objectPath, object, options, callback) {
+    let contents;
+    if (arguments.length < 4) {
+      callback = options;
+      options = {};
+    }
+    if (callback == null) { callback = function() {}; }
 
-    try
-      contents = @stringifyPath(objectPath, object)
-    catch error
-      callback(error)
-      return
+    try {
+      contents = this.stringifyPath(objectPath, object);
+    } catch (error) {
+      callback(error);
+      return;
+    }
 
-    fs.writeFile(objectPath, "#{contents}\n", options, callback)
+    return fs.writeFile(objectPath, `${contents}\n`, options, callback);
+  },
 
-  writeFileSync: (objectPath, object, options = undefined) ->
-    fs.writeFileSync(objectPath, "#{@stringifyPath(objectPath, object)}\n", options)
+  writeFileSync(objectPath, object, options) {
+    if (options == null) { options = undefined; }
+    return fs.writeFileSync(objectPath, `${this.stringifyPath(objectPath, object)}\n`, options);
+  },
 
-  stringifyPath: (objectPath, object, visitor, space) ->
-    if path.extname(objectPath) is '.cson'
-      @stringify(object, visitor, space)
-    else
-      JSON.stringify(object, undefined, 2)
+  stringifyPath(objectPath, object, visitor, space) {
+    if (path.extname(objectPath) === '.cson') {
+      return this.stringify(object, visitor, space);
+    } else {
+      return JSON.stringify(object, undefined, 2);
+    }
+  },
 
-  stringify: (object, visitor, space = 2) ->
-    CSON ?= require 'cson-parser'
-    CSON.stringify(object, visitor, space)
+  stringify(object, visitor, space) {
+    if (space == null) { space = 2; }
+    if (CSON == null) { CSON = require('cson-parser'); }
+    return CSON.stringify(object, visitor, space);
+  },
 
-  parse: (str, reviver) ->
-    CSON ?= require 'cson-parser'
-    CSON.parse(str, reviver)
+  parse(str, reviver) {
+    if (CSON == null) { CSON = require('cson-parser'); }
+    return CSON.parse(str, reviver);
+  },
 
-  getCacheHits: -> stats.hits
+  getCacheHits() { return stats.hits; },
 
-  getCacheMisses: -> stats.misses
+  getCacheMisses() { return stats.misses; },
 
-  resetCacheStats: ->
-    stats =
-      hits: 0
+  resetCacheStats() {
+    return stats = {
+      hits: 0,
       misses: 0
+    };
+  }
+};
 
-detectDuplicateKeys = (key, value) ->
-  if this.hasOwnProperty(key) and this[key] isnt value
-    throw new Error("Duplicate key '#{key}'")
-  else
-    value
+var detectDuplicateKeys = function(key, value) {
+  if (this.hasOwnProperty(key) && (this[key] !== value)) {
+    throw new Error(`Duplicate key '${key}'`);
+  } else {
+    return value;
+  }
+};

@@ -1,4 +1,4 @@
-Builder = require './builder'
-builder = new Builder
+const Builder = require('./builder');
+const builder = new Builder;
 
-exports.$$ = (fn) -> builder.buildElement(fn)
+exports.$$ = fn => builder.buildElement(fn);

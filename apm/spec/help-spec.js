@@ -1,54 +1,61 @@
-apm = require '../lib/apm-cli'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const apm = require('../lib/apm-cli');
 
-describe 'command help', ->
-  beforeEach ->
-    spyOnToken()
-    silenceOutput()
+describe('command help', function() {
+  beforeEach(function() {
+    spyOnToken();
+    return silenceOutput();
+  });
 
-  describe "apm help publish", ->
-    it "displays the help for the command", ->
-      callback = jasmine.createSpy('callback')
-      apm.run(['help', 'publish'], callback)
+  describe("apm help publish", () => it("displays the help for the command", function() {
+    const callback = jasmine.createSpy('callback');
+    apm.run(['help', 'publish'], callback);
 
-      waitsFor 'waiting for help to complete', 60000, ->
-        callback.callCount is 1
+    waitsFor('waiting for help to complete', 60000, () => callback.callCount === 1);
 
-      runs ->
-        expect(console.error.callCount).toBeGreaterThan 0
-        expect(callback.mostRecentCall.args[0]).toBeUndefined()
+    return runs(function() {
+      expect(console.error.callCount).toBeGreaterThan(0);
+      return expect(callback.mostRecentCall.args[0]).toBeUndefined();
+    });
+  }));
 
-  describe "apm publish -h", ->
-    it "displays the help for the command", ->
-      callback = jasmine.createSpy('callback')
-      apm.run(['publish', '-h'], callback)
+  describe("apm publish -h", () => it("displays the help for the command", function() {
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish', '-h'], callback);
 
-      waitsFor 'waiting for help to complete', 60000, ->
-        callback.callCount is 1
+    waitsFor('waiting for help to complete', 60000, () => callback.callCount === 1);
 
-      runs ->
-        expect(console.error.callCount).toBeGreaterThan 0
-        expect(callback.mostRecentCall.args[0]).toBeUndefined()
+    return runs(function() {
+      expect(console.error.callCount).toBeGreaterThan(0);
+      return expect(callback.mostRecentCall.args[0]).toBeUndefined();
+    });
+  }));
 
-  describe "apm help", ->
-    it "displays the help for apm", ->
-      callback = jasmine.createSpy('callback')
-      apm.run(['help'], callback)
+  describe("apm help", () => it("displays the help for apm", function() {
+    const callback = jasmine.createSpy('callback');
+    apm.run(['help'], callback);
 
-      waitsFor 'waiting for help to complete', 60000, ->
-        callback.callCount is 1
+    waitsFor('waiting for help to complete', 60000, () => callback.callCount === 1);
 
-      runs ->
-        expect(console.error.callCount).toBeGreaterThan 0
-        expect(callback.mostRecentCall.args[0]).toBeUndefined()
+    return runs(function() {
+      expect(console.error.callCount).toBeGreaterThan(0);
+      return expect(callback.mostRecentCall.args[0]).toBeUndefined();
+    });
+  }));
 
-  describe "apm", ->
-    it "displays the help for apm", ->
-      callback = jasmine.createSpy('callback')
-      apm.run([], callback)
+  return describe("apm", () => it("displays the help for apm", function() {
+    const callback = jasmine.createSpy('callback');
+    apm.run([], callback);
 
-      waitsFor 'waiting for help to complete', 60000, ->
-        callback.callCount is 1
+    waitsFor('waiting for help to complete', 60000, () => callback.callCount === 1);
 
-      runs ->
-        expect(console.error.callCount).toBeGreaterThan 0
-        expect(callback.mostRecentCall.args[0]).toBeUndefined()
+    return runs(function() {
+      expect(console.error.callCount).toBeGreaterThan(0);
+      return expect(callback.mostRecentCall.args[0]).toBeUndefined();
+    });
+  }));
+});

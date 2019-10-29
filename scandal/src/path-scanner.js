@@ -1,124 +1,160 @@
-fs = require("fs")
-path = require("path")
-{EventEmitter} = require("events")
-PathFilter = require("./path-filter")
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let PathScanner;
+const fs = require("fs");
+const path = require("path");
+const {EventEmitter} = require("events");
+const PathFilter = require("./path-filter");
 
-DIR_SEP = path.sep
+const DIR_SEP = path.sep;
 
-# Public: Scans a directory and emits events when paths matching input options
-# have been found.
-#
-# Note: `PathScanner` keeps no state. You must consume paths via the {::path-found} event.
-#
-# ## Examples
-#
-# ```coffee
-# {PathScanner} = require 'scandal'
-# scanner = new PathScanner('/Users/me/myDopeProject', includeHidden: false)
-#
-# scanner.on 'path-found', (path) ->
-#   console.log(path)
-#
-# scanner.on 'finished-scanning', ->
-#   console.log('All done!')
-#
-# scanner.scan()
-# ```
-#
-# ## Events
-#
-# * `path-found` Emit when a path has been found
-#   * `pathName` {String} name of the path
-# * `finished-scanning` Emit when the scanner is finished
-#
+// Public: Scans a directory and emits events when paths matching input options
+// have been found.
+//
+// Note: `PathScanner` keeps no state. You must consume paths via the {::path-found} event.
+//
+// ## Examples
+//
+// ```coffee
+// {PathScanner} = require 'scandal'
+// scanner = new PathScanner('/Users/me/myDopeProject', includeHidden: false)
+//
+// scanner.on 'path-found', (path) ->
+//   console.log(path)
+//
+// scanner.on 'finished-scanning', ->
+//   console.log('All done!')
+//
+// scanner.scan()
+// ```
+//
+// ## Events
+//
+// * `path-found` Emit when a path has been found
+//   * `pathName` {String} name of the path
+// * `finished-scanning` Emit when the scanner is finished
+//
 module.exports =
-class PathScanner extends EventEmitter
+(PathScanner = class PathScanner extends EventEmitter {
 
-  # Public: Create a {PathScanner} object.
-  #
-  # * `rootPath` {String} top level directory to scan. eg. `/Users/ben/somedir`
-  # * `options` {Object} options hash
-  #   * `excludeVcsIgnores` {Boolean}; default false; true to exclude paths
-  #      defined in a .gitignore. Uses git-utils to check ignred files.
-  #   * `inclusions` {Array} of patterns to include. Uses minimatch with a couple
-  #      additions: `['dirname']` and `['dirname/']` will match all paths in
-  #      directory dirname.
-  #   * `exclusions` {Array} of patterns to exclude. Same matcher as inclusions.
-  #   * `includeHidden` {Boolean} default false; true includes hidden files
-  constructor: (@rootPath, @options={}) ->
-    @asyncCallsInProgress = 0
-    @realPathCache = {}
-    @rootPath = path.resolve(@rootPath)
-    @rootPathLength = @rootPath.length
-    @pathFilter = new PathFilter(@rootPath, @options)
+  // Public: Create a {PathScanner} object.
+  //
+  // * `rootPath` {String} top level directory to scan. eg. `/Users/ben/somedir`
+  // * `options` {Object} options hash
+  //   * `excludeVcsIgnores` {Boolean}; default false; true to exclude paths
+  //      defined in a .gitignore. Uses git-utils to check ignred files.
+  //   * `inclusions` {Array} of patterns to include. Uses minimatch with a couple
+  //      additions: `['dirname']` and `['dirname/']` will match all paths in
+  //      directory dirname.
+  //   * `exclusions` {Array} of patterns to exclude. Same matcher as inclusions.
+  //   * `includeHidden` {Boolean} default false; true includes hidden files
+  constructor(rootPath, options) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.rootPath = rootPath;
+    if (options == null) { options = {}; }
+    this.options = options;
+    this.asyncCallsInProgress = 0;
+    this.realPathCache = {};
+    this.rootPath = path.resolve(this.rootPath);
+    this.rootPathLength = this.rootPath.length;
+    this.pathFilter = new PathFilter(this.rootPath, this.options);
+  }
 
-  ###
+  /*
   Section: Scanning
-  ###
+  */
 
-  # Public: Begin the scan
-  scan: ->
-    @readDir(@rootPath)
+  // Public: Begin the scan
+  scan() {
+    return this.readDir(this.rootPath);
+  }
 
-  readDir: (filePath) ->
-    @asyncCallStarting()
-    fs.readdir filePath, (err, files) =>
-      return @asyncCallDone() unless files
+  readDir(filePath) {
+    this.asyncCallStarting();
+    return fs.readdir(filePath, (err, files) => {
+      if (!files) { return this.asyncCallDone(); }
 
-      fileCount = files.length
-      prefix = filePath + DIR_SEP
-      while fileCount--
-        file = files.shift()
-        filename = prefix + file
-        @processFile(filename)
+      let fileCount = files.length;
+      const prefix = filePath + DIR_SEP;
+      while (fileCount--) {
+        const file = files.shift();
+        const filename = prefix + file;
+        this.processFile(filename);
+      }
 
-      @asyncCallDone()
+      return this.asyncCallDone();
+    });
+  }
 
-  relativize: (filePath) ->
-    len = filePath.length
-    i = @rootPathLength
-    while i < len
-      break unless filePath[i] == DIR_SEP
-      i++
+  relativize(filePath) {
+    const len = filePath.length;
+    let i = this.rootPathLength;
+    while (i < len) {
+      if (filePath[i] !== DIR_SEP) { break; }
+      i++;
+    }
 
-    filePath.slice(i)
+    return filePath.slice(i);
+  }
 
-  processFile: (filePath) ->
-    relPath = @relativize(filePath)
-    stat = @stat(filePath)
-    return unless stat
+  processFile(filePath) {
+    const relPath = this.relativize(filePath);
+    const stat = this.stat(filePath);
+    if (!stat) { return; }
 
-    if stat.isFile() and @pathFilter.isFileAccepted(relPath)
-      @emit('path-found', filePath)
-    else if stat.isDirectory() and @pathFilter.isDirectoryAccepted(relPath)
-      @readDir(filePath)
+    if (stat.isFile() && this.pathFilter.isFileAccepted(relPath)) {
+      return this.emit('path-found', filePath);
+    } else if (stat.isDirectory() && this.pathFilter.isDirectoryAccepted(relPath)) {
+      return this.readDir(filePath);
+    }
+  }
 
-  stat: (filePath) ->
-    # lstat is SLOW, but what other way to determine if something is a directory or file ?
-    # also, sync is about 200ms faster than async...
-    stat = fs.lstatSync(filePath)
+  stat(filePath) {
+    // lstat is SLOW, but what other way to determine if something is a directory or file ?
+    // also, sync is about 200ms faster than async...
+    let stat = fs.lstatSync(filePath);
 
-    if @options.follow and stat.isSymbolicLink()
-      if @isInternalSymlink(filePath)
-        return null
-      try
-        stat = fs.statSync(filePath)
-      catch e
-        return null
+    if (this.options.follow && stat.isSymbolicLink()) {
+      if (this.isInternalSymlink(filePath)) {
+        return null;
+      }
+      try {
+        stat = fs.statSync(filePath);
+      } catch (e) {
+        return null;
+      }
+    }
 
-    stat
+    return stat;
+  }
 
-  isInternalSymlink: (filePath) ->
-    realPath = null
-    try
-      realPath = fs.realpathSync(filePath, @realPathCache)
-    catch error
-      ; # ignore
-    realPath?.search(@rootPath) is 0
+  isInternalSymlink(filePath) {
+    let realPath = null;
+    try {
+      realPath = fs.realpathSync(filePath, this.realPathCache);
+    } catch (error) {}
+       // ignore
+    return (realPath != null ? realPath.search(this.rootPath) : undefined) === 0;
+  }
 
-  asyncCallStarting: ->
-    @asyncCallsInProgress++
+  asyncCallStarting() {
+    return this.asyncCallsInProgress++;
+  }
 
-  asyncCallDone: ->
-    if --@asyncCallsInProgress is 0
-      @emit('finished-scanning', this)
+  asyncCallDone() {
+    if (--this.asyncCallsInProgress === 0) {
+      return this.emit('finished-scanning', this);
+    }
+  }
+});

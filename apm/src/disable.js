@@ -1,83 +1,113 @@
-_ = require 'underscore-plus'
-path = require 'path'
-CSON = require 'season'
-yargs = require 'yargs'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Disable;
+const _ = require('underscore-plus');
+const path = require('path');
+const CSON = require('season');
+const yargs = require('yargs');
 
-config = require './apm'
-Command = require './command'
-List = require './list'
+const config = require('./apm');
+const Command = require('./command');
+const List = require('./list');
 
 module.exports =
-class Disable extends Command
-  @commandNames: ['disable']
+(Disable = (function() {
+  Disable = class Disable extends Command {
+    static initClass() {
+      this.commandNames = ['disable'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm disable [<package_name>]...
+Usage: apm disable [<package_name>]...
 
-      Disables the named package(s).
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
+Disables the named package(s).\
+`
+      );
+      return options.alias('h', 'help').describe('help', 'Print this usage message');
+    }
 
-  getInstalledPackages: (callback) ->
-    options =
-      argv:
-        theme: false
-        bare: true
+    getInstalledPackages(callback) {
+      const options = {
+        argv: {
+          theme: false,
+          bare: true
+        }
+      };
 
-    lister = new List()
-    lister.listBundledPackages options, (error, core_packages) ->
-      lister.listDevPackages options, (error, dev_packages) ->
-        lister.listUserPackages options, (error, user_packages) ->
-          callback(null, core_packages.concat(dev_packages, user_packages))
+      const lister = new List();
+      return lister.listBundledPackages(options, (error, core_packages) => lister.listDevPackages(options, (error, dev_packages) => lister.listUserPackages(options, (error, user_packages) => callback(null, core_packages.concat(dev_packages, user_packages)))));
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
+    run(options) {
+      let settings;
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
 
-    packageNames = @packageNamesFromArgv(options.argv)
+      let packageNames = this.packageNamesFromArgv(options.argv);
 
-    configFilePath = CSON.resolve(path.join(config.getAtomDirectory(), 'config'))
-    unless configFilePath
-      callback("Could not find config.cson. Run Atom first?")
-      return
+      const configFilePath = CSON.resolve(path.join(config.getAtomDirectory(), 'config'));
+      if (!configFilePath) {
+        callback("Could not find config.cson. Run Atom first?");
+        return;
+      }
 
-    try
-      settings = CSON.readFileSync(configFilePath)
-    catch error
-      callback "Failed to load `#{configFilePath}`: #{error.message}"
-      return
+      try {
+        settings = CSON.readFileSync(configFilePath);
+      } catch (error1) {
+        const error = error1;
+        callback(`Failed to load \`${configFilePath}\`: ${error.message}`);
+        return;
+      }
 
-    @getInstalledPackages (error, installedPackages) =>
-      return callback(error) if error
+      return this.getInstalledPackages((error, installedPackages) => {
+        let left;
+        if (error) { return callback(error); }
 
-      installedPackageNames = (pkg.name for pkg in installedPackages)
+        const installedPackageNames = (Array.from(installedPackages).map((pkg) => pkg.name));
 
-      # uninstalledPackages = (name for name in packageNames when !installedPackageNames[name])
-      uninstalledPackageNames = _.difference(packageNames, installedPackageNames)
-      if uninstalledPackageNames.length > 0
-        console.log "Not Installed:\n  #{uninstalledPackageNames.join('\n  ')}"
+        // uninstalledPackages = (name for name in packageNames when !installedPackageNames[name])
+        const uninstalledPackageNames = _.difference(packageNames, installedPackageNames);
+        if (uninstalledPackageNames.length > 0) {
+          console.log(`Not Installed:\n  ${uninstalledPackageNames.join('\n  ')}`);
+        }
 
-      # only installed packages can be disabled
-      packageNames = _.difference(packageNames, uninstalledPackageNames)
+        // only installed packages can be disabled
+        packageNames = _.difference(packageNames, uninstalledPackageNames);
 
-      if packageNames.length is 0
-        callback("Please specify a package to disable")
-        return
+        if (packageNames.length === 0) {
+          callback("Please specify a package to disable");
+          return;
+        }
 
-      keyPath = '*.core.disabledPackages'
-      disabledPackages = _.valueForKeyPath(settings, keyPath) ? []
-      result = _.union(disabledPackages, packageNames)
-      _.setValueForKeyPath(settings, keyPath, result)
+        const keyPath = '*.core.disabledPackages';
+        const disabledPackages = (left = _.valueForKeyPath(settings, keyPath)) != null ? left : [];
+        const result = _.union(disabledPackages, packageNames);
+        _.setValueForKeyPath(settings, keyPath, result);
 
-      try
-        CSON.writeFileSync(configFilePath, settings)
-      catch error
-        callback "Failed to save `#{configFilePath}`: #{error.message}"
-        return
+        try {
+          CSON.writeFileSync(configFilePath, settings);
+        } catch (error2) {
+          error = error2;
+          callback(`Failed to save \`${configFilePath}\`: ${error.message}`);
+          return;
+        }
 
-      console.log "Disabled:\n  #{packageNames.join('\n  ')}"
-      @logSuccess()
-      callback()
+        console.log(`Disabled:\n  ${packageNames.join('\n  ')}`);
+        this.logSuccess();
+        return callback();
+      });
+    }
+  };
+  Disable.initClass();
+  return Disable;
+})());

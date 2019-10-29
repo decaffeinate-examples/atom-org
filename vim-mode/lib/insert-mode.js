@@ -1,19 +1,32 @@
-copyCharacterFromAbove = (editor, vimState) ->
-  editor.transact ->
-    for cursor in editor.getCursors()
-      {row, column} = cursor.getScreenPosition()
-      continue if row is 0
-      range = [[row-1, column], [row-1, column+1]]
-      cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range)))
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const copyCharacterFromAbove = (editor, vimState) => editor.transact(() => (() => {
+  const result = [];
+  for (let cursor of Array.from(editor.getCursors())) {
+    const {row, column} = cursor.getScreenPosition();
+    if (row === 0) { continue; }
+    const range = [[row-1, column], [row-1, column+1]];
+    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))));
+  }
+  return result;
+})());
 
-copyCharacterFromBelow = (editor, vimState) ->
-  editor.transact ->
-    for cursor in editor.getCursors()
-      {row, column} = cursor.getScreenPosition()
-      range = [[row+1, column], [row+1, column+1]]
-      cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range)))
+const copyCharacterFromBelow = (editor, vimState) => editor.transact(() => (() => {
+  const result = [];
+  for (let cursor of Array.from(editor.getCursors())) {
+    const {row, column} = cursor.getScreenPosition();
+    const range = [[row+1, column], [row+1, column+1]];
+    result.push(cursor.selection.insertText(editor.getTextInBufferRange(editor.bufferRangeForScreenRange(range))));
+  }
+  return result;
+})());
 
 module.exports = {
   copyCharacterFromAbove,
   copyCharacterFromBelow
-}
+};

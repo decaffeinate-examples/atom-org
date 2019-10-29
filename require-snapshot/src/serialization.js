@@ -1,10 +1,13 @@
-bson = require 'bson'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const bson = require('bson');
 
-{BSON, Long, ObjectID, Binary, Code, DBRef, Symbol, Double, Timestamp, MaxKey, MinKey} = bson.pure()
-compiler = new BSON([Long, ObjectID, Binary, Code, DBRef, Symbol, Double, Timestamp, MaxKey, MinKey])
+const {BSON, Long, ObjectID, Binary, Code, DBRef, Symbol, Double, Timestamp, MaxKey, MinKey} = bson.pure();
+const compiler = new BSON([Long, ObjectID, Binary, Code, DBRef, Symbol, Double, Timestamp, MaxKey, MinKey]);
 
-exports.serialize = (obj) ->
-  compiler.serialize obj, false, true, false
+exports.serialize = obj => compiler.serialize(obj, false, true, false);
 
-exports.deserialize = (data) ->
-  compiler.deserialize data
+exports.deserialize = data => compiler.deserialize(data);

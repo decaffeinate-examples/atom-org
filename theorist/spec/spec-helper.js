@@ -1,5 +1,5 @@
-require 'coffee-cache'
-jasmine.getEnv().addEqualityTester(require('underscore-plus').isEqual)
+require('coffee-cache');
+jasmine.getEnv().addEqualityTester(require('underscore-plus').isEqual);
 
-Model = require '../src/model'
-beforeEach -> Model.resetNextInstanceId()
+const Model = require('../src/model');
+beforeEach(() => Model.resetNextInstanceId());

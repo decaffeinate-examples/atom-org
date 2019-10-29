@@ -1,193 +1,274 @@
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let List;
+const path = require('path');
 
-_ = require 'underscore-plus'
-CSON = require 'season'
-yargs = require 'yargs'
+const _ = require('underscore-plus');
+const CSON = require('season');
+const yargs = require('yargs');
 
-Command = require './command'
-fs = require './fs'
-config = require './apm'
-tree = require './tree'
-{getRepository} = require "./packages"
+const Command = require('./command');
+const fs = require('./fs');
+const config = require('./apm');
+const tree = require('./tree');
+const {getRepository} = require("./packages");
 
 module.exports =
-class List extends Command
-  @commandNames: ['list', 'ls']
+(List = (function() {
+  List = class List extends Command {
+    static initClass() {
+      this.commandNames = ['list', 'ls'];
+    }
 
-  constructor: ->
-    super()
-    @userPackagesDirectory = path.join(config.getAtomDirectory(), 'packages')
-    @devPackagesDirectory = path.join(config.getAtomDirectory(), 'dev', 'packages')
-    if configPath = CSON.resolve(path.join(config.getAtomDirectory(), 'config'))
-      try
-        @disabledPackages = CSON.readFileSync(configPath)?['*']?.core?.disabledPackages
-    @disabledPackages ?= []
+    constructor() {
+      let configPath;
+      super();
+      this.userPackagesDirectory = path.join(config.getAtomDirectory(), 'packages');
+      this.devPackagesDirectory = path.join(config.getAtomDirectory(), 'dev', 'packages');
+      if (configPath = CSON.resolve(path.join(config.getAtomDirectory(), 'config'))) {
+        try {
+          this.disabledPackages = __guard__(__guard__(__guard__(CSON.readFileSync(configPath), x2 => x2['*']), x1 => x1.core), x => x.disabledPackages);
+        } catch (error) {}
+      }
+      if (this.disabledPackages == null) { this.disabledPackages = []; }
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm list
-             apm list --themes
-             apm list --packages
-             apm list --installed
-             apm list --installed --enabled
-             apm list --installed --bare > my-packages.txt
-             apm list --json
+Usage: apm list
+       apm list --themes
+       apm list --packages
+       apm list --installed
+       apm list --installed --enabled
+       apm list --installed --bare > my-packages.txt
+       apm list --json
 
-      List all the installed packages and also the packages bundled with Atom.
-    """
-    options.alias('b', 'bare').boolean('bare').describe('bare', 'Print packages one per line with no formatting')
-    options.alias('e', 'enabled').boolean('enabled').describe('enabled', 'Print only enabled packages')
-    options.alias('d', 'dev').boolean('dev').default('dev', true).describe('dev', 'Include dev packages')
-    options.boolean('disabled').describe('disabled', 'Print only disabled packages')
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.alias('i', 'installed').boolean('installed').describe('installed', 'Only list installed packages/themes')
-    options.alias('j', 'json').boolean('json').describe('json', 'Output all packages as a JSON object')
-    options.alias('l', 'links').boolean('links').default('links', true).describe('links', 'Include linked packages')
-    options.alias('t', 'themes').boolean('themes').describe('themes', 'Only list themes')
-    options.alias('p', 'packages').boolean('packages').describe('packages', 'Only list packages')
+List all the installed packages and also the packages bundled with Atom.\
+`
+      );
+      options.alias('b', 'bare').boolean('bare').describe('bare', 'Print packages one per line with no formatting');
+      options.alias('e', 'enabled').boolean('enabled').describe('enabled', 'Print only enabled packages');
+      options.alias('d', 'dev').boolean('dev').default('dev', true).describe('dev', 'Include dev packages');
+      options.boolean('disabled').describe('disabled', 'Print only disabled packages');
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      options.alias('i', 'installed').boolean('installed').describe('installed', 'Only list installed packages/themes');
+      options.alias('j', 'json').boolean('json').describe('json', 'Output all packages as a JSON object');
+      options.alias('l', 'links').boolean('links').default('links', true).describe('links', 'Include linked packages');
+      options.alias('t', 'themes').boolean('themes').describe('themes', 'Only list themes');
+      return options.alias('p', 'packages').boolean('packages').describe('packages', 'Only list packages');
+    }
 
-  isPackageDisabled: (name) ->
-    @disabledPackages.indexOf(name) isnt -1
+    isPackageDisabled(name) {
+      return this.disabledPackages.indexOf(name) !== -1;
+    }
 
-  logPackages: (packages, options) ->
-    if options.argv.bare
-      for pack in packages
-        packageLine = pack.name
-        packageLine += "@#{pack.version}" if pack.version?
-        console.log packageLine
-    else
-      tree packages, (pack) =>
-        packageLine = pack.name
-        packageLine += "@#{pack.version}" if pack.version?
-        if pack.apmInstallSource?.type is 'git'
-          repo = getRepository(pack)
-          shaLine = "##{pack.apmInstallSource.sha.substr(0, 8)}"
-          shaLine = repo + shaLine if repo?
-          packageLine += " (#{shaLine})".grey
-        packageLine += ' (disabled)' if @isPackageDisabled(pack.name) and not options.argv.disabled
-        packageLine
-    console.log()
+    logPackages(packages, options) {
+      let packageLine;
+      if (options.argv.bare) {
+        for (let pack of Array.from(packages)) {
+          packageLine = pack.name;
+          if (pack.version != null) { packageLine += `@${pack.version}`; }
+          console.log(packageLine);
+        }
+      } else {
+        tree(packages, pack => {
+          packageLine = pack.name;
+          if (pack.version != null) { packageLine += `@${pack.version}`; }
+          if ((pack.apmInstallSource != null ? pack.apmInstallSource.type : undefined) === 'git') {
+            const repo = getRepository(pack);
+            let shaLine = `#${pack.apmInstallSource.sha.substr(0, 8)}`;
+            if (repo != null) { shaLine = repo + shaLine; }
+            packageLine += ` (${shaLine})`.grey;
+          }
+          if (this.isPackageDisabled(pack.name) && !options.argv.disabled) { packageLine += ' (disabled)'; }
+          return packageLine;
+        });
+      }
+      return console.log();
+    }
 
-  checkExclusiveOptions: (options, positive_option, negative_option, value) ->
-    if options.argv[positive_option]
-      value
-    else if options.argv[negative_option]
-      not value
-    else
-      true
+    checkExclusiveOptions(options, positive_option, negative_option, value) {
+      if (options.argv[positive_option]) {
+        return value;
+      } else if (options.argv[negative_option]) {
+        return !value;
+      } else {
+        return true;
+      }
+    }
 
-  isPackageVisible: (options, manifest) ->
-    @checkExclusiveOptions(options, 'themes', 'packages', manifest.theme) and
-    @checkExclusiveOptions(options, 'disabled', 'enabled', @isPackageDisabled(manifest.name))
+    isPackageVisible(options, manifest) {
+      return this.checkExclusiveOptions(options, 'themes', 'packages', manifest.theme) &&
+      this.checkExclusiveOptions(options, 'disabled', 'enabled', this.isPackageDisabled(manifest.name));
+    }
 
-  listPackages: (directoryPath, options) ->
-    packages = []
-    for child in fs.list(directoryPath)
-      continue unless fs.isDirectorySync(path.join(directoryPath, child))
-      continue if child.match /^\./
-      unless options.argv.links
-        continue if fs.isSymbolicLinkSync(path.join(directoryPath, child))
+    listPackages(directoryPath, options) {
+      const packages = [];
+      for (let child of Array.from(fs.list(directoryPath))) {
+        var manifestPath;
+        if (!fs.isDirectorySync(path.join(directoryPath, child))) { continue; }
+        if (child.match(/^\./)) { continue; }
+        if (!options.argv.links) {
+          if (fs.isSymbolicLinkSync(path.join(directoryPath, child))) { continue; }
+        }
 
-      manifest = null
-      if manifestPath = CSON.resolve(path.join(directoryPath, child, 'package'))
-        try
-          manifest = CSON.readFileSync(manifestPath)
-      manifest ?= {}
-      manifest.name = child
+        let manifest = null;
+        if (manifestPath = CSON.resolve(path.join(directoryPath, child, 'package'))) {
+          try {
+            manifest = CSON.readFileSync(manifestPath);
+          } catch (error) {}
+        }
+        if (manifest == null) { manifest = {}; }
+        manifest.name = child;
 
-      continue unless @isPackageVisible(options, manifest)
-      packages.push(manifest)
+        if (!this.isPackageVisible(options, manifest)) { continue; }
+        packages.push(manifest);
+      }
 
-    packages
+      return packages;
+    }
 
-  listUserPackages: (options, callback) ->
-    userPackages = @listPackages(@userPackagesDirectory, options)
-      .filter (pack) -> not pack.apmInstallSource
-    unless options.argv.bare or options.argv.json
-      console.log "Community Packages (#{userPackages.length})".cyan, "#{@userPackagesDirectory}"
-    callback?(null, userPackages)
+    listUserPackages(options, callback) {
+      const userPackages = this.listPackages(this.userPackagesDirectory, options)
+        .filter(pack => !pack.apmInstallSource);
+      if (!options.argv.bare && !options.argv.json) {
+        console.log(`Community Packages (${userPackages.length})`.cyan, `${this.userPackagesDirectory}`);
+      }
+      return (typeof callback === 'function' ? callback(null, userPackages) : undefined);
+    }
 
-  listDevPackages: (options, callback) ->
-    return callback?(null, []) unless options.argv.dev
+    listDevPackages(options, callback) {
+      if (!options.argv.dev) { return (typeof callback === 'function' ? callback(null, []) : undefined); }
 
-    devPackages = @listPackages(@devPackagesDirectory, options)
-    if devPackages.length > 0
-      unless options.argv.bare or options.argv.json
-        console.log "Dev Packages (#{devPackages.length})".cyan, "#{@devPackagesDirectory}"
-    callback?(null, devPackages)
+      const devPackages = this.listPackages(this.devPackagesDirectory, options);
+      if (devPackages.length > 0) {
+        if (!options.argv.bare && !options.argv.json) {
+          console.log(`Dev Packages (${devPackages.length})`.cyan, `${this.devPackagesDirectory}`);
+        }
+      }
+      return (typeof callback === 'function' ? callback(null, devPackages) : undefined);
+    }
 
-  listGitPackages: (options, callback) ->
-    gitPackages = @listPackages(@userPackagesDirectory, options)
-      .filter (pack) -> pack.apmInstallSource?.type is 'git'
-    if gitPackages.length > 0
-      unless options.argv.bare or options.argv.json
-        console.log "Git Packages (#{gitPackages.length})".cyan, "#{@userPackagesDirectory}"
-    callback?(null, gitPackages)
+    listGitPackages(options, callback) {
+      const gitPackages = this.listPackages(this.userPackagesDirectory, options)
+        .filter(pack => (pack.apmInstallSource != null ? pack.apmInstallSource.type : undefined) === 'git');
+      if (gitPackages.length > 0) {
+        if (!options.argv.bare && !options.argv.json) {
+          console.log(`Git Packages (${gitPackages.length})`.cyan, `${this.userPackagesDirectory}`);
+        }
+      }
+      return (typeof callback === 'function' ? callback(null, gitPackages) : undefined);
+    }
 
-  listBundledPackages: (options, callback) ->
-    config.getResourcePath (resourcePath) =>
-      try
-        metadataPath = path.join(resourcePath, 'package.json')
-        {_atomPackages} = JSON.parse(fs.readFileSync(metadataPath))
-      _atomPackages ?= {}
-      packages = (metadata for packageName, {metadata} of _atomPackages)
+    listBundledPackages(options, callback) {
+      return config.getResourcePath(resourcePath => {
+        let _atomPackages;
+        let metadata;
+        try {
+          const metadataPath = path.join(resourcePath, 'package.json');
+          ({_atomPackages} = JSON.parse(fs.readFileSync(metadataPath)));
+        } catch (error) {}
+        if (_atomPackages == null) { _atomPackages = {}; }
+        let packages = ((() => {
+          const result = [];
+          for (let packageName in _atomPackages) {
+            ({metadata} = _atomPackages[packageName]);
+            result.push(metadata);
+          }
+          return result;
+        })());
 
-      packages = packages.filter (metadata) =>
-        @isPackageVisible(options, metadata)
+        packages = packages.filter(metadata => {
+          return this.isPackageVisible(options, metadata);
+        });
 
-      unless options.argv.bare or options.argv.json
-        if options.argv.themes
-          console.log "#{'Built-in Atom Themes'.cyan} (#{packages.length})"
-        else
-          console.log "#{'Built-in Atom Packages'.cyan} (#{packages.length})"
+        if (!options.argv.bare && !options.argv.json) {
+          if (options.argv.themes) {
+            console.log(`${'Built-in Atom Themes'.cyan} (${packages.length})`);
+          } else {
+            console.log(`${'Built-in Atom Packages'.cyan} (${packages.length})`);
+          }
+        }
 
-      callback?(null, packages)
+        return (typeof callback === 'function' ? callback(null, packages) : undefined);
+      });
+    }
 
-  listInstalledPackages: (options) ->
-    @listDevPackages options, (error, packages) =>
-      @logPackages(packages, options) if packages.length > 0
+    listInstalledPackages(options) {
+      return this.listDevPackages(options, (error, packages) => {
+        if (packages.length > 0) { this.logPackages(packages, options); }
 
-      @listUserPackages options, (error, packages) =>
-        @logPackages(packages, options)
+        return this.listUserPackages(options, (error, packages) => {
+          this.logPackages(packages, options);
 
-        @listGitPackages options, (error, packages) =>
-          @logPackages(packages, options) if packages.length > 0
+          return this.listGitPackages(options, (error, packages) => {
+            if (packages.length > 0) { return this.logPackages(packages, options); }
+          });
+        });
+      });
+    }
 
-  listPackagesAsJson: (options, callback = ->) ->
-    output =
-      core: []
-      dev: []
-      git: []
-      user: []
+    listPackagesAsJson(options, callback) {
+      if (callback == null) { callback = function() {}; }
+      const output = {
+        core: [],
+        dev: [],
+        git: [],
+        user: []
+      };
 
-    @listBundledPackages options, (error, packages) =>
-      return callback(error) if error
-      output.core = packages
-      @listDevPackages options, (error, packages) =>
-        return callback(error) if error
-        output.dev = packages
-        @listUserPackages options, (error, packages) =>
-          return callback(error) if error
-          output.user = packages
-          @listGitPackages options, (error, packages) ->
-            return callback(error) if error
-            output.git = packages
-            console.log JSON.stringify(output)
-            callback()
+      return this.listBundledPackages(options, (error, packages) => {
+        if (error) { return callback(error); }
+        output.core = packages;
+        return this.listDevPackages(options, (error, packages) => {
+          if (error) { return callback(error); }
+          output.dev = packages;
+          return this.listUserPackages(options, (error, packages) => {
+            if (error) { return callback(error); }
+            output.user = packages;
+            return this.listGitPackages(options, function(error, packages) {
+              if (error) { return callback(error); }
+              output.git = packages;
+              console.log(JSON.stringify(output));
+              return callback();
+            });
+          });
+        });
+      });
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
+    run(options) {
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
 
-    if options.argv.json
-      @listPackagesAsJson(options, callback)
-    else if options.argv.installed
-      @listInstalledPackages(options)
-      callback()
-    else
-      @listBundledPackages options, (error, packages) =>
-        @logPackages(packages, options)
-        @listInstalledPackages(options)
-        callback()
+      if (options.argv.json) {
+        return this.listPackagesAsJson(options, callback);
+      } else if (options.argv.installed) {
+        this.listInstalledPackages(options);
+        return callback();
+      } else {
+        return this.listBundledPackages(options, (error, packages) => {
+          this.logPackages(packages, options);
+          this.listInstalledPackages(options);
+          return callback();
+        });
+      }
+    }
+  };
+  List.initClass();
+  return List;
+})());
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

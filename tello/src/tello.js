@@ -1,2 +1,2 @@
-{digest} = require './digester'
-module.exports = {digest}
+const {digest} = require('./digester');
+module.exports = {digest};

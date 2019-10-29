@@ -1,19 +1,32 @@
-fs = require 'fs'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let HTMLRequire;
+const fs = require('fs');
 
-# Public:
+// Public:
 module.exports =
-class HTMLRequire
-  @register: ->
-    require.extensions['.html'] ?= (module, filePath) ->
-      html = fs.readFileSync(filePath, 'utf8')
-      template = document.createElement('template')
-      template.innerHTML = html
-      docFragment = template.content
-      module.exports = new HTMLRequire(template.content)
+(HTMLRequire = class HTMLRequire {
+  static register() {
+    return require.extensions['.html'] != null ? require.extensions['.html'] : (require.extensions['.html'] = function(module, filePath) {
+      const html = fs.readFileSync(filePath, 'utf8');
+      const template = document.createElement('template');
+      template.innerHTML = html;
+      const docFragment = template.content;
+      return module.exports = new HTMLRequire(template.content);
+    });
+  }
 
-  constructor: (@documentFragment) ->
+  constructor(documentFragment) {
+    this.documentFragment = documentFragment;
+  }
 
-  getDocumentFragment: -> @documentFragment
+  getDocumentFragment() { return this.documentFragment; }
 
-  clone: ->
-    @documentFragment.cloneNode(true)
+  clone() {
+    return this.documentFragment.cloneNode(true);
+  }
+});

@@ -1,106 +1,153 @@
-_ = require 'underscore-plus'
-yargs = require 'yargs'
-semver = require 'semver'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let View;
+const _ = require('underscore-plus');
+const yargs = require('yargs');
+const semver = require('semver');
 
-Command = require './command'
-config = require './apm'
-request = require './request'
-tree = require './tree'
+const Command = require('./command');
+const config = require('./apm');
+const request = require('./request');
+const tree = require('./tree');
 
 module.exports =
-class View extends Command
-  @commandNames: ['view', 'show']
+(View = (function() {
+  View = class View extends Command {
+    static initClass() {
+      this.commandNames = ['view', 'show'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm view <package_name>
+Usage: apm view <package_name>
 
-      View information about a package/theme in the atom.io registry.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.boolean('json').describe('json', 'Output featured packages as JSON array')
-    options.string('compatible').describe('compatible', 'Show the latest version compatible with this Atom version')
+View information about a package/theme in the atom.io registry.\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      options.boolean('json').describe('json', 'Output featured packages as JSON array');
+      return options.string('compatible').describe('compatible', 'Show the latest version compatible with this Atom version');
+    }
 
-  loadInstalledAtomVersion: (options, callback) ->
-    process.nextTick =>
-      if options.argv.compatible
-        version = @normalizeVersion(options.argv.compatible)
-        installedAtomVersion = version if semver.valid(version)
-      callback(installedAtomVersion)
+    loadInstalledAtomVersion(options, callback) {
+      return process.nextTick(() => {
+        let installedAtomVersion;
+        if (options.argv.compatible) {
+          const version = this.normalizeVersion(options.argv.compatible);
+          if (semver.valid(version)) { installedAtomVersion = version; }
+        }
+        return callback(installedAtomVersion);
+      });
+    }
 
-  getLatestCompatibleVersion: (pack, options, callback) ->
-    @loadInstalledAtomVersion options, (installedAtomVersion) ->
-      return callback(pack.releases.latest) unless installedAtomVersion
+    getLatestCompatibleVersion(pack, options, callback) {
+      return this.loadInstalledAtomVersion(options, function(installedAtomVersion) {
+        if (!installedAtomVersion) { return callback(pack.releases.latest); }
 
-      latestVersion = null
-      for version, metadata of pack.versions ? {}
-        continue unless semver.valid(version)
-        continue unless metadata
+        let latestVersion = null;
+        const object = pack.versions != null ? pack.versions : {};
+        for (let version in object) {
+          const metadata = object[version];
+          if (!semver.valid(version)) { continue; }
+          if (!metadata) { continue; }
 
-        engine = metadata.engines?.atom ? '*'
-        continue unless semver.validRange(engine)
-        continue unless semver.satisfies(installedAtomVersion, engine)
+          const engine = (metadata.engines != null ? metadata.engines.atom : undefined) != null ? (metadata.engines != null ? metadata.engines.atom : undefined) : '*';
+          if (!semver.validRange(engine)) { continue; }
+          if (!semver.satisfies(installedAtomVersion, engine)) { continue; }
 
-        latestVersion ?= version
-        latestVersion = version if semver.gt(version, latestVersion)
+          if (latestVersion == null) { latestVersion = version; }
+          if (semver.gt(version, latestVersion)) { latestVersion = version; }
+        }
 
-      callback(latestVersion)
+        return callback(latestVersion);
+      });
+    }
 
-  getRepository: (pack) ->
-    if repository = pack.repository?.url ? pack.repository
-      repository.replace(/\.git$/, '')
+    getRepository(pack) {
+      let repository;
+      if (repository = (pack.repository != null ? pack.repository.url : undefined) != null ? (pack.repository != null ? pack.repository.url : undefined) : pack.repository) {
+        return repository.replace(/\.git$/, '');
+      }
+    }
 
-  getPackage: (packageName, options, callback) ->
-    requestSettings =
-      url: "#{config.getAtomPackagesUrl()}/#{packageName}"
-      json: true
-    request.get requestSettings, (error, response, body={}) =>
-      if error?
-        callback(error)
-      else if response.statusCode is 200
-        @getLatestCompatibleVersion body, options, (version) ->
-          {name, readme, downloads, stargazers_count} = body
-          metadata = body.versions?[version] ? {name}
-          pack = _.extend({}, metadata, {readme, downloads, stargazers_count})
-          callback(null, pack)
-      else
-        message = body.message ? body.error ? body
-        callback("Requesting package failed: #{message}")
+    getPackage(packageName, options, callback) {
+      const requestSettings = {
+        url: `${config.getAtomPackagesUrl()}/${packageName}`,
+        json: true
+      };
+      return request.get(requestSettings, (error, response, body) => {
+        if (body == null) { body = {}; }
+        if (error != null) {
+          return callback(error);
+        } else if (response.statusCode === 200) {
+          return this.getLatestCompatibleVersion(body, options, function(version) {
+            const {name, readme, downloads, stargazers_count} = body;
+            const metadata = (body.versions != null ? body.versions[version] : undefined) != null ? (body.versions != null ? body.versions[version] : undefined) : {name};
+            const pack = _.extend({}, metadata, {readme, downloads, stargazers_count});
+            return callback(null, pack);
+          });
+        } else {
+          let left;
+          const message = (left = body.message != null ? body.message : body.error) != null ? left : body;
+          return callback(`Requesting package failed: ${message}`);
+        }
+      });
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
-    [packageName] = options.argv._
+    run(options) {
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
+      const [packageName] = Array.from(options.argv._);
 
-    unless packageName
-      callback("Missing required package name")
-      return
+      if (!packageName) {
+        callback("Missing required package name");
+        return;
+      }
 
-    @getPackage packageName, options, (error, pack) =>
-      if error?
-        callback(error)
-        return
+      return this.getPackage(packageName, options, (error, pack) => {
+        if (error != null) {
+          callback(error);
+          return;
+        }
 
-      if options.argv.json
-        console.log(JSON.stringify(pack, null, 2))
-      else
-        console.log "#{pack.name.cyan}"
-        items = []
-        items.push(pack.version.yellow) if pack.version
-        if repository = @getRepository(pack)
-          items.push(repository.underline)
-        items.push(pack.description.replace(/\s+/g, ' ')) if pack.description
-        if pack.downloads >= 0
-          items.push(_.pluralize(pack.downloads, 'download'))
-        if pack.stargazers_count >= 0
-          items.push(_.pluralize(pack.stargazers_count, 'star'))
+        if (options.argv.json) {
+          console.log(JSON.stringify(pack, null, 2));
+        } else {
+          let repository;
+          console.log(`${pack.name.cyan}`);
+          const items = [];
+          if (pack.version) { items.push(pack.version.yellow); }
+          if (repository = this.getRepository(pack)) {
+            items.push(repository.underline);
+          }
+          if (pack.description) { items.push(pack.description.replace(/\s+/g, ' ')); }
+          if (pack.downloads >= 0) {
+            items.push(_.pluralize(pack.downloads, 'download'));
+          }
+          if (pack.stargazers_count >= 0) {
+            items.push(_.pluralize(pack.stargazers_count, 'star'));
+          }
 
-        tree(items)
+          tree(items);
 
-        console.log()
-        console.log "Run `apm install #{pack.name}` to install this package."
-        console.log()
+          console.log();
+          console.log(`Run \`apm install ${pack.name}\` to install this package.`);
+          console.log();
+        }
 
-      callback()
+        return callback();
+      });
+    }
+  };
+  View.initClass();
+  return View;
+})());

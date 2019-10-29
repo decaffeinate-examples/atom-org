@@ -1,30 +1,48 @@
-{CompositeDisposable} = require 'event-kit'
-{SemVer} = require 'semver'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Provider;
+const {CompositeDisposable} = require('event-kit');
+const {SemVer} = require('semver');
 
-{getValueAtKeyPath, setValueAtKeyPath} = require './helpers'
+const {getValueAtKeyPath, setValueAtKeyPath} = require('./helpers');
 
 module.exports =
-class Provider
-  constructor: (keyPath, servicesByVersion) ->
-    @consumersDisposable = new CompositeDisposable
-    @servicesByVersion = {}
-    @versions = []
-    for version, service of servicesByVersion
-      @servicesByVersion[version] = {}
-      @versions.push(new SemVer(version))
-      setValueAtKeyPath(@servicesByVersion[version], keyPath, service)
+(Provider = class Provider {
+  constructor(keyPath, servicesByVersion) {
+    this.consumersDisposable = new CompositeDisposable;
+    this.servicesByVersion = {};
+    this.versions = [];
+    for (let version in servicesByVersion) {
+      const service = servicesByVersion[version];
+      this.servicesByVersion[version] = {};
+      this.versions.push(new SemVer(version));
+      setValueAtKeyPath(this.servicesByVersion[version], keyPath, service);
+    }
 
-    @versions.sort((a, b) -> b.compare(a))
+    this.versions.sort((a, b) => b.compare(a));
+  }
 
-  provide: (consumer) ->
-    for version in @versions
-      if consumer.versionRange.test(version)
-        if value = getValueAtKeyPath(@servicesByVersion[version.toString()], consumer.keyPath)
-          consumerDisposable = consumer.callback.call(null, value)
-          if typeof consumerDisposable?.dispose is 'function'
-            @consumersDisposable.add(consumerDisposable)
-          return
-    return
+  provide(consumer) {
+    for (let version of Array.from(this.versions)) {
+      if (consumer.versionRange.test(version)) {
+        var value;
+        if (value = getValueAtKeyPath(this.servicesByVersion[version.toString()], consumer.keyPath)) {
+          const consumerDisposable = consumer.callback.call(null, value);
+          if (typeof (consumerDisposable != null ? consumerDisposable.dispose : undefined) === 'function') {
+            this.consumersDisposable.add(consumerDisposable);
+          }
+          return;
+        }
+      }
+    }
+  }
 
-  destroy: ->
-    @consumersDisposable.dispose()
+  destroy() {
+    return this.consumersDisposable.dispose();
+  }
+});

@@ -1,18 +1,24 @@
-fs = require 'fs'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const path = require('path');
 
-{filter, match} = require '../src/fuzzaldrin'
+const {filter, match} = require('../src/fuzzaldrin');
 
-lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
+const lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n');
 
-startTime = Date.now()
-results = filter(lines, 'index')
-console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
+let startTime = Date.now();
+const results = filter(lines, 'index');
+console.log(`Filtering ${lines.length} entries for 'index' took ${Date.now() - startTime}ms for ${results.length} results`);
 
-startTime = Date.now()
-match(line, 'index') for line in lines
-console.log("Matching #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
+startTime = Date.now();
+for (let line of Array.from(lines)) { match(line, 'index'); }
+console.log(`Matching ${lines.length} entries for 'index' took ${Date.now() - startTime}ms for ${results.length} results`);
 
-if results.length isnt 6168
-  console.error("Results count changed! #{results.length} instead of 6168")
-  process.exit(1)
+if (results.length !== 6168) {
+  console.error(`Results count changed! ${results.length} instead of 6168`);
+  process.exit(1);
+}

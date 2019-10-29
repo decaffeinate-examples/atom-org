@@ -1,96 +1,137 @@
-fs = require 'fs'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const path = require('path');
 
-CLASSES = require('../completions.json')
+const CLASSES = require('../completions.json');
 
-propertyPrefixPattern = /(?:^|\[|\(|,|=|:|\s)\s*(atom\.(?:[a-zA-Z]+\.?){0,2})$/
+const propertyPrefixPattern = /(?:^|\[|\(|,|=|:|\s)\s*(atom\.(?:[a-zA-Z]+\.?){0,2})$/;
 
-module.exports =
-  selector: '.source.coffee, .source.js'
-  filterSuggestions: true
+module.exports = {
+  selector: '.source.coffee, .source.js',
+  filterSuggestions: true,
 
-  getSuggestions: ({bufferPosition, editor}) ->
-    return unless @isEditingAnAtomPackageFile(editor)
-    line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
-    @getCompletions(line)
+  getSuggestions({bufferPosition, editor}) {
+    if (!this.isEditingAnAtomPackageFile(editor)) { return; }
+    const line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition]);
+    return this.getCompletions(line);
+  },
 
-  load: ->
-    @loadCompletions()
-    atom.project.onDidChangePaths => @scanProjectDirectories()
-    @scanProjectDirectories()
+  load() {
+    this.loadCompletions();
+    atom.project.onDidChangePaths(() => this.scanProjectDirectories());
+    return this.scanProjectDirectories();
+  },
 
-  scanProjectDirectories: ->
-    @packageDirectories = []
-    atom.project.getDirectories().forEach (directory) =>
-      return unless directory?
-      @readMetadata directory, (error, metadata) =>
-        if @isAtomPackage(metadata) or @isAtomCore(metadata)
-          @packageDirectories.push(directory)
+  scanProjectDirectories() {
+    this.packageDirectories = [];
+    return atom.project.getDirectories().forEach(directory => {
+      if (directory == null) { return; }
+      return this.readMetadata(directory, (error, metadata) => {
+        if (this.isAtomPackage(metadata) || this.isAtomCore(metadata)) {
+          return this.packageDirectories.push(directory);
+        }
+      });
+    });
+  },
 
-  readMetadata: (directory, callback) ->
-    fs.readFile path.join(directory.getPath(), 'package.json'), (error, contents) ->
-      unless error?
-        try
-          metadata = JSON.parse(contents)
-        catch parseError
-          error = parseError
-      callback(error, metadata)
+  readMetadata(directory, callback) {
+    return fs.readFile(path.join(directory.getPath(), 'package.json'), function(error, contents) {
+      let metadata;
+      if (error == null) {
+        try {
+          metadata = JSON.parse(contents);
+        } catch (parseError) {
+          error = parseError;
+        }
+      }
+      return callback(error, metadata);
+    });
+  },
 
-  isAtomPackage: (metadata) ->
-    metadata?.engines?.atom?.length > 0
+  isAtomPackage(metadata) {
+    return __guard__(__guard__(metadata != null ? metadata.engines : undefined, x1 => x1.atom), x => x.length) > 0;
+  },
 
-  isAtomCore: (metadata) ->
-    metadata?.name is 'atom'
+  isAtomCore(metadata) {
+    return (metadata != null ? metadata.name : undefined) === 'atom';
+  },
 
-  isEditingAnAtomPackageFile: (editor) ->
-    editorPath = editor.getPath()
-    if editorPath?
-      parsedPath = path.parse(editorPath)
-      if path.basename(parsedPath.dir) is '.atom'
-        if parsedPath.base is 'init.coffee' or parsedPath.base is 'init.js'
-          return true
-    for directory in @packageDirectories ? []
-      return true if directory.contains(editorPath)
-    false
+  isEditingAnAtomPackageFile(editor) {
+    const editorPath = editor.getPath();
+    if (editorPath != null) {
+      const parsedPath = path.parse(editorPath);
+      if (path.basename(parsedPath.dir) === '.atom') {
+        if ((parsedPath.base === 'init.coffee') || (parsedPath.base === 'init.js')) {
+          return true;
+        }
+      }
+    }
+    for (let directory of Array.from(this.packageDirectories != null ? this.packageDirectories : [])) {
+      if (directory.contains(editorPath)) { return true; }
+    }
+    return false;
+  },
 
-  loadCompletions: ->
-    @completions ?= {}
-    @loadProperty('atom', 'AtomEnvironment', CLASSES)
+  loadCompletions() {
+    if (this.completions == null) { this.completions = {}; }
+    return this.loadProperty('atom', 'AtomEnvironment', CLASSES);
+  },
 
-  getCompletions: (line) ->
-    completions = []
-    match =  propertyPrefixPattern.exec(line)?[1]
-    return completions unless match
+  getCompletions(line) {
+    let left;
+    const completions = [];
+    const match =  __guard__(propertyPrefixPattern.exec(line), x => x[1]);
+    if (!match) { return completions; }
 
-    segments = match.split('.')
-    prefix = segments.pop() ? ''
-    segments = segments.filter (segment) -> segment
-    property = segments[segments.length - 1]
-    propertyCompletions = @completions[property]?.completions ? []
-    for completion in propertyCompletions when not prefix or firstCharsEqual(completion.name, prefix)
-      completions.push(clone(completion))
-    completions
+    let segments = match.split('.');
+    const prefix = (left = segments.pop()) != null ? left : '';
+    segments = segments.filter(segment => segment);
+    const property = segments[segments.length - 1];
+    const propertyCompletions = (this.completions[property] != null ? this.completions[property].completions : undefined) != null ? (this.completions[property] != null ? this.completions[property].completions : undefined) : [];
+    for (let completion of Array.from(propertyCompletions)) {
+      if (!prefix || firstCharsEqual(completion.name, prefix)) {
+        completions.push(clone(completion));
+      }
+    }
+    return completions;
+  },
 
-  getPropertyClass: (name) ->
-    atom[name]?.constructor?.name
+  getPropertyClass(name) {
+    return __guard__(atom[name] != null ? atom[name].constructor : undefined, x => x.name);
+  },
 
-  loadProperty: (propertyName, className, classes, parent) ->
-    classCompletions = classes[className]
-    return unless classCompletions?
+  loadProperty(propertyName, className, classes, parent) {
+    const classCompletions = classes[className];
+    if (classCompletions == null) { return; }
 
-    @completions[propertyName] = completions: []
+    this.completions[propertyName] = {completions: []};
 
-    for completion in classCompletions
-      @completions[propertyName].completions.push(completion)
-      if completion.type is 'property'
-        propertyClass = @getPropertyClass(completion.name)
-        @loadProperty(completion.name, propertyClass, classes)
-    return
+    for (let completion of Array.from(classCompletions)) {
+      this.completions[propertyName].completions.push(completion);
+      if (completion.type === 'property') {
+        const propertyClass = this.getPropertyClass(completion.name);
+        this.loadProperty(completion.name, propertyClass, classes);
+      }
+    }
+  }
+};
 
-clone = (obj) ->
-  newObj = {}
-  newObj[k] = v for k, v of obj
-  newObj
+var clone = function(obj) {
+  const newObj = {};
+  for (let k in obj) { const v = obj[k]; newObj[k] = v; }
+  return newObj;
+};
 
-firstCharsEqual = (str1, str2) ->
-  str1[0].toLowerCase() is str2[0].toLowerCase()
+var firstCharsEqual = (str1, str2) => str1[0].toLowerCase() === str2[0].toLowerCase();
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

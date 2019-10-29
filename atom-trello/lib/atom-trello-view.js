@@ -1,198 +1,252 @@
-{SelectListView} = require 'atom-space-pen-views'
-{$} = require 'space-pen'
-Shell = require 'shell',
-Entities = require('html-entities').AllHtmlEntities;
-Marked = require('marked');
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let AtomTrelloView, Entities;
+const {SelectListView} = require('atom-space-pen-views');
+const {$} = require('space-pen');
+const Shell = require('shell',
+(Entities = require('html-entities').AllHtmlEntities));
+const Marked = require('marked');
 
 module.exports =
 
-class AtomTrelloView extends SelectListView
-  api: null
-  elem: null
-  backBtn: null
-  activeBoards: null
-  activeLanes: null
-  currentView: 'boards'
-  user: null
-  avatarUrl: "https://trello-avatars.s3.amazonaws.com/"
-  entities: new Entities()
+(AtomTrelloView = (function() {
+  AtomTrelloView = class AtomTrelloView extends SelectListView {
+    static initClass() {
+      this.prototype.api = null;
+      this.prototype.elem = null;
+      this.prototype.backBtn = null;
+      this.prototype.activeBoards = null;
+      this.prototype.activeLanes = null;
+      this.prototype.currentView = 'boards';
+      this.prototype.user = null;
+      this.prototype.avatarUrl = "https://trello-avatars.s3.amazonaws.com/";
+      this.prototype.entities = new Entities();
+    }
 
-  initialize: () ->
-    super
-    @getFilterKey = () ->
-      return 'name'
+    initialize() {
+      super.initialize(...arguments);
+      this.getFilterKey = () => 'name';
 
-    @addClass('atom-trello overlay from-top')
-    @panel ?= atom.workspace.addModalPanel(item: this)
-    @elem = $(@panel.item.element)
-    @setButtons()
+      this.addClass('atom-trello overlay from-top');
+      if (this.panel == null) { this.panel = atom.workspace.addModalPanel({item: this}); }
+      this.elem = $(this.panel.item.element);
+      this.setButtons();
 
-    Marked.setOptions({
-      sanitize: true
-    })
-
-
-  setApi: (api) ->
-    @api = api
-
-  setUser: (user) ->
-    @user = user
-
-  encode: (str) ->
-    str = str.replace()
-  viewForItem: (item) ->
-    switch @currentView
-      when 'cards' then @cardsView(item)
-      else @defaultView(item)
-
-  defaultView: (item) ->
-    "<li>#{item.name}</li>"
-
-  itemDescription: (description) ->
-    if description and @showDesc
-      return "<div class='secondary-line'>#{Marked(description)}</div>"
-
-  cardsView: (item) ->
-    avatars = () =>
-      avatarString = ""
-      item.members.map (obj) =>
-        if obj.avatarHash
-          avatarString += "<img class='at-avatar' src='#{@getAvatar obj.avatarHash}'/>"
-        else
-          avatarString += "<span class='at-avatar no-img'>#{obj.initials}</span>"
-      return avatarString
-
-    if @filterMyCards and @user.id not in item.idMembers
-      return false
+      return Marked.setOptions({
+        sanitize: true
+      });
+    }
 
 
-    "<li class='two-lines'>
-        <div class='primary-line'>
-          <div class='at-title'>#{@entities.encode(item.name)}</div>
-          <div class='at-avatars'>#{avatars()}</div>
-        </div>
-        #{@itemDescription(item.desc)}
-    </li>"
+    setApi(api) {
+      return this.api = api;
+    }
 
-  showView: (items, showBackBtn = true) ->
-    @setItems(items)
-    @focusFilterEditor()
-    if showBackBtn then @backBtn.show() else @backBtn.hide()
+    setUser(user) {
+      return this.user = user;
+    }
 
-  loadBoards: () ->
-    @currentView = 'boards'
-    @activeLanes = null
-    @panel.show()
-    @backBtn.hide()
-    @setLoading "Your Boards are Loading!"
+    encode(str) {
+      return str = str.replace();
+    }
+    viewForItem(item) {
+      switch (this.currentView) {
+        case 'cards': return this.cardsView(item);
+        default: return this.defaultView(item);
+      }
+    }
 
-    @confirmed = (board) =>
-      @cancel()
-      @loadLanes(board)
+    defaultView(item) {
+      return `<li>${item.name}</li>`;
+    }
 
-    if @activeBoards
-      @showView @activeBoards, false
-      return
+    itemDescription(description) {
+      if (description && this.showDesc) {
+        return `<div class='secondary-line'>${Marked(description)}</div>`;
+      }
+    }
 
-    @api.get '/1/members/me/boards', { filter: "open" }, (err, data) =>
-      @activeBoards = data;
-      @showView @activeBoards, false
+    cardsView(item) {
+      const avatars = () => {
+        let avatarString = "";
+        item.members.map(obj => {
+          if (obj.avatarHash) {
+            return avatarString += `<img class='at-avatar' src='${this.getAvatar(obj.avatarHash)}'/>`;
+          } else {
+            return avatarString += `<span class='at-avatar no-img'>${obj.initials}</span>`;
+          }
+        });
+        return avatarString;
+      };
 
-  loadLanes: (board) ->
-    @currentView = 'lanes'
-    @panel.show()
-    @backBtn.hide()
-    @setLoading "Your Lanes are Loading!"
+      if (this.filterMyCards && !Array.from(item.idMembers).includes(this.user.id)) {
+        return false;
+      }
 
-    @confirmed = (lane) =>
-      @cancel()
-      @loadCards(lane)
 
-    if @activeLanes
-      @showView(@activeLanes)
-      @backBtn.show()
-      return
+      return `<li class='two-lines'> \
+<div class='primary-line'> \
+<div class='at-title'>${this.entities.encode(item.name)}</div> \
+<div class='at-avatars'>${avatars()}</div> \
+</div> \
+${this.itemDescription(item.desc)} \
+</li>`;
+    }
 
-    @api.get "/1/boards/" + board.id + '/lists', {cards: "open"} ,(err, data) =>
-      @activeLanes = data
-      @activeCards = null
-      @showView(@activeLanes)
+    showView(items, showBackBtn) {
+      if (showBackBtn == null) { showBackBtn = true; }
+      this.setItems(items);
+      this.focusFilterEditor();
+      if (showBackBtn) { return this.backBtn.show(); } else { return this.backBtn.hide(); }
+    }
 
-  loadCards: (lane) ->
-    @currentView = 'cards'
-    @panel.show()
-    @backBtn.hide()
-    @setLoading "Your Cards are Loading!"
+    loadBoards() {
+      this.currentView = 'boards';
+      this.activeLanes = null;
+      this.panel.show();
+      this.backBtn.hide();
+      this.setLoading("Your Boards are Loading!");
 
-    @confirmed = (card) =>
-      Shell.openExternal(card.url)
+      this.confirmed = board => {
+        this.cancel();
+        return this.loadLanes(board);
+      };
 
-    user = @user
+      if (this.activeBoards) {
+        this.showView(this.activeBoards, false);
+        return;
+      }
 
-    @api.get "/1/lists/#{lane.id}/cards", { filter: "open", members: true }, (err, data) =>
-      activeCards = data
+      return this.api.get('/1/members/me/boards', { filter: "open" }, (err, data) => {
+        this.activeBoards = data;
+        return this.showView(this.activeBoards, false);
+      });
+    }
 
-      @showView(activeCards)
+    loadLanes(board) {
+      this.currentView = 'lanes';
+      this.panel.show();
+      this.backBtn.hide();
+      this.setLoading("Your Lanes are Loading!");
 
-  cardActions: (card) ->
-    @currentView = 'card'
-    @panel.show()
-    @setLoading "Loading Card"
-    @api.get "/1/cards/" + card.id, (err, data) =>
-      console.log data
+      this.confirmed = lane => {
+        this.cancel();
+        return this.loadCards(lane);
+      };
 
-  setButtons: () ->
-    @backBtn = $("<div id='back_btn' class='block'><button class='btn icon icon-arrow-left inline-block-tight'>Back</button></div>")
-    @backBtn
-      .appendTo(@elem)
-      .hide()
-      .on 'mousedown', (e) =>
-        e.preventDefault()
-        e.stopPropagation()
-        @cancel()
-        switch @currentView
-          when 'card' then @loadCards()
-          when 'cards' then @loadLanes()
-          when 'lanes' then @loadBoards()
-          else @loadBoards()
+      if (this.activeLanes) {
+        this.showView(this.activeLanes);
+        this.backBtn.show();
+        return;
+      }
 
-    @cardOptions = $('<div class="settings-view at-filter"></div>');
+      return this.api.get("/1/boards/" + board.id + '/lists', {cards: "open"} ,(err, data) => {
+        this.activeLanes = data;
+        this.activeCards = null;
+        return this.showView(this.activeLanes);
+      });
+    }
 
-    @cardFilter = $('<div class="checkbox"><input id="atomTrello_cardFilter" type="checkbox"><div class="setting-title">only my cards</div></div>')
-    @cardFilterInput = @cardFilter.find('input')
-    @cardFilter.appendTo(@cardOptions)
+    loadCards(lane) {
+      this.currentView = 'cards';
+      this.panel.show();
+      this.backBtn.hide();
+      this.setLoading("Your Cards are Loading!");
 
-    @cardFilter
-      .on 'mousedown', (e) =>
-        e.preventDefault()
-        e.stopPropagation()
-        @filterMyCards = !@cardFilterInput.prop('checked')
-        @cardFilterInput.prop('checked', @filterMyCards)
-        @populateList()
-      .find('input').on 'click change', (e) =>
-        e.preventDefault()
-        e.stopPropagation()
+      this.confirmed = card => {
+        return Shell.openExternal(card.url);
+      };
 
-    @descFilter = $('<div class="checkbox"><input id="atomTrello_descFilter" type="checkbox"><div class="setting-title">show descriptions</div></div>')
-    @descFilterInput = @descFilter.find('input')
-    @descFilter.appendTo(@cardOptions)
+      const {
+        user
+      } = this;
 
-    @descFilter
-      .on 'mousedown', (e) =>
-        e.preventDefault()
-        e.stopPropagation()
-        @showDesc = !@descFilterInput.prop('checked')
-        @descFilterInput.prop('checked', @showDesc)
-        @populateList()
-      .find('input').on 'click change', (e) =>
-        e.preventDefault()
-        e.stopPropagation()
+      return this.api.get(`/1/lists/${lane.id}/cards`, { filter: "open", members: true }, (err, data) => {
+        const activeCards = data;
 
-    @cardOptions.appendTo(@elem)
+        return this.showView(activeCards);
+      });
+    }
 
-  getAvatar: (id, large = false) ->
-    size = if large then '170' else '30'
-    return @avatarUrl + id + "/#{size}.png"
+    cardActions(card) {
+      this.currentView = 'card';
+      this.panel.show();
+      this.setLoading("Loading Card");
+      return this.api.get("/1/cards/" + card.id, (err, data) => {
+        return console.log(data);
+      });
+    }
 
-  cancelled: ->
-    @panel.hide()
+    setButtons() {
+      this.backBtn = $("<div id='back_btn' class='block'><button class='btn icon icon-arrow-left inline-block-tight'>Back</button></div>");
+      this.backBtn
+        .appendTo(this.elem)
+        .hide()
+        .on('mousedown', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.cancel();
+          switch (this.currentView) {
+            case 'card': return this.loadCards();
+            case 'cards': return this.loadLanes();
+            case 'lanes': return this.loadBoards();
+            default: return this.loadBoards();
+          }
+      });
+
+      this.cardOptions = $('<div class="settings-view at-filter"></div>');
+
+      this.cardFilter = $('<div class="checkbox"><input id="atomTrello_cardFilter" type="checkbox"><div class="setting-title">only my cards</div></div>');
+      this.cardFilterInput = this.cardFilter.find('input');
+      this.cardFilter.appendTo(this.cardOptions);
+
+      this.cardFilter
+        .on('mousedown', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.filterMyCards = !this.cardFilterInput.prop('checked');
+          this.cardFilterInput.prop('checked', this.filterMyCards);
+          return this.populateList();
+      }).find('input').on('click change', e => {
+          e.preventDefault();
+          return e.stopPropagation();
+      });
+
+      this.descFilter = $('<div class="checkbox"><input id="atomTrello_descFilter" type="checkbox"><div class="setting-title">show descriptions</div></div>');
+      this.descFilterInput = this.descFilter.find('input');
+      this.descFilter.appendTo(this.cardOptions);
+
+      this.descFilter
+        .on('mousedown', e => {
+          e.preventDefault();
+          e.stopPropagation();
+          this.showDesc = !this.descFilterInput.prop('checked');
+          this.descFilterInput.prop('checked', this.showDesc);
+          return this.populateList();
+      }).find('input').on('click change', e => {
+          e.preventDefault();
+          return e.stopPropagation();
+      });
+
+      return this.cardOptions.appendTo(this.elem);
+    }
+
+    getAvatar(id, large) {
+      if (large == null) { large = false; }
+      const size = large ? '170' : '30';
+      return this.avatarUrl + id + `/${size}.png`;
+    }
+
+    cancelled() {
+      return this.panel.hide();
+    }
+  };
+  AtomTrelloView.initClass();
+  return AtomTrelloView;
+})());

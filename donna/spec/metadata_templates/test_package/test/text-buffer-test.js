@@ -1,11 +1,16 @@
-{join} = require 'path'
-temp = require 'temp'
-{File} = require 'pathwatcher'
-TextBuffer = require '../src/text-buffer'
-SampleText = readFileSync(join(__dirname, 'fixtures', 'sample.js'), 'utf8')
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {join} = require('path');
+const temp = require('temp');
+const {File} = require('pathwatcher');
+const TextBuffer = require('../src/text-buffer');
+const SampleText = readFileSync(join(__dirname, 'fixtures', 'sample.js'), 'utf8');
 
-describe "TextBuffer", ->
-  buffer = null
+describe("TextBuffer", function() {
+  let buffer = null;
 
-  afterEach ->
-    buffer = null
+  return afterEach(() => buffer = null);
+});

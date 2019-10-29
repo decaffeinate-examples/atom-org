@@ -1,44 +1,69 @@
-yargs = require 'yargs'
-open = require 'open'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Docs;
+const yargs = require('yargs');
+const open = require('open');
 
-View = require './view'
-config = require './apm'
+const View = require('./view');
+const config = require('./apm');
 
 module.exports =
-class Docs extends View
-  @commandNames: ['docs', 'home', 'open']
+(Docs = (function() {
+  Docs = class Docs extends View {
+    static initClass() {
+      this.commandNames = ['docs', 'home', 'open'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm docs [options] <package_name>
+Usage: apm docs [options] <package_name>
 
-      Open a package's homepage in the default browser.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.boolean('p').alias('p', 'print').describe('print', 'Print the URL instead of opening it')
+Open a package's homepage in the default browser.\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      return options.boolean('p').alias('p', 'print').describe('print', 'Print the URL instead of opening it');
+    }
 
-  openRepositoryUrl: (repositoryUrl) ->
-    open(repositoryUrl)
+    openRepositoryUrl(repositoryUrl) {
+      return open(repositoryUrl);
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
-    [packageName] = options.argv._
+    run(options) {
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
+      const [packageName] = Array.from(options.argv._);
 
-    unless packageName
-      callback("Missing required package name")
-      return
+      if (!packageName) {
+        callback("Missing required package name");
+        return;
+      }
 
-    @getPackage packageName, options, (error, pack) =>
-      return callback(error) if error?
+      return this.getPackage(packageName, options, (error, pack) => {
+        let repository;
+        if (error != null) { return callback(error); }
 
-      if repository = @getRepository(pack)
-        if options.argv.print
-          console.log repository
-        else
-          @openRepositoryUrl(repository)
-        callback()
-      else
-        callback("Package \"#{packageName}\" does not contain a repository URL")
+        if (repository = this.getRepository(pack)) {
+          if (options.argv.print) {
+            console.log(repository);
+          } else {
+            this.openRepositoryUrl(repository);
+          }
+          return callback();
+        } else {
+          return callback(`Package \"${packageName}\" does not contain a repository URL`);
+        }
+      });
+    }
+  };
+  Docs.initClass();
+  return Docs;
+})());

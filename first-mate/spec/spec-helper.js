@@ -1,1 +1,1 @@
-require('grim').includeDeprecatedAPIs = false
+require('grim').includeDeprecatedAPIs = false;

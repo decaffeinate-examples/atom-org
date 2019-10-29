@@ -1,237 +1,332 @@
-{requirePackages} = require 'atom-utils'
-fs = require 'fs-plus'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let FileInfo;
+const {requirePackages} = require('atom-utils');
+const fs = require('fs-plus');
 
 module.exports =
-class FileInfo
-  visible: false
-  debug: false
-  sortKey: 'name'
-  sortOrder: 'ascent'
+(FileInfo = (function() {
+  FileInfo = class FileInfo {
+    static initClass() {
+      this.prototype.visible = false;
+      this.prototype.debug = false;
+      this.prototype.sortKey = 'name';
+      this.prototype.sortOrder = 'ascent';
+    }
 
-  constructor: () ->
+    constructor() {
+      this.updateThread = this.updateThread.bind(this);
+      this.calcOptWidthName = this.calcOptWidthName.bind(this);
+      this.calcOptWidthSize = this.calcOptWidthSize.bind(this);
+      this.calcOptWidthMdate = this.calcOptWidthMdate.bind(this);
+    }
 
-  destroy: ->
+    destroy() {}
 
-  initialize: ->
-    console.log 'file-info: initialize' if @debug
+    initialize() {
+      if (this.debug) { return console.log('file-info: initialize'); }
+    }
 
-  show: (treeView) ->
-    console.log 'file-info: show: treeView =', treeView if @debug
-    return if not treeView
-    @treeView = treeView
-    @visible = true
-    @update()
+    show(treeView) {
+      if (this.debug) { console.log('file-info: show: treeView =', treeView); }
+      if (!treeView) { return; }
+      this.treeView = treeView;
+      this.visible = true;
+      return this.update();
+    }
 
-  hide: ->
-    console.log 'file-info: hide' if @debug
-    @visible = false
-    @update()
-    @treeView = null
+    hide() {
+      if (this.debug) { console.log('file-info: hide'); }
+      this.visible = false;
+      this.update();
+      return this.treeView = null;
+    }
 
-  update: ->
-    if @treeView?
-      if @visible
-        @add()
-      else
-        @delete()
+    update() {
+      if (this.treeView != null) {
+        if (this.visible) {
+          return this.add();
+        } else {
+          return this.delete();
+        }
+      }
+    }
 
-  delete:->
-    console.log 'file-info: delete' if @debug
-    elements = @treeView.element.querySelectorAll '.entry .file-info'
-    for element in elements
-      element.classList.remove('file-info')
-      element.classList.remove('file-info-debug') if @debug
-    elements = @treeView.element.querySelectorAll '.entry .file-info-added'
-    for element in elements
-      element.remove()
+    delete() {
+      let element;
+      if (this.debug) { console.log('file-info: delete'); }
+      let elements = this.treeView.element.querySelectorAll('.entry .file-info');
+      for (element of Array.from(elements)) {
+        element.classList.remove('file-info');
+        if (this.debug) { element.classList.remove('file-info-debug'); }
+      }
+      elements = this.treeView.element.querySelectorAll('.entry .file-info-added');
+      return (() => {
+        const result = [];
+        for (element of Array.from(elements)) {
+          result.push(element.remove());
+        }
+        return result;
+      })();
+    }
 
-  add: ->
-      console.log 'file-info: add' if @debug
-      @updateWidth()
+    add() {
+        if (this.debug) { console.log('file-info: add'); }
+        return this.updateWidth();
+      }
 
-  updateWidth: (nameWidth = @nameWidth, sizeWidth = @sizeWidth, mdateWidth = @mdateWidth) ->
-    console.log 'file-info: updateWidth:', nameWidth, sizeWidth, mdateWidth if @debug
-    @nameWidth = nameWidth
-    @sizeWidth = sizeWidth
-    @mdateWidth = mdateWidth
+    updateWidth(nameWidth, sizeWidth, mdateWidth) {
+      if (nameWidth == null) { ({
+        nameWidth
+      } = this); }
+      if (sizeWidth == null) { ({
+        sizeWidth
+      } = this); }
+      if (mdateWidth == null) { ({
+        mdateWidth
+      } = this); }
+      if (this.debug) { console.log('file-info: updateWidth:', nameWidth, sizeWidth, mdateWidth); }
+      this.nameWidth = nameWidth;
+      this.sizeWidth = sizeWidth;
+      this.mdateWidth = mdateWidth;
 
-    if @treeView and @visible
-      ol = @treeView.element.querySelector '.tree-view'
-      if @debug
-        console.log "file-info: updateWidth: querySelector('.tree-view') =",
-          ol, ol.getBoundingClientRect()
-      @offset = ol.getBoundingClientRect().left
-      @fileEntries = @treeView.element.querySelectorAll '.entry'
-      @fileEntryIndex = 0
-      clearInterval(@timer)
-      console.log 'file-info: update thread...' if @debug
-      console.log 'file-info: update thread...', @updateThread if @debug
-      @timer = setInterval(@updateThread, 1)
+      if (this.treeView && this.visible) {
+        const ol = this.treeView.element.querySelector('.tree-view');
+        if (this.debug) {
+          console.log("file-info: updateWidth: querySelector('.tree-view') =",
+            ol, ol.getBoundingClientRect());
+        }
+        this.offset = ol.getBoundingClientRect().left;
+        this.fileEntries = this.treeView.element.querySelectorAll('.entry');
+        this.fileEntryIndex = 0;
+        clearInterval(this.timer);
+        if (this.debug) { console.log('file-info: update thread...'); }
+        if (this.debug) { console.log('file-info: update thread...', this.updateThread); }
+        return this.timer = setInterval(this.updateThread, 1);
+      }
+    }
 
-  updateThread: =>
-      if not @treeView or not @visible
-        clearInterval(@timer)
-        @timer = null
-        @fileEntries = null
-        return
+    updateThread() {
+        let fileEntry;
+        if (!this.treeView || !this.visible) {
+          clearInterval(this.timer);
+          this.timer = null;
+          this.fileEntries = null;
+          return;
+        }
 
-      cost = 0
-      added = 0
-      while fileEntry = @fileEntries[@fileEntryIndex++]
-        name = fileEntry.querySelector 'span.name'
-        if not name.classList.contains('file-info')
-          added++
-          name.classList.add('file-info')
-          name.classList.add('file-info-debug') if @debug
-          stat = fs.statSyncNoException(name.dataset.path)
+        let cost = 0;
+        let added = 0;
+        while ((fileEntry = this.fileEntries[this.fileEntryIndex++])) {
+          var padding, size;
+          let name = fileEntry.querySelector('span.name');
+          if (!name.classList.contains('file-info')) {
+            added++;
+            name.classList.add('file-info');
+            if (this.debug) { name.classList.add('file-info-debug'); }
+            const stat = fs.statSyncNoException(name.dataset.path);
 
-          padding = document.createElement('span')
-          padding.textContent = '\u00A0'  # XXX
-          fileEntry.dataset.name = name.textContent.toLowerCase()  # use for sorting
-          padding.classList.add('file-info-added')
-          padding.classList.add('file-info-padding')
-          padding.classList.add('file-info-debug') if @debug
-          name.parentNode.appendChild(padding)
+            padding = document.createElement('span');
+            padding.textContent = '\u00A0';  // XXX
+            fileEntry.dataset.name = name.textContent.toLowerCase();  // use for sorting
+            padding.classList.add('file-info-added');
+            padding.classList.add('file-info-padding');
+            if (this.debug) { padding.classList.add('file-info-debug'); }
+            name.parentNode.appendChild(padding);
 
-          size = document.createElement('span')
-          innerSize = document.createElement('span')
-          if fileEntry.classList.contains('file')
-            innerSize.textContent = @toSizeString(stat.size)
-            fileEntry.dataset.size = stat.size  # use for sorting
-          else
-            innerSize.textContent = '--'
-            fileEntry.dataset.size = -1  # use for sorting
-          innerSize.classList.add('file-info-inner-size')
-          innerSize.classList.add('file-info-debug') if @debug
-          size.appendChild(innerSize)
-          size.classList.add('file-info-added')
-          size.classList.add('file-info-size')
-          size.classList.add('file-info-debug') if @debug
-          name.parentNode.appendChild(size)
+            size = document.createElement('span');
+            const innerSize = document.createElement('span');
+            if (fileEntry.classList.contains('file')) {
+              innerSize.textContent = this.toSizeString(stat.size);
+              fileEntry.dataset.size = stat.size;  // use for sorting
+            } else {
+              innerSize.textContent = '--';
+              fileEntry.dataset.size = -1;  // use for sorting
+            }
+            innerSize.classList.add('file-info-inner-size');
+            if (this.debug) { innerSize.classList.add('file-info-debug'); }
+            size.appendChild(innerSize);
+            size.classList.add('file-info-added');
+            size.classList.add('file-info-size');
+            if (this.debug) { size.classList.add('file-info-debug'); }
+            name.parentNode.appendChild(size);
 
-          date = document.createElement('span')
-          innerDate = document.createElement('span')
-          innerDate.textContent = @toDateString(stat.mtime)
-          fileEntry.dataset.mdate = stat.mtime.getTime()  # use for sorting
-          innerDate.classList.add('file-info-inner-mdate')
-          innerDate.classList.add('file-info-debug') if @debug
-          date.appendChild(innerDate)
-          date.classList.add('file-info-added')
-          date.classList.add('file-info-mdate')
-          date.classList.add('file-info-debug') if @debug
-          name.parentNode.appendChild(date)
+            const date = document.createElement('span');
+            const innerDate = document.createElement('span');
+            innerDate.textContent = this.toDateString(stat.mtime);
+            fileEntry.dataset.mdate = stat.mtime.getTime();  // use for sorting
+            innerDate.classList.add('file-info-inner-mdate');
+            if (this.debug) { innerDate.classList.add('file-info-debug'); }
+            date.appendChild(innerDate);
+            date.classList.add('file-info-added');
+            date.classList.add('file-info-mdate');
+            if (this.debug) { date.classList.add('file-info-debug'); }
+            name.parentNode.appendChild(date);
+          }
 
-        name = fileEntry.querySelector 'span.name'
-        [padding] = name.parentNode.querySelectorAll '.file-info-padding'
-        [size] = name.parentNode.querySelectorAll '.file-info-size'
-        [mdate] = name.parentNode.querySelectorAll '.file-info-mdate'
+          name = fileEntry.querySelector('span.name');
+          [padding] = Array.from(name.parentNode.querySelectorAll('.file-info-padding'));
+          [size] = Array.from(name.parentNode.querySelectorAll('.file-info-size'));
+          const [mdate] = Array.from(name.parentNode.querySelectorAll('.file-info-mdate'));
 
-        rect = name.getBoundingClientRect()
-        margin = @nameWidth - (rect.left - @offset + rect.width)
-        if margin < 10
-          padding.style.marginRight = margin + 'px'
-          padding.style.width = '0px'
-        else
-          padding.style.marginRight = '0px'
-          padding.style.width = margin + 'px'
-        if @debug
-          console.log 'file-info: updateWidth:', @fileEntryIndex-1 + ':',
-            padding.style.width, padding.style.marginRight,
-            '(' + @nameWidth + ' - ' + (rect.left - @offset) + ' - ' + rect.width + ')'
-        size.style.width = @sizeWidth + 'px'
-        mdate.style.width = @mdateWidth+ 'px'
-        if 50 < ++cost
-          @sort(@sortKey, @sortOrder) if added
-          return
+          const rect = name.getBoundingClientRect();
+          const margin = this.nameWidth - ((rect.left - this.offset) + rect.width);
+          if (margin < 10) {
+            padding.style.marginRight = margin + 'px';
+            padding.style.width = '0px';
+          } else {
+            padding.style.marginRight = '0px';
+            padding.style.width = margin + 'px';
+          }
+          if (this.debug) {
+            console.log('file-info: updateWidth:', (this.fileEntryIndex-1) + ':',
+              padding.style.width, padding.style.marginRight,
+              '(' + this.nameWidth + ' - ' + (rect.left - this.offset) + ' - ' + rect.width + ')');
+          }
+          size.style.width = this.sizeWidth + 'px';
+          mdate.style.width = this.mdateWidth+ 'px';
+          if (50 < ++cost) {
+            if (added) { this.sort(this.sortKey, this.sortOrder); }
+            return;
+          }
+        }
 
-      console.log 'file-info: update thread...done' if @debug
-      clearInterval(@timer)
-      @sort(@sortKey, @sortOrder) if added
+        if (this.debug) { console.log('file-info: update thread...done'); }
+        clearInterval(this.timer);
+        if (added) { return this.sort(this.sortKey, this.sortOrder); }
+      }
 
-  toSizeString: (size) ->
-    if size < 1
-      return 'Zero bytes'
-    if size < 2
-      return '1 byte'
-    if size < 1000
-      return size + ' bytes'
-    if size < 999500
-      return Math.round(size/1000)/1 + ' KB'
-    if size < 999950000
-      return Math.round(size/100000)/10 + ' MB'
-    return Math.round(size/10000000)/100 + ' GB'
+    toSizeString(size) {
+      if (size < 1) {
+        return 'Zero bytes';
+      }
+      if (size < 2) {
+        return '1 byte';
+      }
+      if (size < 1000) {
+        return size + ' bytes';
+      }
+      if (size < 999500) {
+        return (Math.round(size/1000)/1) + ' KB';
+      }
+      if (size < 999950000) {
+        return (Math.round(size/100000)/10) + ' MB';
+      }
+      return (Math.round(size/10000000)/100) + ' GB';
+    }
 
-  toDateString: (date) ->
-    shortMonth = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
-                  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    res = new Date(date + '')
-    shortMonth[res.getMonth()] + ' ' + res.getDate() + ', ' + 
-      res.getFullYear() + ', ' + res.getHours() + ':' + res.getMinutes()
+    toDateString(date) {
+      const shortMonth = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 
+                    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      const res = new Date(date + '');
+      return shortMonth[res.getMonth()] + ' ' + res.getDate() + ', ' + 
+        res.getFullYear() + ', ' + res.getHours() + ':' + res.getMinutes();
+    }
 
-  calcOptWidthName: =>
-    ol = @treeView.element.querySelector '.tree-view'
-    offset = ol.getBoundingClientRect().left
-    elems = @treeView.element.querySelectorAll '.entry span.name'
-    maxWidth = 0
-    for elem in elems
-      rect = elem.getBoundingClientRect()
-      width = (rect.left - @offset + rect.width)
-      maxWidth = Math.max(width, maxWidth)
-    maxWidth
+    calcOptWidthName() {
+      const ol = this.treeView.element.querySelector('.tree-view');
+      const offset = ol.getBoundingClientRect().left;
+      const elems = this.treeView.element.querySelectorAll('.entry span.name');
+      let maxWidth = 0;
+      for (let elem of Array.from(elems)) {
+        const rect = elem.getBoundingClientRect();
+        const width = ((rect.left - this.offset) + rect.width);
+        maxWidth = Math.max(width, maxWidth);
+      }
+      return maxWidth;
+    }
 
-  calcOptWidthSize: =>
-    @calcOptWidth '.entry .file-info-inner-size'
+    calcOptWidthSize() {
+      return this.calcOptWidth('.entry .file-info-inner-size');
+    }
 
-  calcOptWidthMdate: =>
-    @calcOptWidth '.entry .file-info-inner-mdate'
+    calcOptWidthMdate() {
+      return this.calcOptWidth('.entry .file-info-inner-mdate');
+    }
 
-  calcOptWidth: (selector) ->
-    elems = @treeView.element.querySelectorAll selector
-    maxWidth = 0
-    for elem in elems
-      maxWidth = Math.max(elem.offsetWidth, maxWidth)
-    maxWidth + 16
+    calcOptWidth(selector) {
+      const elems = this.treeView.element.querySelectorAll(selector);
+      let maxWidth = 0;
+      for (let elem of Array.from(elems)) {
+        maxWidth = Math.max(elem.offsetWidth, maxWidth);
+      }
+      return maxWidth + 16;
+    }
 
-  # XXX, messy...
-  sort: (key='name', order='ascent') ->
-    return if not @treeView
-    @sortKey = key
-    @sortOrder = order
-    if @debug
-      console.log 'file-info: sort:',
-        'key =', @sortKey, ', order =', @sortOrder
-    ols = @treeView.element.querySelectorAll 'ol.entries.list-tree'
-    for ol in ols
-      # if ol.childNodes.length
-      #   console.log '====================', ol, ol.childNodes
-      ar = []
-      for li in ol.childNodes
-        # console.log li.dataset['name'], 'value =', li.dataset[key]
-        ar.push li
-      for li in ar
-        ol.removeChild(li)
-      if order is 'ascent'
-        bWin = -1
-        aWin = 1
-      else
-        bWin = 1
-        aWin = -1
-      stringCompFunc = (a, b, key = 'name') ->
-        if a.dataset[key] < b.dataset[key]
-          return bWin
-        if a.dataset[key] > b.dataset[key]
-          return aWin
-        return 0
-      numberCompFunc = (a, b, key = 'name') ->
-        return (a.dataset[key] - b.dataset[key]) * aWin
-      if key is 'name'
-        ar.sort (a, b) ->
-          stringCompFunc(a, b, key)
-      else
-        ar.sort (a, b) ->
-          if (res = numberCompFunc(a, b, key)) == 0
-            res = stringCompFunc(a, b, 'name')
-          res
-      for li in ar
-        ol.appendChild(li)
-      ar = null
+    // XXX, messy...
+    sort(key, order) {
+      if (key == null) { key = 'name'; }
+      if (order == null) { order = 'ascent'; }
+      if (!this.treeView) { return; }
+      this.sortKey = key;
+      this.sortOrder = order;
+      if (this.debug) {
+        console.log('file-info: sort:',
+          'key =', this.sortKey, ', order =', this.sortOrder);
+      }
+      const ols = this.treeView.element.querySelectorAll('ol.entries.list-tree');
+      return (() => {
+        const result = [];
+        for (let ol of Array.from(ols)) {
+        // if ol.childNodes.length
+        //   console.log '====================', ol, ol.childNodes
+          var aWin, bWin, li;
+          let ar = [];
+          for (li of Array.from(ol.childNodes)) {
+            // console.log li.dataset['name'], 'value =', li.dataset[key]
+            ar.push(li);
+          }
+          for (li of Array.from(ar)) {
+            ol.removeChild(li);
+          }
+          if (order === 'ascent') {
+            bWin = -1;
+            aWin = 1;
+          } else {
+            bWin = 1;
+            aWin = -1;
+          }
+          var stringCompFunc = function(a, b, key) {
+            if (key == null) { key = 'name'; }
+            if (a.dataset[key] < b.dataset[key]) {
+              return bWin;
+            }
+            if (a.dataset[key] > b.dataset[key]) {
+              return aWin;
+            }
+            return 0;
+          };
+          var numberCompFunc = function(a, b, key) {
+            if (key == null) { key = 'name'; }
+            return (a.dataset[key] - b.dataset[key]) * aWin;
+          };
+          if (key === 'name') {
+            ar.sort((a, b) => stringCompFunc(a, b, key));
+          } else {
+            ar.sort(function(a, b) {
+              let res;
+              if ((res = numberCompFunc(a, b, key)) === 0) {
+                res = stringCompFunc(a, b, 'name');
+              }
+              return res;
+            });
+          }
+          for (li of Array.from(ar)) {
+            ol.appendChild(li);
+          }
+          result.push(ar = null);
+        }
+        return result;
+      })();
+    }
+  };
+  FileInfo.initClass();
+  return FileInfo;
+})());

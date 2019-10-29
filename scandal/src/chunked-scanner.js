@@ -1,28 +1,50 @@
-ChunkedExecutor = require './chunked-executor'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ChunkedScanner;
+const ChunkedExecutor = require('./chunked-executor');
 
 module.exports =
-class ChunkedScanner extends ChunkedExecutor
-  constructor: (@scanner, execPathFn) ->
-    @finishedScanning = false
-    super([], execPathFn)
+(ChunkedScanner = class ChunkedScanner extends ChunkedExecutor {
+  constructor(scanner, execPathFn) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.onFinishedScanning = this.onFinishedScanning.bind(this);
+    this.scanner = scanner;
+    this.finishedScanning = false;
+    super([], execPathFn);
+  }
 
-  execute: (doneCallback) ->
-    super(doneCallback)
+  execute(doneCallback) {
+    super.execute(doneCallback);
 
-    @scanner.on 'path-found', @push
-    @scanner.on 'finished-scanning', @onFinishedScanning
-    @scanner.scan()
+    this.scanner.on('path-found', this.push);
+    this.scanner.on('finished-scanning', this.onFinishedScanning);
+    return this.scanner.scan();
+  }
 
-  onFinishedScanning: =>
-    @finishedScanning = true
-    @checkIfFinished()
+  onFinishedScanning() {
+    this.finishedScanning = true;
+    return this.checkIfFinished();
+  }
 
-  checkIfFinished: ->
-    return false unless @finishedScanning
-    isFinished = super()
+  checkIfFinished() {
+    if (!this.finishedScanning) { return false; }
+    const isFinished = super.checkIfFinished();
 
-    if isFinished
-      @scanner.removeListener 'path-found', @path
-      @scanner.removeListener 'finished-scanning', @onFinishedScanning
+    if (isFinished) {
+      this.scanner.removeListener('path-found', this.path);
+      this.scanner.removeListener('finished-scanning', this.onFinishedScanning);
+    }
 
-    isFinished
+    return isFinished;
+  }
+});

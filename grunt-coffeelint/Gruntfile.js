@@ -1,46 +1,62 @@
-module.exports = (grunt) ->
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = function(grunt) {
 
-  # Project configuration.
-  grunt.initConfig
+  // Project configuration.
+  grunt.initConfig({
 
-    coffeelint:
-      # global options
-      options:
-        indentation:
-          value: 4
+    coffeelint: {
+      // global options
+      options: {
+        indentation: {
+          value: 4,
           level: 'warn'
+        }
+      },
 
-      # a target that overrides default options
-      one:
-        files:
+      // a target that overrides default options
+      one: {
+        files: {
           src: ['test/fixtures/*.coffee']
-        options:
-          indentation:
-            value: 2
+        },
+        options: {
+          indentation: {
+            value: 2,
             level: 'warn'
-          'no_trailing_semicolons':
+          },
+          'no_trailing_semicolons': {
             level: 'warn'
+          }
+        }
+      },
 
-      # a simple target
+      // a simple target
       two: ['test/fixtures/correct.coffee', 'test/fixtures/some.coffee']
+    },
 
-    'bump': options:
+    'bump': { options: {
       pushTo: 'upstream'
+    }
+  }
+  });
 
-  # Load local tasks.
-  grunt.loadTasks 'tasks'
+  // Load local tasks.
+  grunt.loadTasks('tasks');
 
-  grunt.loadNpmTasks 'grunt-npm'
-  grunt.loadNpmTasks 'grunt-bump'
-  grunt.loadNpmTasks 'grunt-auto-release'
+  grunt.loadNpmTasks('grunt-npm');
+  grunt.loadNpmTasks('grunt-bump');
+  grunt.loadNpmTasks('grunt-auto-release');
 
-  # Default task.
-  grunt.registerTask 'default', 'coffeelint'
+  // Default task.
+  grunt.registerTask('default', 'coffeelint');
 
-  grunt.registerTask 'test', 'coffeelint'
+  grunt.registerTask('test', 'coffeelint');
 
-  grunt.registerTask 'release', 'Bump version, push to NPM.', (type)->
-    grunt.task.run [
-      "bump:#{type || 'patch'}"
-      'npm-publish'
-    ]
+  return grunt.registerTask('release', 'Bump version, push to NPM.', type => grunt.task.run([
+    `bump:${type || 'patch'}`,
+    'npm-publish'
+  ]));
+};

@@ -1,299 +1,365 @@
-createDOMPurify = require 'dompurify'
-fs = require 'fs-plus'
-path = require 'path'
-marked = require 'marked'
-{shell} = require 'electron'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let NotificationElement;
+const createDOMPurify = require('dompurify');
+const fs = require('fs-plus');
+const path = require('path');
+const marked = require('marked');
+const {shell} = require('electron');
 
-NotificationIssue = require './notification-issue'
-TemplateHelper = require './template-helper'
-UserUtilities = require './user-utilities'
+const NotificationIssue = require('./notification-issue');
+const TemplateHelper = require('./template-helper');
+const UserUtilities = require('./user-utilities');
 
-DOMPurify = null
+let DOMPurify = null;
 
-NotificationTemplate = """
-  <div class="content">
-    <div class="message item"></div>
-    <div class="detail item">
-      <div class="detail-content"></div>
-      <a href="#" class="stack-toggle"></a>
-      <div class="stack-container"></div>
-    </div>
-    <div class="meta item"></div>
+const NotificationTemplate = `\
+<div class="content">
+  <div class="message item"></div>
+  <div class="detail item">
+    <div class="detail-content"></div>
+    <a href="#" class="stack-toggle"></a>
+    <div class="stack-container"></div>
   </div>
-  <div class="close icon icon-x"></div>
-  <div class="close-all btn btn-error">Close All</div>
-"""
+  <div class="meta item"></div>
+</div>
+<div class="close icon icon-x"></div>
+<div class="close-all btn btn-error">Close All</div>\
+`;
 
-FatalMetaNotificationTemplate = """
-  <div class="description fatal-notification"></div>
-  <div class="btn-toolbar">
-    <a href="#" class="btn-issue btn btn-error"></a>
-    <a href="#" class="btn-copy-report icon icon-clippy" title="Copy error report to clipboard"></a>
-  </div>
-"""
+const FatalMetaNotificationTemplate = `\
+<div class="description fatal-notification"></div>
+<div class="btn-toolbar">
+  <a href="#" class="btn-issue btn btn-error"></a>
+  <a href="#" class="btn-copy-report icon icon-clippy" title="Copy error report to clipboard"></a>
+</div>\
+`;
 
-MetaNotificationTemplate = """
-  <div class="description"></div>
-"""
+const MetaNotificationTemplate = `\
+<div class="description"></div>\
+`;
 
-ButtonListTemplate = """
-  <div class="btn-toolbar"></div>
-"""
+const ButtonListTemplate = `\
+<div class="btn-toolbar"></div>\
+`;
 
-ButtonTemplate = """
-  <a href="#" class="btn"></a>
-"""
+const ButtonTemplate = `\
+<a href="#" class="btn"></a>\
+`;
 
 module.exports =
-class NotificationElement
-  animationDuration: 360
-  visibilityDuration: 5000
-  autohideTimeout: null
+(NotificationElement = (function() {
+  NotificationElement = class NotificationElement {
+    static initClass() {
+      this.prototype.animationDuration = 360;
+      this.prototype.visibilityDuration = 5000;
+      this.prototype.autohideTimeout = null;
+    }
 
-  constructor: (@model, @visibilityDuration) ->
-    @fatalTemplate = TemplateHelper.create(FatalMetaNotificationTemplate)
-    @metaTemplate = TemplateHelper.create(MetaNotificationTemplate)
-    @buttonListTemplate = TemplateHelper.create(ButtonListTemplate)
-    @buttonTemplate = TemplateHelper.create(ButtonTemplate)
+    constructor(model, visibilityDuration) {
+      this.model = model;
+      this.visibilityDuration = visibilityDuration;
+      this.fatalTemplate = TemplateHelper.create(FatalMetaNotificationTemplate);
+      this.metaTemplate = TemplateHelper.create(MetaNotificationTemplate);
+      this.buttonListTemplate = TemplateHelper.create(ButtonListTemplate);
+      this.buttonTemplate = TemplateHelper.create(ButtonTemplate);
 
-    @element = document.createElement('atom-notification')
-    @issue = new NotificationIssue(@model) if @model.getType() is 'fatal'
-    @renderPromise = @render().catch (e) ->
-      console.error e.message
-      console.error e.stack
+      this.element = document.createElement('atom-notification');
+      if (this.model.getType() === 'fatal') { this.issue = new NotificationIssue(this.model); }
+      this.renderPromise = this.render().catch(function(e) {
+        console.error(e.message);
+        return console.error(e.stack);
+      });
 
-    @model.onDidDismiss => @removeNotification()
+      this.model.onDidDismiss(() => this.removeNotification());
 
-    unless @model.isDismissable()
-      @autohide()
-      @element.addEventListener 'click', @makeDismissable.bind(this), {once: true}
+      if (!this.model.isDismissable()) {
+        this.autohide();
+        this.element.addEventListener('click', this.makeDismissable.bind(this), {once: true});
+      }
 
-    @element.issue = @issue
-    @element.getRenderPromise = @getRenderPromise.bind(this)
+      this.element.issue = this.issue;
+      this.element.getRenderPromise = this.getRenderPromise.bind(this);
+    }
 
-  getModel: -> @model
+    getModel() { return this.model; }
 
-  getRenderPromise: -> @renderPromise
+    getRenderPromise() { return this.renderPromise; }
 
-  render: ->
-    @element.classList.add "#{@model.getType()}"
-    @element.classList.add "icon", "icon-#{@model.getIcon()}", "native-key-bindings"
+    render() {
+      let detail, metaContainer, metaContent;
+      this.element.classList.add(`${this.model.getType()}`);
+      this.element.classList.add("icon", `icon-${this.model.getIcon()}`, "native-key-bindings");
 
-    @element.classList.add('has-detail') if detail = @model.getDetail()
-    @element.classList.add('has-close') if @model.isDismissable()
-    @element.classList.add('has-stack') if @model.getOptions().stack?
+      if (detail = this.model.getDetail()) { this.element.classList.add('has-detail'); }
+      if (this.model.isDismissable()) { this.element.classList.add('has-close'); }
+      if (this.model.getOptions().stack != null) { this.element.classList.add('has-stack'); }
 
-    @element.setAttribute('tabindex', '-1')
+      this.element.setAttribute('tabindex', '-1');
 
-    @element.innerHTML = NotificationTemplate
+      this.element.innerHTML = NotificationTemplate;
 
-    options = @model.getOptions()
+      const options = this.model.getOptions();
 
-    notificationContainer = @element.querySelector('.message')
+      const notificationContainer = this.element.querySelector('.message');
 
-    if DOMPurify is null
-      DOMPurify = createDOMPurify()
-    notificationContainer.innerHTML = DOMPurify.sanitize(marked(@model.getMessage()))
+      if (DOMPurify === null) {
+        DOMPurify = createDOMPurify();
+      }
+      notificationContainer.innerHTML = DOMPurify.sanitize(marked(this.model.getMessage()));
 
-    if detail = @model.getDetail()
-      addSplitLinesToContainer(@element.querySelector('.detail-content'), detail)
+      if (detail = this.model.getDetail()) {
+        let stack;
+        addSplitLinesToContainer(this.element.querySelector('.detail-content'), detail);
 
-      if stack = options.stack
-        stackToggle = @element.querySelector('.stack-toggle')
-        stackContainer = @element.querySelector('.stack-container')
+        if (stack = options.stack) {
+          const stackToggle = this.element.querySelector('.stack-toggle');
+          const stackContainer = this.element.querySelector('.stack-container');
 
-        addSplitLinesToContainer(stackContainer, stack)
+          addSplitLinesToContainer(stackContainer, stack);
 
-        stackToggle.addEventListener 'click', (e) => @handleStackTraceToggleClick(e, stackContainer)
-        @handleStackTraceToggleClick({currentTarget: stackToggle}, stackContainer)
+          stackToggle.addEventListener('click', e => this.handleStackTraceToggleClick(e, stackContainer));
+          this.handleStackTraceToggleClick({currentTarget: stackToggle}, stackContainer);
+        }
+      }
 
-    if metaContent = options.description
-      @element.classList.add('has-description')
-      metaContainer = @element.querySelector('.meta')
-      metaContainer.appendChild(TemplateHelper.render(@metaTemplate))
-      description = @element.querySelector('.description')
-      description.innerHTML = marked(metaContent)
+      if (metaContent = options.description) {
+        this.element.classList.add('has-description');
+        metaContainer = this.element.querySelector('.meta');
+        metaContainer.appendChild(TemplateHelper.render(this.metaTemplate));
+        const description = this.element.querySelector('.description');
+        description.innerHTML = marked(metaContent);
+      }
 
-    if options.buttons and options.buttons.length > 0
-      @element.classList.add('has-buttons')
-      metaContainer = @element.querySelector('.meta')
-      metaContainer.appendChild(TemplateHelper.render(@buttonListTemplate))
-      toolbar = @element.querySelector('.btn-toolbar')
-      buttonClass = @model.getType()
-      buttonClass = 'error' if buttonClass is 'fatal'
-      buttonClass = "btn-#{buttonClass}"
-      options.buttons.forEach (button) =>
-        toolbar.appendChild(TemplateHelper.render(@buttonTemplate))
-        buttonEl = toolbar.childNodes[toolbar.childNodes.length - 1]
-        buttonEl.textContent = button.text
-        buttonEl.classList.add(buttonClass)
-        if button.className?
-          buttonEl.classList.add.apply(buttonEl.classList, button.className.split(' '))
-        if button.onDidClick?
-          buttonEl.addEventListener 'click', (e) =>
-            button.onDidClick.call(this, e)
+      if (options.buttons && (options.buttons.length > 0)) {
+        this.element.classList.add('has-buttons');
+        metaContainer = this.element.querySelector('.meta');
+        metaContainer.appendChild(TemplateHelper.render(this.buttonListTemplate));
+        const toolbar = this.element.querySelector('.btn-toolbar');
+        let buttonClass = this.model.getType();
+        if (buttonClass === 'fatal') { buttonClass = 'error'; }
+        buttonClass = `btn-${buttonClass}`;
+        options.buttons.forEach(button => {
+          toolbar.appendChild(TemplateHelper.render(this.buttonTemplate));
+          const buttonEl = toolbar.childNodes[toolbar.childNodes.length - 1];
+          buttonEl.textContent = button.text;
+          buttonEl.classList.add(buttonClass);
+          if (button.className != null) {
+            buttonEl.classList.add.apply(buttonEl.classList, button.className.split(' '));
+          }
+          if (button.onDidClick != null) {
+            return buttonEl.addEventListener('click', e => {
+              return button.onDidClick.call(this, e);
+            });
+          }
+        });
+      }
 
-    closeButton = @element.querySelector('.close')
-    closeButton.addEventListener 'click', => @handleRemoveNotificationClick()
+      const closeButton = this.element.querySelector('.close');
+      closeButton.addEventListener('click', () => this.handleRemoveNotificationClick());
 
-    closeAllButton = @element.querySelector('.close-all')
-    closeAllButton.classList.add @getButtonClass()
-    closeAllButton.addEventListener 'click', => @handleRemoveAllNotificationsClick()
+      const closeAllButton = this.element.querySelector('.close-all');
+      closeAllButton.classList.add(this.getButtonClass());
+      closeAllButton.addEventListener('click', () => this.handleRemoveAllNotificationsClick());
 
-    if @model.getType() is 'fatal'
-      @renderFatalError()
-    else
-      Promise.resolve()
+      if (this.model.getType() === 'fatal') {
+        return this.renderFatalError();
+      } else {
+        return Promise.resolve();
+      }
+    }
 
-  renderFatalError: ->
-    repoUrl = @issue.getRepoUrl()
-    packageName = @issue.getPackageName()
+    renderFatalError() {
+      const repoUrl = this.issue.getRepoUrl();
+      const packageName = this.issue.getPackageName();
 
-    fatalContainer = @element.querySelector('.meta')
-    fatalContainer.appendChild(TemplateHelper.render(@fatalTemplate))
-    fatalNotification = @element.querySelector('.fatal-notification')
+      const fatalContainer = this.element.querySelector('.meta');
+      fatalContainer.appendChild(TemplateHelper.render(this.fatalTemplate));
+      const fatalNotification = this.element.querySelector('.fatal-notification');
 
-    issueButton = fatalContainer.querySelector('.btn-issue')
+      const issueButton = fatalContainer.querySelector('.btn-issue');
 
-    copyReportButton = fatalContainer.querySelector('.btn-copy-report')
-    atom.tooltips.add(copyReportButton, title: copyReportButton.getAttribute('title'))
-    copyReportButton.addEventListener 'click', (e) =>
-      e.preventDefault()
-      @issue.getIssueBody().then (issueBody) ->
-        atom.clipboard.write(issueBody)
+      const copyReportButton = fatalContainer.querySelector('.btn-copy-report');
+      atom.tooltips.add(copyReportButton, {title: copyReportButton.getAttribute('title')});
+      copyReportButton.addEventListener('click', e => {
+        e.preventDefault();
+        return this.issue.getIssueBody().then(issueBody => atom.clipboard.write(issueBody));
+      });
 
-    if packageName? and repoUrl?
-      fatalNotification.innerHTML = "The error was thrown from the <a href=\"#{repoUrl}\">#{packageName} package</a>. "
-    else if packageName?
-      issueButton.remove()
-      fatalNotification.textContent = "The error was thrown from the #{packageName} package. "
-    else
-      fatalNotification.textContent = "This is likely a bug in Atom. "
+      if ((packageName != null) && (repoUrl != null)) {
+        fatalNotification.innerHTML = `The error was thrown from the <a href=\"${repoUrl}\">${packageName} package</a>. `;
+      } else if (packageName != null) {
+        issueButton.remove();
+        fatalNotification.textContent = `The error was thrown from the ${packageName} package. `;
+      } else {
+        fatalNotification.textContent = "This is likely a bug in Atom. ";
+      }
 
-    # We only show the create issue button if it's clearly in atom core or in a package with a repo url
-    if issueButton.parentNode?
-      if packageName? and repoUrl?
-        issueButton.textContent = "Create issue on the #{packageName} package"
-      else
-        issueButton.textContent = "Create issue on atom/atom"
+      // We only show the create issue button if it's clearly in atom core or in a package with a repo url
+      if (issueButton.parentNode != null) {
+        if ((packageName != null) && (repoUrl != null)) {
+          issueButton.textContent = `Create issue on the ${packageName} package`;
+        } else {
+          issueButton.textContent = "Create issue on atom/atom";
+        }
 
-      promises = []
-      promises.push @issue.findSimilarIssues()
-      promises.push UserUtilities.checkAtomUpToDate()
-      promises.push UserUtilities.checkPackageUpToDate(packageName) if packageName?
+        const promises = [];
+        promises.push(this.issue.findSimilarIssues());
+        promises.push(UserUtilities.checkAtomUpToDate());
+        if (packageName != null) { promises.push(UserUtilities.checkPackageUpToDate(packageName)); }
 
-      Promise.all(promises).then (allData) =>
-        [issues, atomCheck, packageCheck] = allData
+        return Promise.all(promises).then(allData => {
+          let issue;
+          const [issues, atomCheck, packageCheck] = Array.from(allData);
 
-        if issues?.open or issues?.closed
-          issue = issues.open or issues.closed
-          issueButton.setAttribute('href', issue.html_url)
-          issueButton.textContent = "View Issue"
-          fatalNotification.innerHTML += " This issue has already been reported."
-        else if packageCheck? and not packageCheck.upToDate and not packageCheck.isCore
-          issueButton.setAttribute('href', '#')
-          issueButton.textContent = "Check for package updates"
-          issueButton.addEventListener 'click', (e) ->
-            e.preventDefault()
-            command = 'settings-view:check-for-package-updates'
-            atom.commands.dispatch(atom.views.getView(atom.workspace), command)
+          if ((issues != null ? issues.open : undefined) || (issues != null ? issues.closed : undefined)) {
+            issue = issues.open || issues.closed;
+            issueButton.setAttribute('href', issue.html_url);
+            issueButton.textContent = "View Issue";
+            fatalNotification.innerHTML += " This issue has already been reported.";
+          } else if ((packageCheck != null) && !packageCheck.upToDate && !packageCheck.isCore) {
+            issueButton.setAttribute('href', '#');
+            issueButton.textContent = "Check for package updates";
+            issueButton.addEventListener('click', function(e) {
+              e.preventDefault();
+              const command = 'settings-view:check-for-package-updates';
+              return atom.commands.dispatch(atom.views.getView(atom.workspace), command);
+            });
 
-          fatalNotification.innerHTML += """
-            <code>#{packageName}</code> is out of date: #{packageCheck.installedVersion} installed;
-            #{packageCheck.latestVersion} latest.
-            Upgrading to the latest version may fix this issue.
-          """
-        else if packageCheck? and not packageCheck.upToDate and packageCheck.isCore
-          issueButton.remove()
+            fatalNotification.innerHTML += `\
+<code>${packageName}</code> is out of date: ${packageCheck.installedVersion} installed;
+${packageCheck.latestVersion} latest.
+Upgrading to the latest version may fix this issue.\
+`;
+          } else if ((packageCheck != null) && !packageCheck.upToDate && packageCheck.isCore) {
+            issueButton.remove();
 
-          fatalNotification.innerHTML += """
-            <br><br>
-            Locally installed core Atom package <code>#{packageName}</code> is out of date: #{packageCheck.installedVersion} installed locally;
-            #{packageCheck.versionShippedWithAtom} included with the version of Atom you're running.
-            Removing the locally installed version may fix this issue.
-          """
+            fatalNotification.innerHTML += `\
+<br><br>
+Locally installed core Atom package <code>${packageName}</code> is out of date: ${packageCheck.installedVersion} installed locally;
+${packageCheck.versionShippedWithAtom} included with the version of Atom you're running.
+Removing the locally installed version may fix this issue.\
+`;
 
-          packagePath = atom.packages.getLoadedPackage(packageName)?.path
-          if fs.isSymbolicLinkSync(packagePath)
-            fatalNotification.innerHTML += """
-            <br><br>
-            Use: <code>apm unlink #{packagePath}</code>
-          """
-        else if atomCheck? and not atomCheck.upToDate
-          issueButton.remove()
+            const packagePath = __guard__(atom.packages.getLoadedPackage(packageName), x => x.path);
+            if (fs.isSymbolicLinkSync(packagePath)) {
+              fatalNotification.innerHTML += `\
+<br><br>
+Use: <code>apm unlink ${packagePath}</code>\
+`;
+            }
+          } else if ((atomCheck != null) && !atomCheck.upToDate) {
+            issueButton.remove();
 
-          fatalNotification.innerHTML += """
-            Atom is out of date: #{atomCheck.installedVersion} installed;
-            #{atomCheck.latestVersion} latest.
-            Upgrading to the <a href='https://github.com/atom/atom/releases/tag/v#{atomCheck.latestVersion}'>latest version</a> may fix this issue.
-          """
-        else
-          fatalNotification.innerHTML += " You can help by creating an issue. Please explain what actions triggered this error."
-          issueButton.addEventListener 'click', (e) =>
-            e.preventDefault()
-            issueButton.classList.add('opening')
-            @issue.getIssueUrlForSystem().then (issueUrl) ->
-              shell.openExternal(issueUrl)
-              issueButton.classList.remove('opening')
+            fatalNotification.innerHTML += `\
+Atom is out of date: ${atomCheck.installedVersion} installed;
+${atomCheck.latestVersion} latest.
+Upgrading to the <a href='https://github.com/atom/atom/releases/tag/v${atomCheck.latestVersion}'>latest version</a> may fix this issue.\
+`;
+          } else {
+            fatalNotification.innerHTML += " You can help by creating an issue. Please explain what actions triggered this error.";
+            issueButton.addEventListener('click', e => {
+              e.preventDefault();
+              issueButton.classList.add('opening');
+              return this.issue.getIssueUrlForSystem().then(function(issueUrl) {
+                shell.openExternal(issueUrl);
+                return issueButton.classList.remove('opening');
+              });
+            });
+          }
 
-        return
-    else
-      Promise.resolve()
+        });
+      } else {
+        return Promise.resolve();
+      }
+    }
 
-  makeDismissable: ->
-    unless @model.isDismissable()
-      clearTimeout(@autohideTimeout)
-      @model.options.dismissable = true
-      @model.dismissed = false
-      @element.classList.add('has-close')
+    makeDismissable() {
+      if (!this.model.isDismissable()) {
+        clearTimeout(this.autohideTimeout);
+        this.model.options.dismissable = true;
+        this.model.dismissed = false;
+        return this.element.classList.add('has-close');
+      }
+    }
 
-  removeNotification: ->
-    unless @element.classList.contains('remove')
-      @element.classList.add('remove')
-      @removeNotificationAfterTimeout()
+    removeNotification() {
+      if (!this.element.classList.contains('remove')) {
+        this.element.classList.add('remove');
+        return this.removeNotificationAfterTimeout();
+      }
+    }
 
-  handleRemoveNotificationClick: ->
-    @removeNotification()
-    @model.dismiss()
+    handleRemoveNotificationClick() {
+      this.removeNotification();
+      return this.model.dismiss();
+    }
 
-  handleRemoveAllNotificationsClick: ->
-    notifications = atom.notifications.getNotifications()
-    for notification in notifications
-      atom.views.getView(notification).removeNotification()
-      if notification.isDismissable() and not notification.isDismissed()
-        notification.dismiss()
-    return
+    handleRemoveAllNotificationsClick() {
+      const notifications = atom.notifications.getNotifications();
+      for (let notification of Array.from(notifications)) {
+        atom.views.getView(notification).removeNotification();
+        if (notification.isDismissable() && !notification.isDismissed()) {
+          notification.dismiss();
+        }
+      }
+    }
 
-  handleStackTraceToggleClick: (e, container) ->
-    e.preventDefault?()
-    if container.style.display is 'none'
-      e.currentTarget.innerHTML = '<span class="icon icon-dash"></span>Hide Stack Trace'
-      container.style.display = 'block'
-    else
-      e.currentTarget.innerHTML = '<span class="icon icon-plus"></span>Show Stack Trace'
-      container.style.display = 'none'
+    handleStackTraceToggleClick(e, container) {
+      if (typeof e.preventDefault === 'function') {
+        e.preventDefault();
+      }
+      if (container.style.display === 'none') {
+        e.currentTarget.innerHTML = '<span class="icon icon-dash"></span>Hide Stack Trace';
+        return container.style.display = 'block';
+      } else {
+        e.currentTarget.innerHTML = '<span class="icon icon-plus"></span>Show Stack Trace';
+        return container.style.display = 'none';
+      }
+    }
 
-  autohide: ->
-    @autohideTimeout = setTimeout =>
-      @removeNotification()
-    , @visibilityDuration
+    autohide() {
+      return this.autohideTimeout = setTimeout(() => {
+        return this.removeNotification();
+      }
+      , this.visibilityDuration);
+    }
 
-  removeNotificationAfterTimeout: ->
-    atom.workspace.getActivePane().activate() if @element is document.activeElement
+    removeNotificationAfterTimeout() {
+      if (this.element === document.activeElement) { atom.workspace.getActivePane().activate(); }
 
-    setTimeout =>
-      @element.remove()
-    , @animationDuration # keep in sync with CSS animation
+      return setTimeout(() => {
+        return this.element.remove();
+      }
+      , this.animationDuration); // keep in sync with CSS animation
+    }
 
-  getButtonClass: ->
-    type = "btn-#{@model.getType()}"
-    if type is 'btn-fatal' then 'btn-error' else type
+    getButtonClass() {
+      const type = `btn-${this.model.getType()}`;
+      if (type === 'btn-fatal') { return 'btn-error'; } else { return type; }
+    }
+  };
+  NotificationElement.initClass();
+  return NotificationElement;
+})());
 
-addSplitLinesToContainer = (container, content) ->
-  content = content.toString() if typeof content isnt 'string'
-  for line in content.split('\n')
-    div = document.createElement('div')
-    div.classList.add 'line'
-    div.textContent = line
-    container.appendChild(div)
-  return
+var addSplitLinesToContainer = function(container, content) {
+  if (typeof content !== 'string') { content = content.toString(); }
+  for (let line of Array.from(content.split('\n'))) {
+    const div = document.createElement('div');
+    div.classList.add('line');
+    div.textContent = line;
+    container.appendChild(div);
+  }
+};
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

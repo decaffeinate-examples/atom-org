@@ -1,154 +1,214 @@
-child_process = require 'child_process'
-path = require 'path'
-_ = require 'underscore-plus'
-semver = require 'semver'
-config = require './apm'
-git = require './git'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Command;
+const child_process = require('child_process');
+const path = require('path');
+const _ = require('underscore-plus');
+const semver = require('semver');
+const config = require('./apm');
+const git = require('./git');
 
 module.exports =
-class Command
-  spawn: (command, args, remaining...) ->
-    options = remaining.shift() if remaining.length >= 2
-    callback = remaining.shift()
+(Command = class Command {
+  constructor() {
+    this.logCommandResults = this.logCommandResults.bind(this);
+    this.logCommandResultsIfFail = this.logCommandResultsIfFail.bind(this);
+  }
 
-    spawned = child_process.spawn(command, args, options)
+  spawn(command, args, ...remaining) {
+    let options;
+    if (remaining.length >= 2) { options = remaining.shift(); }
+    const callback = remaining.shift();
 
-    errorChunks = []
-    outputChunks = []
+    const spawned = child_process.spawn(command, args, options);
 
-    spawned.stdout.on 'data', (chunk) ->
-      if options?.streaming
-        process.stdout.write chunk
-      else
-        outputChunks.push(chunk)
+    const errorChunks = [];
+    const outputChunks = [];
 
-    spawned.stderr.on 'data', (chunk) ->
-      if options?.streaming
-        process.stderr.write chunk
-      else
-        errorChunks.push(chunk)
+    spawned.stdout.on('data', function(chunk) {
+      if ((options != null ? options.streaming : undefined)) {
+        return process.stdout.write(chunk);
+      } else {
+        return outputChunks.push(chunk);
+      }
+    });
 
-    onChildExit = (errorOrExitCode) ->
-      spawned.removeListener 'error', onChildExit
-      spawned.removeListener 'close', onChildExit
-      callback?(errorOrExitCode, Buffer.concat(errorChunks).toString(), Buffer.concat(outputChunks).toString())
+    spawned.stderr.on('data', function(chunk) {
+      if ((options != null ? options.streaming : undefined)) {
+        return process.stderr.write(chunk);
+      } else {
+        return errorChunks.push(chunk);
+      }
+    });
 
-    spawned.on 'error', onChildExit
-    spawned.on 'close', onChildExit
+    var onChildExit = function(errorOrExitCode) {
+      spawned.removeListener('error', onChildExit);
+      spawned.removeListener('close', onChildExit);
+      return (typeof callback === 'function' ? callback(errorOrExitCode, Buffer.concat(errorChunks).toString(), Buffer.concat(outputChunks).toString()) : undefined);
+    };
 
-    spawned
+    spawned.on('error', onChildExit);
+    spawned.on('close', onChildExit);
 
-  fork: (script, args, remaining...) ->
-    args.unshift(script)
-    @spawn(process.execPath, args, remaining...)
+    return spawned;
+  }
 
-  packageNamesFromArgv: (argv) ->
-    @sanitizePackageNames(argv._)
+  fork(script, args, ...remaining) {
+    args.unshift(script);
+    return this.spawn(process.execPath, args, ...Array.from(remaining));
+  }
 
-  sanitizePackageNames: (packageNames=[]) ->
-    packageNames = packageNames.map (packageName) -> packageName.trim()
-    _.compact(_.uniq(packageNames))
+  packageNamesFromArgv(argv) {
+    return this.sanitizePackageNames(argv._);
+  }
 
-  logSuccess: ->
-    if process.platform is 'win32'
-      process.stdout.write 'done\n'.green
-    else
-      process.stdout.write '\u2713\n'.green
+  sanitizePackageNames(packageNames) {
+    if (packageNames == null) { packageNames = []; }
+    packageNames = packageNames.map(packageName => packageName.trim());
+    return _.compact(_.uniq(packageNames));
+  }
 
-  logFailure: ->
-    if process.platform is 'win32'
-      process.stdout.write 'failed\n'.red
-    else
-      process.stdout.write '\u2717\n'.red
+  logSuccess() {
+    if (process.platform === 'win32') {
+      return process.stdout.write('done\n'.green);
+    } else {
+      return process.stdout.write('\u2713\n'.green);
+    }
+  }
 
-  logCommandResults: (callback, code, stderr='', stdout='') =>
-    if code is 0
-      @logSuccess()
-      callback()
-    else
-      @logFailure()
-      callback("#{stdout}\n#{stderr}".trim())
+  logFailure() {
+    if (process.platform === 'win32') {
+      return process.stdout.write('failed\n'.red);
+    } else {
+      return process.stdout.write('\u2717\n'.red);
+    }
+  }
 
-  logCommandResultsIfFail: (callback, code, stderr='', stdout='') =>
-    if code is 0
-      callback()
-    else
-      @logFailure()
-      callback("#{stdout}\n#{stderr}".trim())
+  logCommandResults(callback, code, stderr, stdout) {
+    if (stderr == null) { stderr = ''; }
+    if (stdout == null) { stdout = ''; }
+    if (code === 0) {
+      this.logSuccess();
+      return callback();
+    } else {
+      this.logFailure();
+      return callback(`${stdout}\n${stderr}`.trim());
+    }
+  }
 
-  normalizeVersion: (version) ->
-    if typeof version is 'string'
-      # Remove commit SHA suffix
-      version.replace(/-.*$/, '')
-    else
-      version
+  logCommandResultsIfFail(callback, code, stderr, stdout) {
+    if (stderr == null) { stderr = ''; }
+    if (stdout == null) { stdout = ''; }
+    if (code === 0) {
+      return callback();
+    } else {
+      this.logFailure();
+      return callback(`${stdout}\n${stderr}`.trim());
+    }
+  }
 
-  loadInstalledAtomMetadata: (callback) ->
-    @getResourcePath (resourcePath) =>
-      try
-        {version, electronVersion} = require(path.join(resourcePath, 'package.json')) ? {}
-        version = @normalizeVersion(version)
-        @installedAtomVersion = version if semver.valid(version)
+  normalizeVersion(version) {
+    if (typeof version === 'string') {
+      // Remove commit SHA suffix
+      return version.replace(/-.*$/, '');
+    } else {
+      return version;
+    }
+  }
 
-      @electronVersion = process.env.ATOM_ELECTRON_VERSION ? electronVersion
-      unless @electronVersion?
-        throw new Error('Could not determine Electron version')
+  loadInstalledAtomMetadata(callback) {
+    return this.getResourcePath(resourcePath => {
+      let electronVersion;
+      try {
+        let left, version;
+        ({version, electronVersion} = (left = require(path.join(resourcePath, 'package.json'))) != null ? left : {});
+        version = this.normalizeVersion(version);
+        if (semver.valid(version)) { this.installedAtomVersion = version; }
+      } catch (error) {}
 
-      callback()
+      this.electronVersion = process.env.ATOM_ELECTRON_VERSION != null ? process.env.ATOM_ELECTRON_VERSION : electronVersion;
+      if (this.electronVersion == null) {
+        throw new Error('Could not determine Electron version');
+      }
 
-  getResourcePath: (callback) ->
-    if @resourcePath
-      process.nextTick => callback(@resourcePath)
-    else
-      config.getResourcePath (@resourcePath) => callback(@resourcePath)
+      return callback();
+    });
+  }
 
-  addBuildEnvVars: (env) ->
-    @updateWindowsEnv(env) if config.isWin32()
-    @addNodeBinToEnv(env)
-    @addProxyToEnv(env)
-    env.npm_config_runtime = "electron"
-    env.npm_config_target = @electronVersion
-    env.npm_config_disturl = config.getElectronUrl()
-    env.npm_config_arch = config.getElectronArch()
-    env.npm_config_target_arch = config.getElectronArch() # for node-pre-gyp
+  getResourcePath(callback) {
+    if (this.resourcePath) {
+      return process.nextTick(() => callback(this.resourcePath));
+    } else {
+      return config.getResourcePath(resourcePath => { this.resourcePath = resourcePath; return callback(this.resourcePath); });
+    }
+  }
 
-  getVisualStudioFlags: ->
-    if vsVersion = config.getInstalledVisualStudioFlag()
-      "--msvs_version=#{vsVersion}"
+  addBuildEnvVars(env) {
+    if (config.isWin32()) { this.updateWindowsEnv(env); }
+    this.addNodeBinToEnv(env);
+    this.addProxyToEnv(env);
+    env.npm_config_runtime = "electron";
+    env.npm_config_target = this.electronVersion;
+    env.npm_config_disturl = config.getElectronUrl();
+    env.npm_config_arch = config.getElectronArch();
+    return env.npm_config_target_arch = config.getElectronArch(); // for node-pre-gyp
+  }
 
-  getNpmBuildFlags: ->
-    ["--target=#{@electronVersion}", "--disturl=#{config.getElectronUrl()}", "--arch=#{config.getElectronArch()}"]
+  getVisualStudioFlags() {
+    let vsVersion;
+    if (vsVersion = config.getInstalledVisualStudioFlag()) {
+      return `--msvs_version=${vsVersion}`;
+    }
+  }
 
-  updateWindowsEnv: (env) ->
-    env.USERPROFILE = env.HOME
+  getNpmBuildFlags() {
+    return [`--target=${this.electronVersion}`, `--disturl=${config.getElectronUrl()}`, `--arch=${config.getElectronArch()}`];
+  }
 
-    git.addGitToEnv(env)
+  updateWindowsEnv(env) {
+    env.USERPROFILE = env.HOME;
 
-  addNodeBinToEnv: (env) ->
-    nodeBinFolder = path.resolve(__dirname, '..', 'bin')
-    pathKey = if config.isWin32() then 'Path' else 'PATH'
-    if env[pathKey]
-      env[pathKey] = "#{nodeBinFolder}#{path.delimiter}#{env[pathKey]}"
-    else
-      env[pathKey]= nodeBinFolder
+    return git.addGitToEnv(env);
+  }
 
-  addProxyToEnv: (env) ->
-    httpProxy = @npm.config.get('proxy')
-    if httpProxy
-      env.HTTP_PROXY ?= httpProxy
-      env.http_proxy ?= httpProxy
+  addNodeBinToEnv(env) {
+    const nodeBinFolder = path.resolve(__dirname, '..', 'bin');
+    const pathKey = config.isWin32() ? 'Path' : 'PATH';
+    if (env[pathKey]) {
+      return env[pathKey] = `${nodeBinFolder}${path.delimiter}${env[pathKey]}`;
+    } else {
+      return env[pathKey]= nodeBinFolder;
+    }
+  }
 
-    httpsProxy = @npm.config.get('https-proxy')
-    if httpsProxy
-      env.HTTPS_PROXY ?= httpsProxy
-      env.https_proxy ?= httpsProxy
+  addProxyToEnv(env) {
+    let left;
+    const httpProxy = this.npm.config.get('proxy');
+    if (httpProxy) {
+      if (env.HTTP_PROXY == null) { env.HTTP_PROXY = httpProxy; }
+      if (env.http_proxy == null) { env.http_proxy = httpProxy; }
+    }
 
-      # node-gyp only checks HTTP_PROXY (as of node-gyp@4.0.0)
-      env.HTTP_PROXY ?= httpsProxy
-      env.http_proxy ?= httpsProxy
+    const httpsProxy = this.npm.config.get('https-proxy');
+    if (httpsProxy) {
+      if (env.HTTPS_PROXY == null) { env.HTTPS_PROXY = httpsProxy; }
+      if (env.https_proxy == null) { env.https_proxy = httpsProxy; }
 
-    # node-gyp doesn't currently have an option for this so just set the
-    # environment variable to bypass strict SSL
-    # https://github.com/nodejs/node-gyp/issues/448
-    useStrictSsl = @npm.config.get('strict-ssl') ? true
-    env.NODE_TLS_REJECT_UNAUTHORIZED = 0 unless useStrictSsl
+      // node-gyp only checks HTTP_PROXY (as of node-gyp@4.0.0)
+      if (env.HTTP_PROXY == null) { env.HTTP_PROXY = httpsProxy; }
+      if (env.http_proxy == null) { env.http_proxy = httpsProxy; }
+    }
+
+    // node-gyp doesn't currently have an option for this so just set the
+    // environment variable to bypass strict SSL
+    // https://github.com/nodejs/node-gyp/issues/448
+    const useStrictSsl = (left = this.npm.config.get('strict-ssl')) != null ? left : true;
+    if (!useStrictSsl) { return env.NODE_TLS_REJECT_UNAUTHORIZED = 0; }
+  }
+});

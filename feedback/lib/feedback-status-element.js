@@ -1,27 +1,39 @@
-Template = """
-  <a href="#" class="inline-block">1-minute survey</a>
-"""
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let FeedbackStatusElement;
+const Template = `\
+<a href="#" class="inline-block">1-minute survey</a>\
+`;
 
 module.exports =
-class FeedbackStatusElement extends HTMLElement
-  initialize: ({@feedbackSource}) ->
+(FeedbackStatusElement = class FeedbackStatusElement extends HTMLElement {
+  initialize({feedbackSource}) {
+    this.feedbackSource = feedbackSource;
+  }
 
-  attachedCallback: ->
-    @innerHTML = Template
-    atom.tooltips.add this, title: "Help us improve Atom by giving feedback"
+  attachedCallback() {
+    this.innerHTML = Template;
+    atom.tooltips.add(this, {title: "Help us improve Atom by giving feedback"});
 
-    unless localStorage.getItem("hasClickedSurveyLink-#{@feedbackSource}")
-      @classList.add 'promote'
+    if (!localStorage.getItem(`hasClickedSurveyLink-${this.feedbackSource}`)) {
+      this.classList.add('promote');
+    }
 
-    @querySelector('a').addEventListener 'click', (e) =>
-      localStorage.setItem("hasClickedSurveyLink-#{@feedbackSource}", true)
-      @classList.remove 'promote'
+    return this.querySelector('a').addEventListener('click', e => {
+      localStorage.setItem(`hasClickedSurveyLink-${this.feedbackSource}`, true);
+      this.classList.remove('promote');
 
-      Reporter = require './reporter'
-      Reporter.sendEvent('did-click-status-bar-link')
+      const Reporter = require('./reporter');
+      Reporter.sendEvent('did-click-status-bar-link');
 
-      e.preventDefault()
-      atom.commands.dispatch this, 'feedback:show'
+      e.preventDefault();
+      return atom.commands.dispatch(this, 'feedback:show');
+    });
+  }
+});
 
-module.exports = document.registerElement 'feedback-status',
-  prototype: FeedbackStatusElement.prototype
+module.exports = document.registerElement('feedback-status',
+  {prototype: FeedbackStatusElement.prototype});

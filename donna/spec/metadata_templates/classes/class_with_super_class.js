@@ -1,5 +1,6 @@
-# Public: A mutable text container with undo/redo support and the ability to
-# annotate logical regions in the text.
-#
+// Public: A mutable text container with undo/redo support and the ability to
+// annotate logical regions in the text.
+//
+let TextBuffer;
 module.exports =
-class TextBuffer extends String
+(TextBuffer = class TextBuffer extends String {});

@@ -1,125 +1,174 @@
-slick = require 'atom-slick'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Selector;
+const slick = require('atom-slick');
 
-indexCounter = 0
+let indexCounter = 0;
 
 module.exports =
-class Selector
-  # Public: Creates one or more {Selector} objects.
-  #
-  # This method will return more than one `Selector` object when the string
-  # selector describes more than one object. e.g. `.foo.bar, .omg.wow`
-  #
-  # * `selectorString` {String} CSS selector. e.g. `.foo .bar`
-  # * `options` {Object} (optional)
-  #   * `priority` {Number} (optional)
-  #
-  # Returns an {Array} or {Selector} objects.
-  @create: (selectorString, options) ->
-    for selectorAst in slick.parse(selectorString)
-      @parsePseudoSelectors(selectorComponent) for selectorComponent in selectorAst
-      new this(selectorAst, options)
+(Selector = class Selector {
+  // Public: Creates one or more {Selector} objects.
+  //
+  // This method will return more than one `Selector` object when the string
+  // selector describes more than one object. e.g. `.foo.bar, .omg.wow`
+  //
+  // * `selectorString` {String} CSS selector. e.g. `.foo .bar`
+  // * `options` {Object} (optional)
+  //   * `priority` {Number} (optional)
+  //
+  // Returns an {Array} or {Selector} objects.
+  static create(selectorString, options) {
+    return (() => {
+      const result = [];
+      for (let selectorAst of Array.from(slick.parse(selectorString))) {
+        for (let selectorComponent of Array.from(selectorAst)) { this.parsePseudoSelectors(selectorComponent); }
+        result.push(new (this)(selectorAst, options));
+      }
+      return result;
+    })();
+  }
 
-  @parsePseudoSelectors: (selectorComponent) ->
-    return unless selectorComponent.pseudos?
-    for pseudoClass in selectorComponent.pseudos
-      if pseudoClass.name is 'not'
-        selectorComponent.notSelectors ?= []
-        selectorComponent.notSelectors.push(@create(pseudoClass.value)...)
-      else
-        console.warn "Unsupported pseudo-selector: #{pseudoClass.name}"
+  static parsePseudoSelectors(selectorComponent) {
+    if (selectorComponent.pseudos == null) { return; }
+    return (() => {
+      const result = [];
+      for (let pseudoClass of Array.from(selectorComponent.pseudos)) {
+        if (pseudoClass.name === 'not') {
+          if (selectorComponent.notSelectors == null) { selectorComponent.notSelectors = []; }
+          result.push(selectorComponent.notSelectors.push(...Array.from(this.create(pseudoClass.value) || [])));
+        } else {
+          result.push(console.warn(`Unsupported pseudo-selector: ${pseudoClass.name}`));
+        }
+      }
+      return result;
+    })();
+  }
 
-  constructor: (@selector, options) ->
-    priority = options?.priority ? 0
-    @specificity = @calculateSpecificity()
-    @index = priority + indexCounter++
+  constructor(selector, options) {
+    this.selector = selector;
+    const priority = (options != null ? options.priority : undefined) != null ? (options != null ? options.priority : undefined) : 0;
+    this.specificity = this.calculateSpecificity();
+    this.index = priority + indexCounter++;
+  }
 
-  # Public: Returns a {Boolean} indcating whether or not this `Selector` matches
-  # the given scope chain.
-  #
-  # * `scopeChain` {String} e.g. `.parent .child`
-  matches: (scopeChain) ->
-    if typeof scopeChain is 'string'
-      [scopeChain] = slick.parse(scopeChain)
-      return false unless scopeChain?
+  // Public: Returns a {Boolean} indcating whether or not this `Selector` matches
+  // the given scope chain.
+  //
+  // * `scopeChain` {String} e.g. `.parent .child`
+  matches(scopeChain) {
+    if (typeof scopeChain === 'string') {
+      [scopeChain] = Array.from(slick.parse(scopeChain));
+      if (scopeChain == null) { return false; }
+    }
 
-    selectorIndex = @selector.length - 1
-    scopeIndex = scopeChain.length - 1
+    let selectorIndex = this.selector.length - 1;
+    let scopeIndex = scopeChain.length - 1;
 
-    requireMatch = true
-    while selectorIndex >= 0 and scopeIndex >= 0
-      if @selectorComponentMatchesScope(@selector[selectorIndex], scopeChain[scopeIndex])
-        requireMatch = @selector[selectorIndex].combinator is '>'
-        selectorIndex--
-      else if requireMatch
-        return false
+    let requireMatch = true;
+    while ((selectorIndex >= 0) && (scopeIndex >= 0)) {
+      if (this.selectorComponentMatchesScope(this.selector[selectorIndex], scopeChain[scopeIndex])) {
+        requireMatch = this.selector[selectorIndex].combinator === '>';
+        selectorIndex--;
+      } else if (requireMatch) {
+        return false;
+      }
 
-      scopeIndex--
+      scopeIndex--;
+    }
 
-    selectorIndex < 0
+    return selectorIndex < 0;
+  }
 
-  # Public: Compare specificity to another {Selector} object
-  #
-  # * `other` {Selector} object
-  #
-  # Returns a {Number}
-  compare: (other) ->
-    if other.specificity is @specificity
-      other.index - @index
-    else
-      other.specificity - @specificity
+  // Public: Compare specificity to another {Selector} object
+  //
+  // * `other` {Selector} object
+  //
+  // Returns a {Number}
+  compare(other) {
+    if (other.specificity === this.specificity) {
+      return other.index - this.index;
+    } else {
+      return other.specificity - this.specificity;
+    }
+  }
 
-  # Public: Returns {Boolean} if the selectors are equal.
-  #
-  # * `other` {Selector} object
-  isEqual: (other) ->
-    @toString() is other.toString()
+  // Public: Returns {Boolean} if the selectors are equal.
+  //
+  // * `other` {Selector} object
+  isEqual(other) {
+    return this.toString() === other.toString();
+  }
 
-  # Public: Returns a {String} representation of the object
-  toString: ->
-    @selector.toString().replace(/\*\./g, '.')
+  // Public: Returns a {String} representation of the object
+  toString() {
+    return this.selector.toString().replace(/\*\./g, '.');
+  }
 
-  # Public: Returns {Number} specificity
-  getSpecificity: ->
-    @specificity
+  // Public: Returns {Number} specificity
+  getSpecificity() {
+    return this.specificity;
+  }
 
-  ###
+  /*
   Section: Private Member Methods
-  ###
+  */
 
-  selectorComponentMatchesScope: (selectorComponent, scope) ->
-    if selectorComponent.classList?
-      for className in selectorComponent.classList
-        return false unless scope.classes?[className]?
+  selectorComponentMatchesScope(selectorComponent, scope) {
+    if (selectorComponent.classList != null) {
+      for (let className of Array.from(selectorComponent.classList)) {
+        if ((scope.classes != null ? scope.classes[className] : undefined) == null) { return false; }
+      }
+    }
 
-    if selectorComponent.tag?
-      return false unless selectorComponent.tag is scope.tag or selectorComponent.tag is '*'
+    if (selectorComponent.tag != null) {
+      if ((selectorComponent.tag !== scope.tag) && (selectorComponent.tag !== '*')) { return false; }
+    }
 
-    if selectorComponent.attributes?
-      scopeAttributes = {}
-      for attribute in scope.attributes ? []
-        scopeAttributes[attribute.name] = attribute
-      for attribute in selectorComponent.attributes
-        return false unless scopeAttributes[attribute.name]?.value is attribute.value
+    if (selectorComponent.attributes != null) {
+      let attribute;
+      const scopeAttributes = {};
+      for (attribute of Array.from(scope.attributes != null ? scope.attributes : [])) {
+        scopeAttributes[attribute.name] = attribute;
+      }
+      for (attribute of Array.from(selectorComponent.attributes)) {
+        if ((scopeAttributes[attribute.name] != null ? scopeAttributes[attribute.name].value : undefined) !== attribute.value) { return false; }
+      }
+    }
 
-    if selectorComponent.notSelectors?
-      for selector in selectorComponent.notSelectors
-        return false if selector.matches([scope])
+    if (selectorComponent.notSelectors != null) {
+      for (let selector of Array.from(selectorComponent.notSelectors)) {
+        if (selector.matches([scope])) { return false; }
+      }
+    }
 
-    true
+    return true;
+  }
 
-  calculateSpecificity: ->
-    a = 0
-    b = 0
-    c = 0
+  calculateSpecificity() {
+    const a = 0;
+    let b = 0;
+    let c = 0;
 
-    for selectorComponent in @selector
-      if selectorComponent.classList?
-        b += selectorComponent.classList.length
+    for (let selectorComponent of Array.from(this.selector)) {
+      if (selectorComponent.classList != null) {
+        b += selectorComponent.classList.length;
+      }
 
-      if selectorComponent.attributes?
-        b += selectorComponent.attributes.length
+      if (selectorComponent.attributes != null) {
+        b += selectorComponent.attributes.length;
+      }
 
-      if selectorComponent.tag?
-        c += 1
+      if (selectorComponent.tag != null) {
+        c += 1;
+      }
+    }
 
-    (a * 100) + (b * 10) + (c * 1)
+    return (a * 100) + (b * 10) + (c * 1);
+  }
+});

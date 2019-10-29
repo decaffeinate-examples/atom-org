@@ -1,13 +1,27 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Tile;
 module.exports =
-class Tile
-  constructor: (@item, @priority, @collection) ->
+(Tile = class Tile {
+  constructor(item, priority, collection) {
+    this.item = item;
+    this.priority = priority;
+    this.collection = collection;
+  }
 
-  getItem: ->
-    @item
+  getItem() {
+    return this.item;
+  }
 
-  getPriority: ->
-    @priority
+  getPriority() {
+    return this.priority;
+  }
 
-  destroy: ->
-    @collection.splice(@collection.indexOf(this), 1)
-    atom.views.getView(@item).remove()
+  destroy() {
+    this.collection.splice(this.collection.indexOf(this), 1);
+    return atom.views.getView(this.item).remove();
+  }
+});

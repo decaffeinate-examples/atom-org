@@ -1,27 +1,48 @@
-Point = require './point'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let CompositeRegion;
+const Point = require('./point');
 
 module.exports =
-class CompositeRegion
-  constructor: (@children, @sourceSpan, @targetSpan) ->
+(CompositeRegion = class CompositeRegion {
+  constructor(children, sourceSpan, targetSpan) {
+    this.children = children;
+    this.sourceSpan = sourceSpan;
+    this.targetSpan = targetSpan;
+  }
 
-  getSourceSpan: ->
-    @sourceSpan ? @computeSourceSpan()
+  getSourceSpan() {
+    return this.sourceSpan != null ? this.sourceSpan : this.computeSourceSpan();
+  }
 
-  getTargetSpan: ->
-    @targetSpan ? @computeTargetSpan()
+  getTargetSpan() {
+    return this.targetSpan != null ? this.targetSpan : this.computeTargetSpan();
+  }
 
-  computeSourceSpan: ->
-    span = Point(0, 0)
-    span = span.add(child.getSourceSpan()) for child in @children
-    span
+  computeSourceSpan() {
+    let span = Point(0, 0);
+    for (let child of Array.from(this.children)) { span = span.add(child.getSourceSpan()); }
+    return span;
+  }
 
-  computeTargetSpan: ->
-    span = Point(0, 0)
-    for child in @children
-      span = span.add(child.getTargetSpan())
-    span
+  computeTargetSpan() {
+    let span = Point(0, 0);
+    for (let child of Array.from(this.children)) {
+      span = span.add(child.getTargetSpan());
+    }
+    return span;
+  }
 
-  summarize: ->
-    sourceSpan: @getSourceSpan().summarize()
-    targetSpan: @getTargetSpan().summarize()
-    children: @children.map (c) -> c.summarize()
+  summarize() {
+    return {
+      sourceSpan: this.getSourceSpan().summarize(),
+      targetSpan: this.getTargetSpan().summarize(),
+      children: this.children.map(c => c.summarize())
+    };
+  }
+});

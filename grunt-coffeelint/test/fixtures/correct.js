@@ -1,1 +1,1 @@
-abc = true
+const abc = true;

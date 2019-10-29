@@ -1,39 +1,56 @@
-{Tags} = require('../build/Release/ctags.node')
-es = require 'event-stream'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {Tags} = require('../build/Release/ctags.node');
+const es = require('event-stream');
 
-exports.findTags = (tagsFilePath, tag, options, callback) ->
-  unless typeof tagsFilePath is 'string'
-    throw new TypeError('tagsFilePath must be a string')
+exports.findTags = function(tagsFilePath, tag, options, callback) {
+  if (typeof tagsFilePath !== 'string') {
+    throw new TypeError('tagsFilePath must be a string');
+  }
 
-  unless typeof tag is 'string'
-    throw new TypeError('tag must be a string')
+  if (typeof tag !== 'string') {
+    throw new TypeError('tag must be a string');
+  }
 
-  if typeof options is 'function'
-    callback = options
-    options = null
+  if (typeof options === 'function') {
+    callback = options;
+    options = null;
+  }
 
-  {partialMatch, caseInsensitive} = options ? {}
+  const {partialMatch, caseInsensitive} = options != null ? options : {};
 
-  tagsWrapper = new Tags(tagsFilePath)
-  tagsWrapper.findTags tag, partialMatch, caseInsensitive, (error, tags) ->
-    tagsWrapper.end()
-    callback?(error, tags)
+  const tagsWrapper = new Tags(tagsFilePath);
+  tagsWrapper.findTags(tag, partialMatch, caseInsensitive, function(error, tags) {
+    tagsWrapper.end();
+    return (typeof callback === 'function' ? callback(error, tags) : undefined);
+  });
 
-  undefined
+  return undefined;
+};
 
-exports.createReadStream = (tagsFilePath, options={}) ->
-  unless typeof tagsFilePath is 'string'
-    throw new TypeError('tagsFilePath must be a string')
+exports.createReadStream = function(tagsFilePath, options) {
+  if (options == null) { options = {}; }
+  if (typeof tagsFilePath !== 'string') {
+    throw new TypeError('tagsFilePath must be a string');
+  }
 
-  {chunkSize} = options
-  chunkSize = 100 if typeof chunkSize isnt 'number'
+  let {chunkSize} = options;
+  if (typeof chunkSize !== 'number') { chunkSize = 100; }
 
-  tagsWrapper = new Tags(tagsFilePath)
-  es.readable (count, callback) ->
-    unless tagsWrapper.exists()
-      return callback(new Error("Tags file could not be opened: #{tagsFilePath}"))
+  const tagsWrapper = new Tags(tagsFilePath);
+  return es.readable(function(count, callback) {
+    if (!tagsWrapper.exists()) {
+      return callback(new Error(`Tags file could not be opened: ${tagsFilePath}`));
+    }
 
-    tagsWrapper.getTags chunkSize, (error, tags) =>
-      tagsWrapper.end() if error? or tags.length is 0
-      callback(error, tags)
-      @emit('end') if error? or tags.length is 0
+    return tagsWrapper.getTags(chunkSize, (error, tags) => {
+      if ((error != null) || (tags.length === 0)) { tagsWrapper.end(); }
+      callback(error, tags);
+      if ((error != null) || (tags.length === 0)) { return this.emit('end'); }
+    });
+  });
+};

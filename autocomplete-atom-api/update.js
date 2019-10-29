@@ -1,84 +1,112 @@
-# Run this to update the static list of properties stored in the
-# completions.json file at the root of this repository.
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+// Run this to update the static list of properties stored in the
+// completions.json file at the root of this repository.
 
-fs = require 'fs'
-request = require 'request'
+const fs = require('fs');
+const request = require('request');
 
-requestOptions =
-  url: 'https://api.github.com/repos/atom/atom/releases/latest'
-  json: true
-  headers:
+const requestOptions = {
+  url: 'https://api.github.com/repos/atom/atom/releases/latest',
+  json: true,
+  headers: {
     'User-Agent': 'agent'
+  }
+};
 
-request requestOptions, (error, response, release) ->
-  if error?
-    console.error(error.message)
-    return process.exit(1)
+request(requestOptions, function(error, response, release) {
+  if (error != null) {
+    console.error(error.message);
+    return process.exit(1);
+  }
 
-  [apiAsset] = release.assets.filter ({name}) -> name is 'atom-api.json'
+  const [apiAsset] = Array.from(release.assets.filter(({name}) => name === 'atom-api.json'));
 
-  unless apiAsset?.browser_download_url
-    console.error('No atom-api.json asset found in latest release')
-    return process.exit(1)
+  if (!(apiAsset != null ? apiAsset.browser_download_url : undefined)) {
+    console.error('No atom-api.json asset found in latest release');
+    return process.exit(1);
+  }
 
-  apiRequestOptions =
-    json: true
+  const apiRequestOptions = {
+    json: true,
     url: apiAsset.browser_download_url
+  };
 
-  request apiRequestOptions, (error, response, atomApi) ->
-    if error?
-      console.error(error.message)
-      return process.exit(1)
+  return request(apiRequestOptions, function(error, response, atomApi) {
+    if (error != null) {
+      console.error(error.message);
+      return process.exit(1);
+    }
 
-    {classes} = atomApi
+    const {classes} = atomApi;
 
-    publicClasses = {}
-    for name, {instanceProperties, instanceMethods} of classes
-      pluckPropertyAttributes = convertPropertyToSuggestion.bind(this, name)
-      pluckMethodAttributes = convertMethodToSuggestion.bind(this, name)
-      properties = instanceProperties.filter(isVisible).map(pluckPropertyAttributes).sort(textComparator)
-      methods = instanceMethods.filter(isVisible).map(pluckMethodAttributes).sort(textComparator)
+    const publicClasses = {};
+    for (let name in classes) {
+      const {instanceProperties, instanceMethods} = classes[name];
+      const pluckPropertyAttributes = convertPropertyToSuggestion.bind(this, name);
+      const pluckMethodAttributes = convertMethodToSuggestion.bind(this, name);
+      const properties = instanceProperties.filter(isVisible).map(pluckPropertyAttributes).sort(textComparator);
+      const methods = instanceMethods.filter(isVisible).map(pluckMethodAttributes).sort(textComparator);
 
-      if properties?.length > 0 or methods.length > 0
-        publicClasses[name] = properties.concat(methods)
+      if (((properties != null ? properties.length : undefined) > 0) || (methods.length > 0)) {
+        publicClasses[name] = properties.concat(methods);
+      }
+    }
 
-    fs.writeFileSync('completions.json', JSON.stringify(publicClasses, null, '  '))
+    return fs.writeFileSync('completions.json', JSON.stringify(publicClasses, null, '  '));
+  });
+});
 
-isVisible = ({visibility}) ->
-  visibility in ['Essential', 'Extended', 'Public']
+var isVisible = ({visibility}) => ['Essential', 'Extended', 'Public'].includes(visibility);
 
-convertMethodToSuggestion = (className, method) ->
-  {name, summary, returnValues} = method
-  args = method['arguments']
+var convertMethodToSuggestion = function(className, method) {
+  const {name, summary, returnValues} = method;
+  const args = method['arguments'];
 
-  snippets = []
-  if args?.length
-    for arg, i in args
-      snippets.push("${#{i+1}:#{arg.name}}")
+  const snippets = [];
+  if (args != null ? args.length : undefined) {
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      snippets.push(`\${${i+1}:${arg.name}}`);
+    }
+  }
 
-  text = null
-  snippet = null
-  if snippets.length
-    snippet = "#{name}(#{snippets.join(', ')})"
-  else
-    text = "#{name}()"
+  let text = null;
+  let snippet = null;
+  if (snippets.length) {
+    snippet = `${name}(${snippets.join(', ')})`;
+  } else {
+    text = `${name}()`;
+  }
 
-  returnValue = returnValues?[0]?.type
-  description = summary
-  descriptionMoreURL = getDocLink(className, name)
-  {name, text, snippet, description, descriptionMoreURL, leftLabel: returnValue, type: 'method'}
+  const returnValue = __guard__(returnValues != null ? returnValues[0] : undefined, x => x.type);
+  const description = summary;
+  const descriptionMoreURL = getDocLink(className, name);
+  return {name, text, snippet, description, descriptionMoreURL, leftLabel: returnValue, type: 'method'};
+};
 
-convertPropertyToSuggestion = (className, {name, summary}) ->
-  text = name
-  returnValue = summary?.match(/\{(\w+)\}/)?[1]
-  description = summary
-  descriptionMoreURL = getDocLink(className, name)
-  {name, text, description, descriptionMoreURL, leftLabel: returnValue, type: 'property'}
+var convertPropertyToSuggestion = function(className, {name, summary}) {
+  const text = name;
+  const returnValue = __guard__(summary != null ? summary.match(/\{(\w+)\}/) : undefined, x => x[1]);
+  const description = summary;
+  const descriptionMoreURL = getDocLink(className, name);
+  return {name, text, description, descriptionMoreURL, leftLabel: returnValue, type: 'property'};
+};
 
-getDocLink = (className, instanceName) ->
-  "https://atom.io/docs/api/latest/#{className}#instance-#{instanceName}"
+var getDocLink = (className, instanceName) => `https://atom.io/docs/api/latest/${className}#instance-${instanceName}`;
 
-textComparator = (a, b) ->
-  return 1 if a.name > b.name
-  return -1 if a.name < b.name
-  0
+var textComparator = function(a, b) {
+  if (a.name > b.name) { return 1; }
+  if (a.name < b.name) { return -1; }
+  return 0;
+};
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

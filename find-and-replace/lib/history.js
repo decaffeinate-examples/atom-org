@@ -1,76 +1,109 @@
-_ = require 'underscore-plus'
-{Emitter} = require 'atom'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const _ = require('underscore-plus');
+const {Emitter} = require('atom');
 
-HISTORY_MAX = 25
+const HISTORY_MAX = 25;
 
-class History
-  constructor: (@items=[]) ->
-    @emitter = new Emitter
-    @length = @items.length
+class History {
+  constructor(items) {
+    if (items == null) { items = []; }
+    this.items = items;
+    this.emitter = new Emitter;
+    this.length = this.items.length;
+  }
 
-  onDidAddItem: (callback) ->
-    @emitter.on 'did-add-item', callback
+  onDidAddItem(callback) {
+    return this.emitter.on('did-add-item', callback);
+  }
 
-  serialize: ->
-    @items[-HISTORY_MAX..]
+  serialize() {
+    return this.items.slice(-HISTORY_MAX);
+  }
 
-  getLast: ->
-    _.last(@items)
+  getLast() {
+    return _.last(this.items);
+  }
 
-  getAtIndex: (index) ->
-    @items[index]
+  getAtIndex(index) {
+    return this.items[index];
+  }
 
-  add: (text) ->
-    @items.push(text)
-    @length = @items.length
-    @emitter.emit 'did-add-item', text
+  add(text) {
+    this.items.push(text);
+    this.length = this.items.length;
+    return this.emitter.emit('did-add-item', text);
+  }
 
-  clear: ->
-    @items = []
-    @length = 0
+  clear() {
+    this.items = [];
+    return this.length = 0;
+  }
+}
 
-# Adds the ability to cycle through history
-class HistoryCycler
+// Adds the ability to cycle through history
+class HistoryCycler {
 
-  # * `buffer` an {Editor} instance to attach the cycler to
-  # * `history` a {History} object
-  constructor: (@buffer, @history) ->
-    @index = @history.length
-    @history.onDidAddItem (text) =>
-      @buffer.setText(text) if text isnt @buffer.getText()
+  // * `buffer` an {Editor} instance to attach the cycler to
+  // * `history` a {History} object
+  constructor(buffer, history) {
+    this.buffer = buffer;
+    this.history = history;
+    this.index = this.history.length;
+    this.history.onDidAddItem(text => {
+      if (text !== this.buffer.getText()) { return this.buffer.setText(text); }
+    });
+  }
 
-  addEditorElement: (editorElement) ->
-    atom.commands.add editorElement,
-      'core:move-up': => @previous()
-      'core:move-down': => @next()
+  addEditorElement(editorElement) {
+    return atom.commands.add(editorElement, {
+      'core:move-up': () => this.previous(),
+      'core:move-down': () => this.next()
+    }
+    );
+  }
 
-  previous: ->
-    if @history.length is 0 or (@atLastItem() and @buffer.getText() isnt @history.getLast())
-      @scratch = @buffer.getText()
-    else if @index > 0
-      @index--
+  previous() {
+    let left;
+    if ((this.history.length === 0) || (this.atLastItem() && (this.buffer.getText() !== this.history.getLast()))) {
+      this.scratch = this.buffer.getText();
+    } else if (this.index > 0) {
+      this.index--;
+    }
 
-    @buffer.setText @history.getAtIndex(@index) ? ''
+    return this.buffer.setText((left = this.history.getAtIndex(this.index)) != null ? left : '');
+  }
 
-  next: ->
-    if @index < @history.length - 1
-      @index++
-      item = @history.getAtIndex(@index)
-    else if @scratch
-      item = @scratch
-    else
-      item = ''
+  next() {
+    let item;
+    if (this.index < (this.history.length - 1)) {
+      this.index++;
+      item = this.history.getAtIndex(this.index);
+    } else if (this.scratch) {
+      item = this.scratch;
+    } else {
+      item = '';
+    }
 
-    @buffer.setText item
+    return this.buffer.setText(item);
+  }
 
-  atLastItem: ->
-    @index is @history.length - 1
+  atLastItem() {
+    return this.index === (this.history.length - 1);
+  }
 
-  store: ->
-    text = @buffer.getText()
-    return if not text or text is @history.getLast()
-    @scratch = null
-    @history.add(text)
-    @index = @history.length - 1
+  store() {
+    const text = this.buffer.getText();
+    if (!text || (text === this.history.getLast())) { return; }
+    this.scratch = null;
+    this.history.add(text);
+    return this.index = this.history.length - 1;
+  }
+}
 
-module.exports = {History, HistoryCycler}
+module.exports = {History, HistoryCycler};

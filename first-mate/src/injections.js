@@ -1,36 +1,62 @@
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Injections;
+const _ = require('underscore-plus');
 
-Scanner = require './scanner'
-ScopeSelector = require './scope-selector'
+const Scanner = require('./scanner');
+const ScopeSelector = require('./scope-selector');
 
 module.exports =
-class Injections
-  constructor: (@grammar, injections={}) ->
-    @injections = []
-    @scanners = {}
-    for selector, values of injections
-      continue unless values?.patterns?.length > 0
-      patterns = []
-      for regex in values.patterns
-        pattern = @grammar.createPattern(regex)
-        patterns.push(pattern.getIncludedPatterns(@grammar, patterns)...)
-      @injections.push
-        selector: new ScopeSelector(selector)
-        patterns: patterns
+(Injections = class Injections {
+  constructor(grammar, injections) {
+    this.grammar = grammar;
+    if (injections == null) { injections = {}; }
+    this.injections = [];
+    this.scanners = {};
+    for (let selector in injections) {
+      const values = injections[selector];
+      if (!(__guard__(values != null ? values.patterns : undefined, x => x.length) > 0)) { continue; }
+      const patterns = [];
+      for (let regex of Array.from(values.patterns)) {
+        const pattern = this.grammar.createPattern(regex);
+        patterns.push(...Array.from(pattern.getIncludedPatterns(this.grammar, patterns) || []));
+      }
+      this.injections.push({
+        selector: new ScopeSelector(selector),
+        patterns
+      });
+    }
+  }
 
-  getScanner: (injection) ->
-    return injection.scanner if injection.scanner?
+  getScanner(injection) {
+    if (injection.scanner != null) { return injection.scanner; }
 
-    scanner = new Scanner(injection.patterns)
-    injection.scanner = scanner
-    scanner
+    const scanner = new Scanner(injection.patterns);
+    injection.scanner = scanner;
+    return scanner;
+  }
 
-  getScanners: (ruleStack) ->
-    return [] if @injections.length is 0
+  getScanners(ruleStack) {
+    if (this.injections.length === 0) { return []; }
 
-    scanners = []
-    scopes = @grammar.scopesFromStack(ruleStack)
-    for injection in @injections when injection.selector.matches(scopes)
-      scanner = @getScanner(injection)
-      scanners.push(scanner)
-    scanners
+    const scanners = [];
+    const scopes = this.grammar.scopesFromStack(ruleStack);
+    for (let injection of Array.from(this.injections)) {
+      if (injection.selector.matches(scopes)) {
+        const scanner = this.getScanner(injection);
+        scanners.push(scanner);
+      }
+    }
+    return scanners;
+  }
+});
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

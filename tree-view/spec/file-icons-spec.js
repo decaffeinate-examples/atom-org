@@ -1,44 +1,56 @@
-DefaultFileIcons = require '../lib/default-file-icons'
-getIconServices = require '../lib/get-icon-services'
-{Disposable} = require 'atom'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const DefaultFileIcons = require('../lib/default-file-icons');
+const getIconServices = require('../lib/get-icon-services');
+const {Disposable} = require('atom');
 
-describe 'IconServices', ->
-  afterEach ->
-    getIconServices().resetFileIcons()
-    getIconServices().resetElementIcons()
+describe('IconServices', function() {
+  afterEach(function() {
+    getIconServices().resetFileIcons();
+    return getIconServices().resetElementIcons();
+  });
 
-  describe 'FileIcons', ->
-    it 'provides a default', ->
-      expect(getIconServices().fileIcons).toBeDefined()
-      expect(getIconServices().fileIcons).toBe(DefaultFileIcons)
+  describe('FileIcons', function() {
+    it('provides a default', function() {
+      expect(getIconServices().fileIcons).toBeDefined();
+      return expect(getIconServices().fileIcons).toBe(DefaultFileIcons);
+    });
 
-    it 'allows the default to be overridden', ->
-      service = new Object
-      getIconServices().setFileIcons service
-      expect(getIconServices().fileIcons).toBe(service)
+    it('allows the default to be overridden', function() {
+      const service = new Object;
+      getIconServices().setFileIcons(service);
+      return expect(getIconServices().fileIcons).toBe(service);
+    });
 
-    it 'allows the service to be reset to the default easily', ->
-      service = new Object
-      getIconServices().setFileIcons service
-      getIconServices().resetFileIcons()
-      expect(getIconServices().fileIcons).toBe(DefaultFileIcons)
+    return it('allows the service to be reset to the default easily', function() {
+      const service = new Object;
+      getIconServices().setFileIcons(service);
+      getIconServices().resetFileIcons();
+      return expect(getIconServices().fileIcons).toBe(DefaultFileIcons);
+    });
+  });
 
-  describe 'ElementIcons', ->
-    it 'does not provide a default', ->
-      expect(getIconServices().elementIcons).toBe(null)
+  return describe('ElementIcons', function() {
+    it('does not provide a default', () => expect(getIconServices().elementIcons).toBe(null));
 
-    it 'consumes the ElementIcons service', ->
-      service = ->
-      getIconServices().setElementIcons service
-      expect(getIconServices().elementIcons).toBe(service)
+    it('consumes the ElementIcons service', function() {
+      const service = function() {};
+      getIconServices().setElementIcons(service);
+      return expect(getIconServices().elementIcons).toBe(service);
+    });
 
-    it 'does not call the FileIcons service when the ElementIcons service is provided', ->
-      elementIcons = ->
-        new Disposable ->
-      fileIcons =
-        iconClassForPath: ->
-      spyOn(fileIcons, 'iconClassForPath').andCallThrough()
-      getIconServices().setElementIcons elementIcons
-      getIconServices().setFileIcons fileIcons
-      getIconServices().updateFileIcon(file: {}, fileName: classList: add: ->)
-      expect(fileIcons.iconClassForPath).not.toHaveBeenCalled()
+    return it('does not call the FileIcons service when the ElementIcons service is provided', function() {
+      const elementIcons = () => new Disposable(function() {});
+      const fileIcons =
+        {iconClassForPath() {}};
+      spyOn(fileIcons, 'iconClassForPath').andCallThrough();
+      getIconServices().setElementIcons(elementIcons);
+      getIconServices().setFileIcons(fileIcons);
+      getIconServices().updateFileIcon({file: {}, fileName: {classList: {add() {}}}});
+      return expect(fileIcons.iconClassForPath).not.toHaveBeenCalled();
+    });
+  });
+});

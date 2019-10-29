@@ -1,11 +1,20 @@
-semver = require 'semver'
-deprecatedPackages = null
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const semver = require('semver');
+let deprecatedPackages = null;
 
-exports.isDeprecatedPackage = (name, version) ->
-  deprecatedPackages ?= require('../deprecated-packages') ? {}
-  return false unless deprecatedPackages.hasOwnProperty(name)
+exports.isDeprecatedPackage = function(name, version) {
+  if (deprecatedPackages == null) { let left;
+  deprecatedPackages = (left = require('../deprecated-packages')) != null ? left : {}; }
+  if (!deprecatedPackages.hasOwnProperty(name)) { return false; }
 
-  deprecatedVersionRange = deprecatedPackages[name].version
-  return true unless deprecatedVersionRange
+  const deprecatedVersionRange = deprecatedPackages[name].version;
+  if (!deprecatedVersionRange) { return true; }
 
-  semver.valid(version) and semver.validRange(deprecatedVersionRange) and semver.satisfies(version, deprecatedVersionRange)
+  return semver.valid(version) && semver.validRange(deprecatedVersionRange) && semver.satisfies(version, deprecatedVersionRange);
+};

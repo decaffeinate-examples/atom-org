@@ -1,46 +1,49 @@
-fs = require 'fs-plus'
-path = require 'path'
-temp = require('temp').track()
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs-plus');
+const path = require('path');
+const temp = require('temp').track();
 
-fileIcons = require '../lib/default-file-icons'
+const fileIcons = require('../lib/default-file-icons');
 
-describe 'DefaultFileIcons', ->
-  it 'defaults to text', ->
-    expect(fileIcons.iconClassForPath('foo.bar')).toEqual('icon-file-text')
+describe('DefaultFileIcons', function() {
+  it('defaults to text', () => expect(fileIcons.iconClassForPath('foo.bar')).toEqual('icon-file-text'));
 
-  it 'recognizes READMEs', ->
-    expect(fileIcons.iconClassForPath('README.md')).toEqual('icon-book')
+  it('recognizes READMEs', () => expect(fileIcons.iconClassForPath('README.md')).toEqual('icon-book'));
 
-  it 'recognizes compressed files', ->
-    expect(fileIcons.iconClassForPath('foo.zip')).toEqual('icon-file-zip')
+  it('recognizes compressed files', () => expect(fileIcons.iconClassForPath('foo.zip')).toEqual('icon-file-zip'));
 
-  it 'recognizes image files', ->
-    expect(fileIcons.iconClassForPath('foo.png')).toEqual('icon-file-media')
+  it('recognizes image files', () => expect(fileIcons.iconClassForPath('foo.png')).toEqual('icon-file-media'));
 
-  it 'recognizes PDF files', ->
-    expect(fileIcons.iconClassForPath('foo.pdf')).toEqual('icon-file-pdf')
+  it('recognizes PDF files', () => expect(fileIcons.iconClassForPath('foo.pdf')).toEqual('icon-file-pdf'));
 
-  it 'recognizes binary files', ->
-    expect(fileIcons.iconClassForPath('foo.exe')).toEqual('icon-file-binary')
+  it('recognizes binary files', () => expect(fileIcons.iconClassForPath('foo.exe')).toEqual('icon-file-binary'));
 
-  describe 'symlinks', ->
-    [tempDir] = []
+  return describe('symlinks', function() {
+    let [tempDir] = Array.from([]);
 
-    beforeEach ->
-      tempDir = temp.mkdirSync('atom-tree-view')
+    beforeEach(() => tempDir = temp.mkdirSync('atom-tree-view'));
 
-    it 'recognizes symlinks', ->
-      filePath = path.join(tempDir, 'foo.bar')
-      linkPath = path.join(tempDir, 'link.bar')
-      fs.writeFileSync(filePath, '')
-      fs.symlinkSync(filePath, linkPath, 'junction')
+    it('recognizes symlinks', function() {
+      const filePath = path.join(tempDir, 'foo.bar');
+      const linkPath = path.join(tempDir, 'link.bar');
+      fs.writeFileSync(filePath, '');
+      fs.symlinkSync(filePath, linkPath, 'junction');
 
-      expect(fileIcons.iconClassForPath(linkPath)).toEqual('icon-file-symlink-file')
+      return expect(fileIcons.iconClassForPath(linkPath)).toEqual('icon-file-symlink-file');
+    });
 
-    it 'recognizes as symlink instead of other types', ->
-      filePath = path.join(tempDir, 'foo.zip')
-      linkPath = path.join(tempDir, 'link.zip')
-      fs.writeFileSync(filePath, '')
-      fs.symlinkSync(filePath, linkPath, 'junction')
+    return it('recognizes as symlink instead of other types', function() {
+      const filePath = path.join(tempDir, 'foo.zip');
+      const linkPath = path.join(tempDir, 'link.zip');
+      fs.writeFileSync(filePath, '');
+      fs.symlinkSync(filePath, linkPath, 'junction');
 
-      expect(fileIcons.iconClassForPath(linkPath)).toEqual('icon-file-symlink-file')
+      return expect(fileIcons.iconClassForPath(linkPath)).toEqual('icon-file-symlink-file');
+    });
+  });
+});

@@ -1,93 +1,132 @@
-{calculateSpecificity, MODIFIERS, isKeyup} = require './helpers'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let KeyBinding;
+const {calculateSpecificity, MODIFIERS, isKeyup} = require('./helpers');
 
-MATCH_TYPES = {
-  EXACT: 'exact'
-  PARTIAL: 'partial'
+const MATCH_TYPES = {
+  EXACT: 'exact',
+  PARTIAL: 'partial',
   PENDING_KEYUP: 'pendingKeyup'
-}
-module.exports.MATCH_TYPES = MATCH_TYPES
+};
+module.exports.MATCH_TYPES = MATCH_TYPES;
 
 module.exports.KeyBinding =
-class KeyBinding
-  @currentIndex: 1
+(KeyBinding = (function() {
+  KeyBinding = class KeyBinding {
+    static initClass() {
+      this.currentIndex = 1;
+  
+      this.prototype.enabled = true;
+    }
 
-  enabled: true
+    constructor(source, command, keystrokes, selector, priority) {
+      this.source = source;
+      this.command = command;
+      this.keystrokes = keystrokes;
+      this.priority = priority;
+      this.keystrokeArray = this.keystrokes.split(' ');
+      this.keystrokeCount = this.keystrokeArray.length;
+      this.selector = selector.replace(/!important/g, '');
+      this.specificity = calculateSpecificity(selector);
+      this.index = this.constructor.currentIndex++;
+      this.cachedKeyups = null;
+    }
 
-  constructor: (@source, @command, @keystrokes, selector, @priority) ->
-    @keystrokeArray = @keystrokes.split(' ')
-    @keystrokeCount = @keystrokeArray.length
-    @selector = selector.replace(/!important/g, '')
-    @specificity = calculateSpecificity(selector)
-    @index = @constructor.currentIndex++
-    @cachedKeyups = null
+    matches(keystroke) {
+      const multiKeystroke = /\s/.test(keystroke);
+      if (multiKeystroke) {
+        return keystroke === this.keystroke;
+      } else {
+        return keystroke.split(' ')[0] === this.keystroke.split(' ')[0];
+      }
+    }
 
-  matches: (keystroke) ->
-    multiKeystroke = /\s/.test keystroke
-    if multiKeystroke
-      keystroke is @keystroke
-    else
-      keystroke.split(' ')[0] is @keystroke.split(' ')[0]
+    compare(keyBinding) {
+      if (keyBinding.priority === this.priority) {
+        if (keyBinding.specificity === this.specificity) {
+          return keyBinding.index - this.index;
+        } else {
+          return keyBinding.specificity - this.specificity;
+        }
+      } else {
+        return keyBinding.priority - this.priority;
+      }
+    }
 
-  compare: (keyBinding) ->
-    if keyBinding.priority is @priority
-      if keyBinding.specificity is @specificity
-        keyBinding.index - @index
-      else
-        keyBinding.specificity - @specificity
-    else
-      keyBinding.priority - @priority
+    // Return the keyup portion of the binding, if any, as an array of
+    // keystrokes.
+    getKeyups() {
+      if (this.cachedKeyups != null) { return this.cachedKeyups; }
+      for (let i = 0; i < this.keystrokeArray.length; i++) {
+        const keystroke = this.keystrokeArray[i];
+        if (isKeyup(keystroke)) { return this.cachedKeyups = this.keystrokeArray.slice(i); }
+      }
+    }
 
-  # Return the keyup portion of the binding, if any, as an array of
-  # keystrokes.
-  getKeyups: ->
-    return @cachedKeyups if @cachedKeyups?
-    for keystroke, i in @keystrokeArray
-      return @cachedKeyups = @keystrokeArray.slice(i) if isKeyup(keystroke)
+    // userKeystrokes is an array of keystrokes e.g.
+    // ['ctrl-y', 'ctrl-x', '^x']
+    matchesKeystrokes(userKeystrokes) {
+      let userKeystrokeIndex = -1;
+      let userKeystrokesHasKeydownEvent = false;
+      const matchesNextUserKeystroke = function(bindingKeystroke) {
+        while (userKeystrokeIndex < (userKeystrokes.length - 1)) {
+          userKeystrokeIndex += 1;
+          const userKeystroke = userKeystrokes[userKeystrokeIndex];
+          const isKeydownEvent = !isKeyup(userKeystroke);
+          if (isKeydownEvent) { userKeystrokesHasKeydownEvent = true; }
+          if (bindingKeystroke === userKeystroke) {
+            return true;
+          } else if (isKeydownEvent) {
+            return false;
+          }
+        }
+        return null;
+      };
 
-  # userKeystrokes is an array of keystrokes e.g.
-  # ['ctrl-y', 'ctrl-x', '^x']
-  matchesKeystrokes: (userKeystrokes) ->
-    userKeystrokeIndex = -1
-    userKeystrokesHasKeydownEvent = false
-    matchesNextUserKeystroke = (bindingKeystroke) ->
-      while userKeystrokeIndex < userKeystrokes.length - 1
-        userKeystrokeIndex += 1
-        userKeystroke = userKeystrokes[userKeystrokeIndex]
-        isKeydownEvent = not isKeyup(userKeystroke)
-        userKeystrokesHasKeydownEvent = true if isKeydownEvent
-        if bindingKeystroke is userKeystroke
-          return true
-        else if isKeydownEvent
-          return false
-      null
+      let isPartialMatch = false;
+      let bindingRemainderContainsOnlyKeyups = true;
+      const bindingKeystrokeIndex = 0;
+      for (let bindingKeystroke of Array.from(this.keystrokeArray)) {
+        if (!isPartialMatch) {
+          const doesMatch = matchesNextUserKeystroke(bindingKeystroke);
+          if (doesMatch === false) {
+            return false;
+          } else if (doesMatch === null) {
+            // Make sure userKeystrokes with only keyup events don't match everything
+            if (userKeystrokesHasKeydownEvent) {
+              isPartialMatch = true;
+            } else {
+              return false;
+            }
+          }
+        }
 
-    isPartialMatch = false
-    bindingRemainderContainsOnlyKeyups = true
-    bindingKeystrokeIndex = 0
-    for bindingKeystroke in @keystrokeArray
-      unless isPartialMatch
-        doesMatch = matchesNextUserKeystroke(bindingKeystroke)
-        if doesMatch is false
-          return false
-        else if doesMatch is null
-          # Make sure userKeystrokes with only keyup events don't match everything
-          if userKeystrokesHasKeydownEvent
-            isPartialMatch = true
-          else
-            return false
+        if (isPartialMatch) {
+          if (!isKeyup(bindingKeystroke)) { bindingRemainderContainsOnlyKeyups = false; }
+        }
+      }
 
-      if isPartialMatch
-        bindingRemainderContainsOnlyKeyups = false unless isKeyup(bindingKeystroke)
+      // Bindings that match the beginning of the user's keystrokes are not a match.
+      // e.g. This is not a match. It would have been a match on the previous keystroke:
+      // bindingKeystrokes = ['ctrl-tab', '^tab']
+      // userKeystrokes    = ['ctrl-tab', '^tab', '^ctrl']
+      if (userKeystrokeIndex < (userKeystrokes.length - 1)) { return false; }
 
-    # Bindings that match the beginning of the user's keystrokes are not a match.
-    # e.g. This is not a match. It would have been a match on the previous keystroke:
-    # bindingKeystrokes = ['ctrl-tab', '^tab']
-    # userKeystrokes    = ['ctrl-tab', '^tab', '^ctrl']
-    return false if userKeystrokeIndex < userKeystrokes.length - 1
-
-    if isPartialMatch and bindingRemainderContainsOnlyKeyups
-      MATCH_TYPES.PENDING_KEYUP
-    else if isPartialMatch
-      MATCH_TYPES.PARTIAL
-    else
-      MATCH_TYPES.EXACT
+      if (isPartialMatch && bindingRemainderContainsOnlyKeyups) {
+        return MATCH_TYPES.PENDING_KEYUP;
+      } else if (isPartialMatch) {
+        return MATCH_TYPES.PARTIAL;
+      } else {
+        return MATCH_TYPES.EXACT;
+      }
+    }
+  };
+  KeyBinding.initClass();
+  return KeyBinding;
+})());

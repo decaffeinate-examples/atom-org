@@ -1,63 +1,96 @@
-{Disposable} = require 'atom'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let CursorPositionView;
+const {Disposable} = require('atom');
 
 module.exports =
-class CursorPositionView
-  constructor: ->
-    @viewUpdatePending = false
+(CursorPositionView = class CursorPositionView {
+  constructor() {
+    let left;
+    this.viewUpdatePending = false;
 
-    @element = document.createElement('status-bar-cursor')
-    @element.classList.add('cursor-position', 'inline-block')
-    @goToLineLink = document.createElement('a')
-    @goToLineLink.classList.add('inline-block')
-    @element.appendChild(@goToLineLink)
+    this.element = document.createElement('status-bar-cursor');
+    this.element.classList.add('cursor-position', 'inline-block');
+    this.goToLineLink = document.createElement('a');
+    this.goToLineLink.classList.add('inline-block');
+    this.element.appendChild(this.goToLineLink);
 
-    @formatString = atom.config.get('status-bar.cursorPositionFormat') ? '%L:%C'
+    this.formatString = (left = atom.config.get('status-bar.cursorPositionFormat')) != null ? left : '%L:%C';
 
-    @activeItemSubscription = atom.workspace.onDidChangeActiveTextEditor (activeEditor) => @subscribeToActiveTextEditor()
+    this.activeItemSubscription = atom.workspace.onDidChangeActiveTextEditor(activeEditor => this.subscribeToActiveTextEditor());
 
-    @subscribeToConfig()
-    @subscribeToActiveTextEditor()
+    this.subscribeToConfig();
+    this.subscribeToActiveTextEditor();
 
-    @tooltip = atom.tooltips.add(@element, title: => "Line #{@row}, Column #{@column}")
+    this.tooltip = atom.tooltips.add(this.element, {title: () => `Line ${this.row}, Column ${this.column}`});
 
-    @handleClick()
+    this.handleClick();
+  }
 
-  destroy: ->
-    @activeItemSubscription.dispose()
-    @cursorSubscription?.dispose()
-    @tooltip.dispose()
-    @configSubscription?.dispose()
-    @clickSubscription.dispose()
-    @updateSubscription?.dispose()
+  destroy() {
+    this.activeItemSubscription.dispose();
+    if (this.cursorSubscription != null) {
+      this.cursorSubscription.dispose();
+    }
+    this.tooltip.dispose();
+    if (this.configSubscription != null) {
+      this.configSubscription.dispose();
+    }
+    this.clickSubscription.dispose();
+    return (this.updateSubscription != null ? this.updateSubscription.dispose() : undefined);
+  }
 
-  subscribeToActiveTextEditor: ->
-    @cursorSubscription?.dispose()
-    selectionsMarkerLayer = atom.workspace.getActiveTextEditor()?.selectionsMarkerLayer
-    @cursorSubscription = selectionsMarkerLayer?.onDidUpdate(@scheduleUpdate.bind(this))
-    @scheduleUpdate()
+  subscribeToActiveTextEditor() {
+    if (this.cursorSubscription != null) {
+      this.cursorSubscription.dispose();
+    }
+    const selectionsMarkerLayer = __guard__(atom.workspace.getActiveTextEditor(), x => x.selectionsMarkerLayer);
+    this.cursorSubscription = selectionsMarkerLayer != null ? selectionsMarkerLayer.onDidUpdate(this.scheduleUpdate.bind(this)) : undefined;
+    return this.scheduleUpdate();
+  }
 
-  subscribeToConfig: ->
-    @configSubscription?.dispose()
-    @configSubscription = atom.config.observe 'status-bar.cursorPositionFormat', (value) =>
-      @formatString = value ? '%L:%C'
-      @scheduleUpdate()
+  subscribeToConfig() {
+    if (this.configSubscription != null) {
+      this.configSubscription.dispose();
+    }
+    return this.configSubscription = atom.config.observe('status-bar.cursorPositionFormat', value => {
+      this.formatString = value != null ? value : '%L:%C';
+      return this.scheduleUpdate();
+    });
+  }
 
-  handleClick: ->
-    clickHandler = -> atom.commands.dispatch(atom.views.getView(atom.workspace.getActiveTextEditor()), 'go-to-line:toggle')
-    @element.addEventListener('click', clickHandler)
-    @clickSubscription = new Disposable => @element.removeEventListener('click', clickHandler)
+  handleClick() {
+    const clickHandler = () => atom.commands.dispatch(atom.views.getView(atom.workspace.getActiveTextEditor()), 'go-to-line:toggle');
+    this.element.addEventListener('click', clickHandler);
+    return this.clickSubscription = new Disposable(() => this.element.removeEventListener('click', clickHandler));
+  }
 
-  scheduleUpdate: ->
-    return if @viewUpdatePending
+  scheduleUpdate() {
+    if (this.viewUpdatePending) { return; }
 
-    @viewUpdatePending = true
-    @updateSubscription = atom.views.updateDocument =>
-      @viewUpdatePending = false
-      if position = atom.workspace.getActiveTextEditor()?.getCursorBufferPosition()
-        @row = position.row + 1
-        @column = position.column + 1
-        @goToLineLink.textContent = @formatString.replace('%L', @row).replace('%C', @column)
-        @element.classList.remove('hide')
-      else
-        @goToLineLink.textContent = ''
-        @element.classList.add('hide')
+    this.viewUpdatePending = true;
+    return this.updateSubscription = atom.views.updateDocument(() => {
+      let position;
+      this.viewUpdatePending = false;
+      if (position = __guard__(atom.workspace.getActiveTextEditor(), x => x.getCursorBufferPosition())) {
+        this.row = position.row + 1;
+        this.column = position.column + 1;
+        this.goToLineLink.textContent = this.formatString.replace('%L', this.row).replace('%C', this.column);
+        return this.element.classList.remove('hide');
+      } else {
+        this.goToLineLink.textContent = '';
+        return this.element.classList.add('hide');
+      }
+    });
+  }
+});
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

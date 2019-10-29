@@ -1,13 +1,23 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ProjectRingNotification;
 module.exports =
-class ProjectRingNotification
-	notify: (message) ->
-		return unless @isEnabled and message
-		atom.notifications.addSuccess message
+(ProjectRingNotification = class ProjectRingNotification {
+	notify(message) {
+		if (!this.isEnabled || !message) { return; }
+		return atom.notifications.addSuccess(message);
+	}
 
-	warn: (message, autoDismiss) ->
-		return unless @isEnabled and message
-		atom.notifications.addWarning message, dismissable: not autoDismiss
+	warn(message, autoDismiss) {
+		if (!this.isEnabled || !message) { return; }
+		return atom.notifications.addWarning(message, {dismissable: !autoDismiss});
+	}
 
-	alert: (message) ->
-		return unless message
-		atom.notifications.addError message, dismissable: true
+	alert(message) {
+		if (!message) { return; }
+		return atom.notifications.addError(message, {dismissable: true});
+	}
+});

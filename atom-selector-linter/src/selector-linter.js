@@ -1,133 +1,207 @@
-_ = require "underscore-plus"
-path = require "path"
-{selectorHasClass, eachSelector, selectorHasPsuedoClass} = require "./helpers"
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let SelectorLinter;
+const _ = require("underscore-plus");
+const path = require("path");
+const {selectorHasClass, eachSelector, selectorHasPsuedoClass} = require("./helpers");
 
-CLASS_TO_TAG =
-  "workspace": "atom-workspace"
-  "pane": "atom-pane"
-  "panes": "atom-pane-container"
-  "editor": "atom-text-editor"
+const CLASS_TO_TAG = {
+  "workspace": "atom-workspace",
+  "pane": "atom-pane",
+  "panes": "atom-pane-container",
+  "editor": "atom-text-editor",
   "editor-colors": "atom-text-editor"
+};
 
-CLASS_TO_SELECTOR =
-  "pane-row": "atom-pane-axis.horizontal"
+const CLASS_TO_SELECTOR = {
+  "pane-row": "atom-pane-axis.horizontal",
   "pane-column": "atom-pane-axis.vertical"
+};
 
-CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY =
-  "overlay": "atom-panel.modal"
-  "panel-top": "atom-panel.top"
-  "panel-left": "atom-panel.left"
-  "panel-right": "atom-panel.right"
-  "panel-bottom": "atom-panel.bottom"
+const CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY = {
+  "overlay": "atom-panel.modal",
+  "panel-top": "atom-panel.top",
+  "panel-left": "atom-panel.left",
+  "panel-right": "atom-panel.right",
+  "panel-bottom": "atom-panel.bottom",
   "tool-panel": "atom-panel"
+};
 
-EDITOR_DESCENDENT_PATTERN = /(\.text-editor|\.editor|\.editor-colors|atom-text-editor)([:.][^ ]+)?[ >].*\w/
+const EDITOR_DESCENDENT_PATTERN = /(\.text-editor|\.editor|\.editor-colors|atom-text-editor)([:.][^ ]+)?[ >].*\w/;
 
 module.exports =
-class SelectorLinter
-  constructor: ->
-    @deprecations = {}
+(SelectorLinter = class SelectorLinter {
+  constructor() {
+    this.deprecations = {};
+  }
 
-  checkPackage: (pkg) ->
-    for [sourcePath, menu] in pkg.menus ? []
-      @checkMenu(menu, @packageMetadata(pkg, sourcePath))
-    for [sourcePath, keymap] in pkg.keymaps ? []
-      @checkKeymap(keymap, @packageMetadata(pkg, sourcePath))
-    for [sourcePath, stylesheet] in pkg.stylesheets ? []
-      if pkg.metadata.theme is "syntax" or /atom-text-editor\.(less|css)/.test(sourcePath)
-        @checkSyntaxStylesheet(stylesheet, @packageMetadata(pkg, sourcePath))
-      else
-        @checkUIStylesheet(stylesheet, @packageMetadata(pkg, sourcePath))
+  checkPackage(pkg) {
+    let sourcePath;
+    let menu;
+    let keymap;
+    for ([sourcePath, menu] of Array.from(pkg.menus != null ? pkg.menus : [])) {
+      this.checkMenu(menu, this.packageMetadata(pkg, sourcePath));
+    }
+    for ([sourcePath, keymap] of Array.from(pkg.keymaps != null ? pkg.keymaps : [])) {
+      this.checkKeymap(keymap, this.packageMetadata(pkg, sourcePath));
+    }
+    return (() => {
+      let stylesheet;
+      const result = [];
+      for ([sourcePath, stylesheet] of Array.from(pkg.stylesheets != null ? pkg.stylesheets : [])) {
+        if ((pkg.metadata.theme === "syntax") || /atom-text-editor\.(less|css)/.test(sourcePath)) {
+          result.push(this.checkSyntaxStylesheet(stylesheet, this.packageMetadata(pkg, sourcePath)));
+        } else {
+          result.push(this.checkUIStylesheet(stylesheet, this.packageMetadata(pkg, sourcePath)));
+        }
+      }
+      return result;
+    })();
+  }
 
-  checkKeymap: (keymap, metadata) ->
-    for selector of keymap
-      @check(selector, metadata)
+  checkKeymap(keymap, metadata) {
+    return (() => {
+      const result = [];
+      for (let selector in keymap) {
+        result.push(this.check(selector, metadata));
+      }
+      return result;
+    })();
+  }
 
-  checkUIStylesheet: (css, metadata) ->
-    shadowSelectorUsed = editorDescendentUsed = false
+  checkUIStylesheet(css, metadata) {
+    let editorDescendentUsed;
+    let shadowSelectorUsed = (editorDescendentUsed = false);
 
-    selectorsUsed = {}
+    const selectorsUsed = {};
 
-    eachSelector css, (selector) =>
-      @check(selector, metadata, true)
+    eachSelector(css, selector => {
+      this.check(selector, metadata, true);
 
-      for klass, replacementSelector of CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY
-        selectorsUsed[klass] ||= selectorHasClass(selector, klass)
-        selectorsUsed[replacementSelector] ||= selector.indexOf(replacementSelector) >= 0
+      for (let klass in CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY) {
+        const replacementSelector = CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY[klass];
+        if (!selectorsUsed[klass]) { selectorsUsed[klass] = selectorHasClass(selector, klass); }
+        if (!selectorsUsed[replacementSelector]) { selectorsUsed[replacementSelector] = selector.indexOf(replacementSelector) >= 0; }
+      }
 
-      editorDescendentUsed ||= EDITOR_DESCENDENT_PATTERN.test(selector)
-      shadowSelectorUsed ||= selectorHasPsuedoClass(selector, ":shadow")
+      if (!editorDescendentUsed) { editorDescendentUsed = EDITOR_DESCENDENT_PATTERN.test(selector); }
+      return shadowSelectorUsed || (shadowSelectorUsed = selectorHasPsuedoClass(selector, ":shadow"));
+    });
 
-    for klass, replacementSelector of CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY
-      if selectorsUsed[klass] and not selectorsUsed[replacementSelector]
-        @addDeprecation(metadata, "Use the selector `#{replacementSelector}` instead of the `#{klass}` class.")
+    for (let klass in CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY) {
+      const replacementSelector = CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY[klass];
+      if (selectorsUsed[klass] && !selectorsUsed[replacementSelector]) {
+        this.addDeprecation(metadata, `Use the selector \`${replacementSelector}\` instead of the \`${klass}\` class.`);
+      }
+    }
 
-    if editorDescendentUsed and not shadowSelectorUsed
-      @addDeprecation(metadata, """
-        Style elements within text editors using the `atom-text-editor::shadow` selector or the `.atom-text-editor.less` file extension.
-        If you want to target overlay elements, target them directly or as descendants of `atom-overlay` elements.
-      """)
+    if (editorDescendentUsed && !shadowSelectorUsed) {
+      return this.addDeprecation(metadata, `\
+Style elements within text editors using the \`atom-text-editor::shadow\` selector or the \`.atom-text-editor.less\` file extension.
+If you want to target overlay elements, target them directly or as descendants of \`atom-overlay\` elements.\
+`);
+    }
+  }
 
-  checkSyntaxStylesheet: (css, metadata) ->
-    hostSelectorUsed = editorClassUsed = editorColorsClassUsed = false
-    eachSelector css, (selector) =>
-      @check(selector, metadata)
-      editorClassUsed ||= selectorHasClass(selector, "editor")
-      editorColorsClassUsed ||= selectorHasClass(selector, "editor-colors")
-      hostSelectorUsed ||= selectorHasPsuedoClass(selector, "host")
-    unless hostSelectorUsed
-      if editorClassUsed
-        @addDeprecation(metadata, "Target the selector `:host, atom-text-editor` instead of `.editor` for shadow DOM support.")
-      if editorColorsClassUsed
-        @addDeprecation(metadata, "Target the selector `:host, atom-text-editor` instead of `.editor-colors` for shadow DOM support.")
+  checkSyntaxStylesheet(css, metadata) {
+    let editorClassUsed, editorColorsClassUsed;
+    let hostSelectorUsed = (editorClassUsed = (editorColorsClassUsed = false));
+    eachSelector(css, selector => {
+      this.check(selector, metadata);
+      if (!editorClassUsed) { editorClassUsed = selectorHasClass(selector, "editor"); }
+      if (!editorColorsClassUsed) { editorColorsClassUsed = selectorHasClass(selector, "editor-colors"); }
+      return hostSelectorUsed || (hostSelectorUsed = selectorHasPsuedoClass(selector, "host"));
+    });
+    if (!hostSelectorUsed) {
+      if (editorClassUsed) {
+        this.addDeprecation(metadata, "Target the selector `:host, atom-text-editor` instead of `.editor` for shadow DOM support.");
+      }
+      if (editorColorsClassUsed) {
+        return this.addDeprecation(metadata, "Target the selector `:host, atom-text-editor` instead of `.editor-colors` for shadow DOM support.");
+      }
+    }
+  }
 
-  checkMenu: (menu, metadata) ->
-    for selector of menu['context-menu']
-      @check(selector, metadata)
+  checkMenu(menu, metadata) {
+    return (() => {
+      const result = [];
+      for (let selector in menu['context-menu']) {
+        result.push(this.check(selector, metadata));
+      }
+      return result;
+    })();
+  }
 
-  check: (selector, metadata, skipBackwardCompatible=false) ->
-    for klass, tag of CLASS_TO_TAG
-      if selectorHasClass(selector, klass)
-        @addDeprecation(metadata, "Use the `#{tag}` tag instead of the `#{klass}` class.")
+  check(selector, metadata, skipBackwardCompatible) {
+    let klass, replacement;
+    if (skipBackwardCompatible == null) { skipBackwardCompatible = false; }
+    for (klass in CLASS_TO_TAG) {
+      const tag = CLASS_TO_TAG[klass];
+      if (selectorHasClass(selector, klass)) {
+        this.addDeprecation(metadata, `Use the \`${tag}\` tag instead of the \`${klass}\` class.`);
+      }
+    }
 
-    for klass, replacement of CLASS_TO_SELECTOR
-      if selectorHasClass(selector, klass)
-        @addDeprecation(metadata, "Use the selector `#{replacement}` instead of the `#{klass}` class.")
+    for (klass in CLASS_TO_SELECTOR) {
+      replacement = CLASS_TO_SELECTOR[klass];
+      if (selectorHasClass(selector, klass)) {
+        this.addDeprecation(metadata, `Use the selector \`${replacement}\` instead of the \`${klass}\` class.`);
+      }
+    }
 
-    unless skipBackwardCompatible
-      for klass, replacement of CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY
-        if selectorHasClass(selector, klass)
-          @addDeprecation(metadata, "Use the selector `#{replacement}` instead of the `#{klass}` class.")
+    if (!skipBackwardCompatible) {
+      for (klass in CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY) {
+        replacement = CLASS_TO_SELECTOR_WITH_BACKWARD_COMPATIBILITY[klass];
+        if (selectorHasClass(selector, klass)) {
+          this.addDeprecation(metadata, `Use the selector \`${replacement}\` instead of the \`${klass}\` class.`);
+        }
+      }
+    }
 
-    if selectorHasClass(selector, "editor") and selectorHasClass(selector, "mini")
-      @addDeprecation(metadata, "Use the selector `atom-text-editor[mini]` to select mini-editors.")
+    if (selectorHasClass(selector, "editor") && selectorHasClass(selector, "mini")) {
+      this.addDeprecation(metadata, "Use the selector `atom-text-editor[mini]` to select mini-editors.");
+    }
 
-    if selectorHasClass(selector, "bracket-matcher") and not selectorHasClass(selector, "region")
-      @addDeprecation(metadata, "Use `.bracket-matcher .region` to select highlighted brackets.")
+    if (selectorHasClass(selector, "bracket-matcher") && !selectorHasClass(selector, "region")) {
+      return this.addDeprecation(metadata, "Use `.bracket-matcher .region` to select highlighted brackets.");
+    }
+  }
 
-  clearDeprecations: ->
-    @deprecations = {}
+  clearDeprecations() {
+    return this.deprecations = {};
+  }
 
-  getDeprecations: ->
-    @deprecations
+  getDeprecations() {
+    return this.deprecations;
+  }
 
-  # Private
+  // Private
 
-  packageMetadata: (pkg, sourcePath) ->
-    {
+  packageMetadata(pkg, sourcePath) {
+    return {
       packageName: pkg.name,
       packagePath: pkg.path,
       sourcePath: path.relative(pkg.path, sourcePath)
-    }
+    };
+  }
 
-  addDeprecation: (metadata, message) ->
-    {packageName, sourcePath} = metadata
-    @deprecations[packageName] ?= {}
-    fileDeprecations = @deprecations[packageName][sourcePath] ?= []
-    deprecation = _.extend(
+  addDeprecation(metadata, message) {
+    const {packageName, sourcePath} = metadata;
+    if (this.deprecations[packageName] == null) { this.deprecations[packageName] = {}; }
+    const fileDeprecations = this.deprecations[packageName][sourcePath] != null ? this.deprecations[packageName][sourcePath] : (this.deprecations[packageName][sourcePath] = []);
+    const deprecation = _.extend(
       _.omit(metadata, "packageName", "sourcePath"),
       {message}
-    )
+    );
 
-    unless _.any(fileDeprecations, (existing) -> _.isEqual(existing, deprecation))
-      fileDeprecations.push(deprecation)
+    if (!_.any(fileDeprecations, existing => _.isEqual(existing, deprecation))) {
+      return fileDeprecations.push(deprecation);
+    }
+  }
+});

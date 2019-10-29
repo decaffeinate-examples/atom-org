@@ -1,32 +1,48 @@
-vm = require 'vm'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS201: Simplify complex destructure assignments
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const vm = require('vm');
 
-exports.allowUnsafeEval = (fn) ->
-  previousEval = global.eval
-  try
-    global.eval = (source) -> vm.runInThisContext(source)
-    fn()
-  finally
-    global.eval = previousEval
+exports.allowUnsafeEval = function(fn) {
+  const previousEval = global.eval;
+  try {
+    global.eval = source => vm.runInThisContext(source);
+    return fn();
+  } finally {
+    global.eval = previousEval;
+  }
+};
 
-exports.allowUnsafeNewFunction = (fn) ->
-  previousFunction = global.Function
-  try
-    global.Function = exports.Function
-    fn()
-  finally
-    global.Function = previousFunction
+exports.allowUnsafeNewFunction = function(fn) {
+  const previousFunction = global.Function;
+  try {
+    global.Function = exports.Function;
+    return fn();
+  } finally {
+    global.Function = previousFunction;
+  }
+};
 
-exports.Function = (paramLists..., body) ->
-  params = []
-  for paramList in paramLists
-    if typeof paramList is 'string'
-      paramList = paramList.split(/\s*,\s*/)
-    params.push(paramList...)
+exports.Function = function(...args) {
+  const adjustedLength = Math.max(args.length, 1), paramLists = args.slice(0, adjustedLength - 1), body = args[adjustedLength - 1];
+  const params = [];
+  for (let paramList of Array.from(paramLists)) {
+    if (typeof paramList === 'string') {
+      paramList = paramList.split(/\s*,\s*/);
+    }
+    params.push(...Array.from(paramList || []));
+  }
 
-  vm.runInThisContext """
-    (function(#{params.join(', ')}) {
-      #{body}
-    })
-  """
+  return vm.runInThisContext(`\
+(function(${params.join(', ')}) {
+  ${body}
+})\
+`
+  );
+};
 
-exports.Function:: = global.Function::
+exports.Function.prototype = global.Function.prototype;

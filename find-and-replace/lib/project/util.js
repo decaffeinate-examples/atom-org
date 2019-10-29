@@ -1,42 +1,56 @@
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const _ = require('underscore-plus');
 
-escapeNode = null
+let escapeNode = null;
 
-escapeHtml = (str) ->
-  escapeNode ?= document.createElement('div')
-  escapeNode.innerText = str
-  escapeNode.innerHTML
+const escapeHtml = function(str) {
+  if (escapeNode == null) { escapeNode = document.createElement('div'); }
+  escapeNode.innerText = str;
+  return escapeNode.innerHTML;
+};
 
-escapeRegex = (str) ->
-  str.replace /[.?*+^$[\]\\(){}|-]/g, (match) -> "\\" + match
+const escapeRegex = str => str.replace(/[.?*+^$[\]\\(){}|-]/g, match => "\\" + match);
 
-sanitizePattern = (pattern) ->
-  pattern = escapeHtml(pattern)
-  pattern.replace(/\n/g, '\\n').replace(/\t/g, '\\t')
+const sanitizePattern = function(pattern) {
+  pattern = escapeHtml(pattern);
+  return pattern.replace(/\n/g, '\\n').replace(/\t/g, '\\t');
+};
 
-getReplacementResultsMessage = ({findPattern, replacePattern, replacedPathCount, replacementCount}) ->
-  if replacedPathCount
-    "<span class=\"text-highlight\">Replaced <span class=\"highlight-error\">#{sanitizePattern(findPattern)}</span> with <span class=\"highlight-success\">#{sanitizePattern(replacePattern)}</span> #{_.pluralize(replacementCount, 'time')} in #{_.pluralize(replacedPathCount, 'file')}</span>"
-  else
-    "<span class=\"text-highlight\">Nothing replaced</span>"
+const getReplacementResultsMessage = function({findPattern, replacePattern, replacedPathCount, replacementCount}) {
+  if (replacedPathCount) {
+    return `<span class=\"text-highlight\">Replaced <span class=\"highlight-error\">${sanitizePattern(findPattern)}</span> with <span class=\"highlight-success\">${sanitizePattern(replacePattern)}</span> ${_.pluralize(replacementCount, 'time')} in ${_.pluralize(replacedPathCount, 'file')}</span>`;
+  } else {
+    return "<span class=\"text-highlight\">Nothing replaced</span>";
+  }
+};
 
-getSearchResultsMessage = (results) ->
-  if results?.findPattern?
-    {findPattern, matchCount, pathCount, replacedPathCount} = results
-    if matchCount
-      "#{_.pluralize(matchCount, 'result')} found in #{_.pluralize(pathCount, 'file')} for <span class=\"highlight-info\">#{sanitizePattern(findPattern)}</span>"
-    else
-      "No #{if replacedPathCount? then 'more' else ''} results found for '#{sanitizePattern(findPattern)}'"
-  else
-    ''
+const getSearchResultsMessage = function(results) {
+  if ((results != null ? results.findPattern : undefined) != null) {
+    const {findPattern, matchCount, pathCount, replacedPathCount} = results;
+    if (matchCount) {
+      return `${_.pluralize(matchCount, 'result')} found in ${_.pluralize(pathCount, 'file')} for <span class=\"highlight-info\">${sanitizePattern(findPattern)}</span>`;
+    } else {
+      return `No ${(replacedPathCount != null) ? 'more' : ''} results found for '${sanitizePattern(findPattern)}'`;
+    }
+  } else {
+    return '';
+  }
+};
 
-showIf = (condition) ->
-  if condition
-    null
-  else
-    {display: 'none'}
+const showIf = function(condition) {
+  if (condition) {
+    return null;
+  } else {
+    return {display: 'none'};
+  }
+};
 
 module.exports = {
   escapeHtml, escapeRegex, sanitizePattern, getReplacementResultsMessage,
   getSearchResultsMessage, showIf
-}
+};

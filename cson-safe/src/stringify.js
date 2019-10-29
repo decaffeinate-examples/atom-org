@@ -1,4 +1,11 @@
-###
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+/*
 Copyright (c) 2014, Groupon, Inc.
 All rights reserved.
 
@@ -28,96 +35,113 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-###
+*/
 
-# There are multiple ways to express the same thing in CSON, so trying to
-# make `CSON.stringify(CSON.parse(str)) == str` work is doomed to fail
-# but we can at least make output look a lot nicer than JSON.stringify's.
-jsIdentifierRE = /^[a-z_$][a-z0-9_$]*$/i
-tripleQuotesRE = new RegExp "'''", 'g' # some syntax hilighters hate on /'''/g
+// There are multiple ways to express the same thing in CSON, so trying to
+// make `CSON.stringify(CSON.parse(str)) == str` work is doomed to fail
+// but we can at least make output look a lot nicer than JSON.stringify's.
+const jsIdentifierRE = /^[a-z_$][a-z0-9_$]*$/i;
+const tripleQuotesRE = new RegExp("'''", 'g'); // some syntax hilighters hate on /'''/g
 
-SPACES = '          ' # 10 spaces
+const SPACES = '          '; // 10 spaces
 
-newlineWrap = (str) ->
-  str and "\n#{ str }\n"
+const newlineWrap = str => str && `\n${ str }\n`;
 
-isObject = (obj) ->
-  typeof obj == 'object' && obj != null && !Array.isArray(obj)
+const isObject = obj => (typeof obj === 'object') && (obj !== null) && !Array.isArray(obj);
 
-# See:
-# http://www.ecma-international.org/ecma-262/5.1/#sec-15.12.3
-module.exports = (data, visitor, indent) ->
-  return undefined if typeof data in ['undefined', 'function']
+// See:
+// http://www.ecma-international.org/ecma-262/5.1/#sec-15.12.3
+module.exports = function(data, visitor, indent) {
+  if (['undefined', 'function'].includes(typeof data)) { return undefined; }
 
-  # pick an indent style much as JSON.stringify does
-  indent = switch typeof indent
-    when 'string' then indent.slice 0, 10
+  // pick an indent style much as JSON.stringify does
+  indent = (() => { switch (typeof indent) {
+    case 'string': return indent.slice(0, 10);
 
-    when 'number'
-      n = Math.min 10, Math.floor indent
-      n = 0 unless n in [1..10] # do not bail on NaN and similar
-      SPACES.slice(0, n)
+    case 'number':
+      var n = Math.min(10, Math.floor(indent));
+      if (!Array.from([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]).includes(n)) { n = 0; } // do not bail on NaN and similar
+      return SPACES.slice(0, n);
 
-    else 0
+    default: return 0;
+  } })();
 
-  return JSON.stringify data, visitor, indent unless indent
+  if (!indent) { return JSON.stringify(data, visitor, indent); }
 
-  indentLine = (line) -> indent + line
+  const indentLine = line => indent + line;
 
-  indentLines = (str) ->
-    return str if str == ''
-    str.split('\n').map(indentLine).join('\n')
+  const indentLines = function(str) {
+    if (str === '') { return str; }
+    return str.split('\n').map(indentLine).join('\n');
+  };
 
-  # have the native JSON serializer do visitor transforms & normalization for us
-  normalized = JSON.parse JSON.stringify data, visitor
+  // have the native JSON serializer do visitor transforms & normalization for us
+  const normalized = JSON.parse(JSON.stringify(data, visitor));
 
-  visitString = (str) ->
-    if str.indexOf('\n') == -1
-      JSON.stringify str
-    else
-      string = str.replace tripleQuotesRE, "\\'''"
-      "'''#{ newlineWrap indentLines string }'''"
+  const visitString = function(str) {
+    if (str.indexOf('\n') === -1) {
+      return JSON.stringify(str);
+    } else {
+      const string = str.replace(tripleQuotesRE, "\\'''");
+      return `'''${ newlineWrap(indentLines(string)) }'''`;
+    }
+  };
 
-  visitArray = (arr) ->
-    items = arr.map (value) ->
-      serializedValue = visitNode value
-      if isObject value
-        "{#{ newlineWrap indentLines serializedValue }}"
-      else
-        serializedValue
+  const visitArray = function(arr) {
+    const items = arr.map(function(value) {
+      const serializedValue = visitNode(value);
+      if (isObject(value)) {
+        return `{${ newlineWrap(indentLines(serializedValue)) }}`;
+      } else {
+        return serializedValue;
+      }
+    });
 
-    array = items.join '\n'
-    "[#{ newlineWrap indentLines array }]"
+    const array = items.join('\n');
+    return `[${ newlineWrap(indentLines(array)) }]`;
+  };
 
-  visitObject = (obj) ->
-    keypairs = for key, value of obj
-      key = JSON.stringify key unless key.match jsIdentifierRE
-      serializedValue = visitNode value
-      if isObject value
-        if serializedValue == ''
-          "#{ key }: {}"
-        else
-          "#{ key }:\n#{ indentLines serializedValue }"
-      else
-        "#{ key }: #{ serializedValue }"
+  const visitObject = function(obj) {
+    const keypairs = (() => {
+      const result = [];
+      for (let key in obj) {
+        const value = obj[key];
+        if (!key.match(jsIdentifierRE)) { key = JSON.stringify(key); }
+        const serializedValue = visitNode(value);
+        if (isObject(value)) {
+          if (serializedValue === '') {
+            result.push(`${ key }: {}`);
+          } else {
+            result.push(`${ key }:\n${ indentLines(serializedValue) }`);
+          }
+        } else {
+          result.push(`${ key }: ${ serializedValue }`);
+        }
+      }
+      return result;
+    })();
 
-    keypairs.join '\n'
+    return keypairs.join('\n');
+  };
 
-  visitNode = (node) ->
-    switch typeof node
-      when 'boolean' then "#{node}"
+  var visitNode = function(node) {
+    switch (typeof node) {
+      case 'boolean': return `${node}`;
 
-      when 'number'
-        if isFinite node then "#{node}"
-        else 'null' # NaN, Infinity and -Infinity
+      case 'number':
+        if (isFinite(node)) { return `${node}`;
+        } else { return 'null'; } // NaN, Infinity and -Infinity
 
-      when 'string' then visitString node
+      case 'string': return visitString(node);
 
-      when 'object'
-        if node == null then 'null'
-        else if Array.isArray(node) then visitArray(node)
-        else visitObject(node)
+      case 'object':
+        if (node === null) { return 'null';
+        } else if (Array.isArray(node)) { return visitArray(node);
+        } else { return visitObject(node); }
+    }
+  };
 
-  out = visitNode normalized
-  if out == '' then '{}' # the only thing that serializes to '' is an empty object
-  else out
+  const out = visitNode(normalized);
+  if (out === '') { return '{}'; // the only thing that serializes to '' is an empty object
+  } else { return out; }
+};

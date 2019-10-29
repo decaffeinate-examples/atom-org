@@ -1,71 +1,103 @@
-{TextEditor, CompositeDisposable, Disposable, Emitter, Range, Point} = require 'atom'
-path = require 'path'
-{getFullExtension} = require "./helpers"
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Dialog;
+const {TextEditor, CompositeDisposable, Disposable, Emitter, Range, Point} = require('atom');
+const path = require('path');
+const {getFullExtension} = require("./helpers");
 
 module.exports =
-class Dialog
-  constructor: ({initialPath, select, iconClass, prompt} = {}) ->
-    @emitter = new Emitter()
-    @disposables = new CompositeDisposable()
+(Dialog = class Dialog {
+  constructor(param) {
+    if (param == null) { param = {}; }
+    const {initialPath, select, iconClass, prompt} = param;
+    this.emitter = new Emitter();
+    this.disposables = new CompositeDisposable();
 
-    @element = document.createElement('div')
-    @element.classList.add('tree-view-dialog')
+    this.element = document.createElement('div');
+    this.element.classList.add('tree-view-dialog');
 
-    @promptText = document.createElement('label')
-    @promptText.classList.add('icon')
-    @promptText.classList.add(iconClass) if iconClass
-    @promptText.textContent = prompt
-    @element.appendChild(@promptText)
+    this.promptText = document.createElement('label');
+    this.promptText.classList.add('icon');
+    if (iconClass) { this.promptText.classList.add(iconClass); }
+    this.promptText.textContent = prompt;
+    this.element.appendChild(this.promptText);
 
-    @miniEditor = new TextEditor({mini: true})
-    blurHandler = =>
-      @close() if document.hasFocus()
-    @miniEditor.element.addEventListener('blur', blurHandler)
-    @disposables.add(new Disposable(=> @miniEditor.element.removeEventListener('blur', blurHandler)))
-    @disposables.add(@miniEditor.onDidChange => @showError())
-    @element.appendChild(@miniEditor.element)
+    this.miniEditor = new TextEditor({mini: true});
+    const blurHandler = () => {
+      if (document.hasFocus()) { return this.close(); }
+    };
+    this.miniEditor.element.addEventListener('blur', blurHandler);
+    this.disposables.add(new Disposable(() => this.miniEditor.element.removeEventListener('blur', blurHandler)));
+    this.disposables.add(this.miniEditor.onDidChange(() => this.showError()));
+    this.element.appendChild(this.miniEditor.element);
 
-    @errorMessage = document.createElement('div')
-    @errorMessage.classList.add('error-message')
-    @element.appendChild(@errorMessage)
+    this.errorMessage = document.createElement('div');
+    this.errorMessage.classList.add('error-message');
+    this.element.appendChild(this.errorMessage);
 
-    atom.commands.add @element,
-      'core:confirm': => @onConfirm(@miniEditor.getText())
-      'core:cancel': => @cancel()
+    atom.commands.add(this.element, {
+      'core:confirm': () => this.onConfirm(this.miniEditor.getText()),
+      'core:cancel': () => this.cancel()
+    }
+    );
 
-    @miniEditor.setText(initialPath)
+    this.miniEditor.setText(initialPath);
 
-    if select
-      extension = getFullExtension(initialPath)
-      baseName = path.basename(initialPath)
-      selectionStart = initialPath.length - baseName.length
-      if baseName is extension
-        selectionEnd = initialPath.length
-      else
-        selectionEnd = initialPath.length - extension.length
-      @miniEditor.setSelectedBufferRange(Range(Point(0, selectionStart), Point(0, selectionEnd)))
+    if (select) {
+      let selectionEnd;
+      const extension = getFullExtension(initialPath);
+      const baseName = path.basename(initialPath);
+      const selectionStart = initialPath.length - baseName.length;
+      if (baseName === extension) {
+        selectionEnd = initialPath.length;
+      } else {
+        selectionEnd = initialPath.length - extension.length;
+      }
+      this.miniEditor.setSelectedBufferRange(Range(Point(0, selectionStart), Point(0, selectionEnd)));
+    }
+  }
 
-  attach: ->
-    @panel = atom.workspace.addModalPanel(item: this)
-    @miniEditor.element.focus()
-    @miniEditor.scrollToCursorPosition()
+  attach() {
+    this.panel = atom.workspace.addModalPanel({item: this});
+    this.miniEditor.element.focus();
+    return this.miniEditor.scrollToCursorPosition();
+  }
 
-  close: ->
-    panel = @panel
-    @panel = null
-    panel?.destroy()
-    @emitter.dispose()
-    @disposables.dispose()
-    @miniEditor.destroy()
-    activePane = atom.workspace.getCenter().getActivePane()
-    activePane.activate() unless activePane.isDestroyed()
+  close() {
+    const {
+      panel
+    } = this;
+    this.panel = null;
+    if (panel != null) {
+      panel.destroy();
+    }
+    this.emitter.dispose();
+    this.disposables.dispose();
+    this.miniEditor.destroy();
+    const activePane = atom.workspace.getCenter().getActivePane();
+    if (!activePane.isDestroyed()) { return activePane.activate(); }
+  }
 
-  cancel: ->
-    @close()
-    document.querySelector('.tree-view')?.focus()
+  cancel() {
+    this.close();
+    return __guard__(document.querySelector('.tree-view'), x => x.focus());
+  }
 
-  showError: (message='') ->
-    @errorMessage.textContent = message
-    if message
-      @element.classList.add('error')
-      window.setTimeout((=> @element.classList.remove('error')), 300)
+  showError(message) {
+    if (message == null) { message = ''; }
+    this.errorMessage.textContent = message;
+    if (message) {
+      this.element.classList.add('error');
+      return window.setTimeout((() => this.element.classList.remove('error')), 300);
+    }
+  }
+});
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}
