@@ -1,43 +1,66 @@
-diff = require "virtual-dom/diff"
-patch = require "virtual-dom/patch"
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const diff = require("virtual-dom/diff");
+const patch = require("virtual-dom/patch");
 
-buildVirtualNode = require './build-virtual-node'
-refsStack = require './refs-stack'
+const buildVirtualNode = require('./build-virtual-node');
+const refsStack = require('./refs-stack');
 
-module.exports = Object.create HTMLElement.prototype,
-  domScheduler:
-    writable: true
-    value:
-      readDocument: (fn) -> fn()
-      updateDocument: (fn) -> fn()
+module.exports = Object.create(HTMLElement.prototype, {
+  domScheduler: {
+    writable: true,
+    value: {
+      readDocument(fn) { return fn(); },
+      updateDocument(fn) { return fn(); }
+    }
+  },
 
-  createdCallback: value: ->
-    @refs = {}
-    @didCreate?()
+  createdCallback: { value() {
+    this.refs = {};
+    return (typeof this.didCreate === 'function' ? this.didCreate() : undefined);
+  }
+},
 
-  attachedCallback: value: ->
-    @updateSync()
-    @didAttach?()
+  attachedCallback: { value() {
+    this.updateSync();
+    return (typeof this.didAttach === 'function' ? this.didAttach() : undefined);
+  }
+},
 
-  detachedCallback: value: ->
-    @didDetach?()
-    @innerHTML = ""
-    @refs = {}
+  detachedCallback: { value() {
+    if (typeof this.didDetach === 'function') {
+      this.didDetach();
+    }
+    this.innerHTML = "";
+    return this.refs = {};
+  }
+},
 
-  update: value: ->
-    @domScheduler.updateDocument(@updateSync.bind(this))
-    @domScheduler.readDocument(@readSync.bind(this))
+  update: { value() {
+    this.domScheduler.updateDocument(this.updateSync.bind(this));
+    return this.domScheduler.readDocument(this.readSync.bind(this));
+  }
+},
 
-  updateSync:
-    writable: true
-    value: ->
-      @oldVirtualDOM ?= buildVirtualNode(@tagName.toLowerCase())
-      newVirtualDOM = @render()
-      refsStack.push(@refs)
-      patch(this, diff(@oldVirtualDOM, newVirtualDOM))
-      refsStack.pop()
-      @oldVirtualDOM = newVirtualDOM
+  updateSync: {
+    writable: true,
+    value() {
+      if (this.oldVirtualDOM == null) { this.oldVirtualDOM = buildVirtualNode(this.tagName.toLowerCase()); }
+      const newVirtualDOM = this.render();
+      refsStack.push(this.refs);
+      patch(this, diff(this.oldVirtualDOM, newVirtualDOM));
+      refsStack.pop();
+      return this.oldVirtualDOM = newVirtualDOM;
+    }
+  },
 
-  readSync:
-    writable: true
-    value: ->
+  readSync: {
+    writable: true,
+    value() {}
+  }
+}
+);

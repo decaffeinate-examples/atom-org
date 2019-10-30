@@ -1,6 +1,11 @@
-{Range} = require 'semver'
+let Consumer;
+const {Range} = require('semver');
 
 module.exports =
-class Consumer
-  constructor: (@keyPath, versionRange, @callback) ->
-    @versionRange = new Range(versionRange)
+(Consumer = class Consumer {
+  constructor(keyPath, versionRange, callback) {
+    this.keyPath = keyPath;
+    this.callback = callback;
+    this.versionRange = new Range(versionRange);
+  }
+});

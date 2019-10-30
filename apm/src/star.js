@@ -1,93 +1,135 @@
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Star;
+const path = require('path');
 
-_ = require 'underscore-plus'
-async = require 'async'
-CSON = require 'season'
-yargs = require 'yargs'
+const _ = require('underscore-plus');
+const async = require('async');
+const CSON = require('season');
+const yargs = require('yargs');
 
-config = require './apm'
-Command = require './command'
-fs = require './fs'
-Login = require './login'
-Packages = require './packages'
-request = require './request'
+const config = require('./apm');
+const Command = require('./command');
+const fs = require('./fs');
+const Login = require('./login');
+const Packages = require('./packages');
+const request = require('./request');
 
 module.exports =
-class Star extends Command
-  @commandNames: ['star']
+(Star = (function() {
+  Star = class Star extends Command {
+    static initClass() {
+      this.commandNames = ['star'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm star <package_name>...
+Usage: apm star <package_name>...
 
-      Star the given packages on https://atom.io
+Star the given packages on https://atom.io
 
-      Run `apm stars` to see all your starred packages.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.boolean('installed').describe('installed', 'Star all packages in ~/.atom/packages')
+Run \`apm stars\` to see all your starred packages.\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      return options.boolean('installed').describe('installed', 'Star all packages in ~/.atom/packages');
+    }
 
-  starPackage: (packageName, {ignoreUnpublishedPackages, token}={}, callback) ->
-    process.stdout.write '\u2B50  ' if process.platform is 'darwin'
-    process.stdout.write "Starring #{packageName} "
-    requestSettings =
-      json: true
-      url: "#{config.getAtomPackagesUrl()}/#{packageName}/star"
-      headers:
-        authorization: token
-    request.post requestSettings, (error, response, body={}) =>
-      if error?
-        @logFailure()
-        callback(error)
-      else if response.statusCode is 404 and ignoreUnpublishedPackages
-        process.stdout.write 'skipped (not published)\n'.yellow
-        callback()
-      else if response.statusCode isnt 200
-        @logFailure()
-        message = request.getErrorMessage(response, body)
-        callback("Starring package failed: #{message}")
-      else
-        @logSuccess()
-        callback()
+    starPackage(packageName, param, callback) {
+      if (param == null) { param = {}; }
+      const {ignoreUnpublishedPackages, token} = param;
+      if (process.platform === 'darwin') { process.stdout.write('\u2B50  '); }
+      process.stdout.write(`Starring ${packageName} `);
+      const requestSettings = {
+        json: true,
+        url: `${config.getAtomPackagesUrl()}/${packageName}/star`,
+        headers: {
+          authorization: token
+        }
+      };
+      return request.post(requestSettings, (error, response, body) => {
+        if (body == null) { body = {}; }
+        if (error != null) {
+          this.logFailure();
+          return callback(error);
+        } else if ((response.statusCode === 404) && ignoreUnpublishedPackages) {
+          process.stdout.write('skipped (not published)\n'.yellow);
+          return callback();
+        } else if (response.statusCode !== 200) {
+          this.logFailure();
+          const message = request.getErrorMessage(response, body);
+          return callback(`Starring package failed: ${message}`);
+        } else {
+          this.logSuccess();
+          return callback();
+        }
+      });
+    }
 
-  getInstalledPackageNames: ->
-    installedPackages = []
-    userPackagesDirectory = path.join(config.getAtomDirectory(), 'packages')
-    for child in fs.list(userPackagesDirectory)
-      continue unless fs.isDirectorySync(path.join(userPackagesDirectory, child))
+    getInstalledPackageNames() {
+      const installedPackages = [];
+      const userPackagesDirectory = path.join(config.getAtomDirectory(), 'packages');
+      for (let child of Array.from(fs.list(userPackagesDirectory))) {
+        var manifestPath;
+        if (!fs.isDirectorySync(path.join(userPackagesDirectory, child))) { continue; }
 
-      if manifestPath = CSON.resolve(path.join(userPackagesDirectory, child, 'package'))
-        try
-          metadata = CSON.readFileSync(manifestPath) ? {}
-          if metadata.name and Packages.getRepository(metadata)
-            installedPackages.push metadata.name
+        if (manifestPath = CSON.resolve(path.join(userPackagesDirectory, child, 'package'))) {
+          try {
+            var left;
+            const metadata = (left = CSON.readFileSync(manifestPath)) != null ? left : {};
+            if (metadata.name && Packages.getRepository(metadata)) {
+              installedPackages.push(metadata.name);
+            }
+          } catch (error) {}
+        }
+      }
 
-    _.uniq(installedPackages)
+      return _.uniq(installedPackages);
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
+    run(options) {
+      let packageNames;
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
 
-    if options.argv.installed
-      packageNames = @getInstalledPackageNames()
-      if packageNames.length is 0
-        callback()
-        return
-    else
-      packageNames = @packageNamesFromArgv(options.argv)
-      if packageNames.length is 0
-        callback("Please specify a package name to star")
-        return
+      if (options.argv.installed) {
+        packageNames = this.getInstalledPackageNames();
+        if (packageNames.length === 0) {
+          callback();
+          return;
+        }
+      } else {
+        packageNames = this.packageNamesFromArgv(options.argv);
+        if (packageNames.length === 0) {
+          callback("Please specify a package name to star");
+          return;
+        }
+      }
 
-    Login.getTokenOrLogin (error, token) =>
-      return callback(error) if error?
+      return Login.getTokenOrLogin((error, token) => {
+        if (error != null) { return callback(error); }
 
-      starOptions =
-        ignoreUnpublishedPackages: options.argv.installed
-        token: token
+        const starOptions = {
+          ignoreUnpublishedPackages: options.argv.installed,
+          token
+        };
 
-      commands = packageNames.map (packageName) =>
-        (callback) => @starPackage(packageName, starOptions, callback)
-      async.waterfall(commands, callback)
+        const commands = packageNames.map(packageName => {
+          return callback => this.starPackage(packageName, starOptions, callback);
+        });
+        return async.waterfall(commands, callback);
+      });
+    }
+  };
+  Star.initClass();
+  return Star;
+})());

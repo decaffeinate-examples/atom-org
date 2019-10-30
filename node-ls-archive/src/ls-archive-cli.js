@@ -1,45 +1,59 @@
-path = require 'path'
-async = require 'async'
-colors = require 'colors'
-optimist = require 'optimist'
-archive = require './ls-archive'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const async = require('async');
+const colors = require('colors');
+const optimist = require('optimist');
+const archive = require('./ls-archive');
 
-module.exports = ->
-  cli = optimist.usage( """
-      Usage: lsa [file ...]
+module.exports = function() {
+  const cli = optimist.usage( `\
+Usage: lsa [file ...]
 
-      List the files and folders inside an archive file.
+List the files and folders inside an archive file.
 
-      Supports .zip, .tar, .tar.gz, and .tgz files.
-    """)
+Supports .zip, .tar, .tar.gz, and .tgz files.\
+`)
     .describe('colors', 'Enable colored output').default('colors', true).boolean('colors')
     .describe('help', 'Show this message').alias('h', 'help')
-    .demand(1)
+    .demand(1);
 
-  if cli.argv.help
-    cli.showHelp()
-    return
+  if (cli.argv.help) {
+    cli.showHelp();
+    return;
+  }
 
-  unless cli.argv.colors
-    colors.setTheme
-      cyan: 'stripColors'
+  if (!cli.argv.colors) {
+    colors.setTheme({
+      cyan: 'stripColors',
       red: 'stripColors'
+    });
+  }
 
-  queue = async.queue (archivePath, callback) ->
-    do (archivePath) ->
-      archive.list archivePath, (error, files) ->
-        if error?
-          console.error("Error reading: #{archivePath}".red)
-        else
-          console.log("#{archivePath.cyan} (#{files.length})")
-          for file, index in files
-            if index is files.length - 1
-              prefix = '\u2514\u2500\u2500 '
-            else
-              prefix = '\u251C\u2500\u2500 '
-            console.log "#{prefix}#{file.getPath()}"
-          console.log()
-        callback()
+  const queue = async.queue((archivePath, callback) => ((archivePath => archive.list(archivePath, function(error, files) {
+    if (error != null) {
+      console.error(`Error reading: ${archivePath}`.red);
+    } else {
+      console.log(`${archivePath.cyan} (${files.length})`);
+      for (let index = 0; index < files.length; index++) {
+        var prefix;
+        const file = files[index];
+        if (index === (files.length - 1)) {
+          prefix = '\u2514\u2500\u2500 ';
+        } else {
+          prefix = '\u251C\u2500\u2500 ';
+        }
+        console.log(`${prefix}${file.getPath()}`);
+      }
+      console.log();
+    }
+    return callback();
+  })))(archivePath));
 
-  files = cli.argv._
-  files.forEach (file) -> queue.push(path.resolve(process.cwd(), file))
+  const files = cli.argv._;
+  return files.forEach(file => queue.push(path.resolve(process.cwd(), file)));
+};

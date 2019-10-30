@@ -1,63 +1,85 @@
-class KnownWordsChecker
-  enableAdd: false
-  spelling: null
-  checker: null
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+class KnownWordsChecker {
+  static initClass() {
+    this.prototype.enableAdd = false;
+    this.prototype.spelling = null;
+    this.prototype.checker = null;
+  }
 
-  constructor: (knownWords) ->
-    # Set up the spelling manager we'll be using.
-    spellingManager = require "spelling-manager"
-    @spelling = new spellingManager.TokenSpellingManager
-    @checker = new spellingManager.BufferSpellingChecker @spelling
+  constructor(knownWords) {
+    // Set up the spelling manager we'll be using.
+    const spellingManager = require("spelling-manager");
+    this.spelling = new spellingManager.TokenSpellingManager;
+    this.checker = new spellingManager.BufferSpellingChecker(this.spelling);
 
-    # Set our known words.
-    @setKnownWords knownWords
+    // Set our known words.
+    this.setKnownWords(knownWords);
+  }
 
-  deactivate: ->
-    return
+  deactivate() {
+  }
 
-  getId: -> "spell-check:known-words"
-  getName: -> "Known Words"
-  getPriority: -> 10
-  isEnabled: -> @spelling.sensitive or @spelling.insensitive
+  getId() { return "spell-check:known-words"; }
+  getName() { return "Known Words"; }
+  getPriority() { return 10; }
+  isEnabled() { return this.spelling.sensitive || this.spelling.insensitive; }
 
-  getStatus: -> "Working correctly."
-  providesSpelling: (args) -> true
-  providesSuggestions: (args) -> true
-  providesAdding: (args) -> @enableAdd
+  getStatus() { return "Working correctly."; }
+  providesSpelling(args) { return true; }
+  providesSuggestions(args) { return true; }
+  providesAdding(args) { return this.enableAdd; }
 
-  check: (args, text) ->
-    ranges = []
-    checked = @checker.check text
-    for token in checked
-      if token.status is 1
-        ranges.push {start: token.start, end: token.end}
-    {correct: ranges}
+  check(args, text) {
+    const ranges = [];
+    const checked = this.checker.check(text);
+    for (let token of Array.from(checked)) {
+      if (token.status === 1) {
+        ranges.push({start: token.start, end: token.end});
+      }
+    }
+    return {correct: ranges};
+  }
 
-  suggest: (args, word) ->
-    @spelling.suggest word
+  suggest(args, word) {
+    return this.spelling.suggest(word);
+  }
 
-  getAddingTargets: (args) ->
-    if @enableAdd
-      [{sensitive: false, label: "Add to " + @getName()}]
-    else
-      []
+  getAddingTargets(args) {
+    if (this.enableAdd) {
+      return [{sensitive: false, label: "Add to " + this.getName()}];
+    } else {
+      return [];
+    }
+  }
 
-  add: (args, target) ->
-    c = atom.config.get 'spell-check.knownWords'
-    c.push target.word
-    atom.config.set 'spell-check.knownWords', c
+  add(args, target) {
+    const c = atom.config.get('spell-check.knownWords');
+    c.push(target.word);
+    return atom.config.set('spell-check.knownWords', c);
+  }
 
-  setAddKnownWords: (newValue) ->
-    @enableAdd = newValue
+  setAddKnownWords(newValue) {
+    return this.enableAdd = newValue;
+  }
 
-  setKnownWords: (knownWords) ->
-    # Clear out the old list.
-    @spelling.sensitive = {}
-    @spelling.insensitive = {}
+  setKnownWords(knownWords) {
+    // Clear out the old list.
+    this.spelling.sensitive = {};
+    this.spelling.insensitive = {};
 
-    # Add the new ones into the list.
-    if knownWords
-      for ignore in knownWords
-        @spelling.add ignore
+    // Add the new ones into the list.
+    if (knownWords) {
+      return Array.from(knownWords).map((ignore) =>
+        this.spelling.add(ignore));
+    }
+  }
+}
+KnownWordsChecker.initClass();
 
-module.exports = KnownWordsChecker
+module.exports = KnownWordsChecker;

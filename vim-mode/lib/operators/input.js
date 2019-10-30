@@ -1,141 +1,205 @@
-Motions = require '../motions/index'
-{Operator, Delete} = require './general-operators'
-_ = require 'underscore-plus'
-settings = require '../settings'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const Motions = require('../motions/index');
+const {Operator, Delete} = require('./general-operators');
+const _ = require('underscore-plus');
+const settings = require('../settings');
 
-# The operation for text entered in input mode. Broadly speaking, input
-# operators manage an undo transaction and set a @typingCompleted variable when
-# it's done. When the input operation is completed, the typingCompleted variable
-# tells the operation to repeat itself instead of enter insert mode.
-class Insert extends Operator
-  standalone: true
+// The operation for text entered in input mode. Broadly speaking, input
+// operators manage an undo transaction and set a @typingCompleted variable when
+// it's done. When the input operation is completed, the typingCompleted variable
+// tells the operation to repeat itself instead of enter insert mode.
+class Insert extends Operator {
+  static initClass() {
+    this.prototype.standalone = true;
+  }
 
-  isComplete: -> @standalone or super
+  isComplete() { return this.standalone || super.isComplete(...arguments); }
 
-  confirmChanges: (changes) ->
-    if changes.length > 0
-      @typedText = changes[0].newText
-    else
-      @typedText = ""
+  confirmChanges(changes) {
+    if (changes.length > 0) {
+      return this.typedText = changes[0].newText;
+    } else {
+      return this.typedText = "";
+    }
+  }
 
-  execute: ->
-    if @typingCompleted
-      return unless @typedText? and @typedText.length > 0
-      @editor.insertText(@typedText, normalizeLineEndings: true, autoIndent: true)
-      for cursor in @editor.getCursors()
-        cursor.moveLeft() unless cursor.isAtBeginningOfLine()
-    else
-      @vimState.activateInsertMode()
-      @typingCompleted = true
-    return
+  execute() {
+    if (this.typingCompleted) {
+      if ((this.typedText == null) || !(this.typedText.length > 0)) { return; }
+      this.editor.insertText(this.typedText, {normalizeLineEndings: true, autoIndent: true});
+      for (let cursor of Array.from(this.editor.getCursors())) {
+        if (!cursor.isAtBeginningOfLine()) { cursor.moveLeft(); }
+      }
+    } else {
+      this.vimState.activateInsertMode();
+      this.typingCompleted = true;
+    }
+  }
 
-  inputOperator: -> true
+  inputOperator() { return true; }
+}
+Insert.initClass();
 
-class ReplaceMode extends Insert
+class ReplaceMode extends Insert {
 
-  execute: ->
-    if @typingCompleted
-      return unless @typedText? and @typedText.length > 0
-      @editor.transact =>
-        @editor.insertText(@typedText, normalizeLineEndings: true)
-        toDelete = @typedText.length - @countChars('\n', @typedText)
-        for selection in @editor.getSelections()
-          count = toDelete
-          selection.delete() while count-- and not selection.cursor.isAtEndOfLine()
-        for cursor in @editor.getCursors()
-          cursor.moveLeft() unless cursor.isAtBeginningOfLine()
-    else
-      @vimState.activateReplaceMode()
-      @typingCompleted = true
+  execute() {
+    if (this.typingCompleted) {
+      if ((this.typedText == null) || !(this.typedText.length > 0)) { return; }
+      return this.editor.transact(() => {
+        this.editor.insertText(this.typedText, {normalizeLineEndings: true});
+        const toDelete = this.typedText.length - this.countChars('\n', this.typedText);
+        for (let selection of Array.from(this.editor.getSelections())) {
+          let count = toDelete;
+          while (count-- && !selection.cursor.isAtEndOfLine()) { selection.delete(); }
+        }
+        return (() => {
+          const result = [];
+          for (let cursor of Array.from(this.editor.getCursors())) {
+            if (!cursor.isAtBeginningOfLine()) { result.push(cursor.moveLeft()); } else {
+              result.push(undefined);
+            }
+          }
+          return result;
+        })();
+      });
+    } else {
+      this.vimState.activateReplaceMode();
+      return this.typingCompleted = true;
+    }
+  }
 
-  countChars: (char, string) ->
-    string.split(char).length - 1
+  countChars(char, string) {
+    return string.split(char).length - 1;
+  }
+}
 
-class InsertAfter extends Insert
-  execute: ->
-    @editor.moveRight() unless @editor.getLastCursor().isAtEndOfLine()
-    super
+class InsertAfter extends Insert {
+  execute() {
+    if (!this.editor.getLastCursor().isAtEndOfLine()) { this.editor.moveRight(); }
+    return super.execute(...arguments);
+  }
+}
 
-class InsertAfterEndOfLine extends Insert
-  execute: ->
-    @editor.moveToEndOfLine()
-    super
+class InsertAfterEndOfLine extends Insert {
+  execute() {
+    this.editor.moveToEndOfLine();
+    return super.execute(...arguments);
+  }
+}
 
-class InsertAtBeginningOfLine extends Insert
-  execute: ->
-    @editor.moveToBeginningOfLine()
-    @editor.moveToFirstCharacterOfLine()
-    super
+class InsertAtBeginningOfLine extends Insert {
+  execute() {
+    this.editor.moveToBeginningOfLine();
+    this.editor.moveToFirstCharacterOfLine();
+    return super.execute(...arguments);
+  }
+}
 
-class InsertAboveWithNewline extends Insert
-  execute: ->
-    @vimState.setInsertionCheckpoint() unless @typingCompleted
-    @editor.insertNewlineAbove()
-    @editor.getLastCursor().skipLeadingWhitespace()
+class InsertAboveWithNewline extends Insert {
+  execute() {
+    if (!this.typingCompleted) { this.vimState.setInsertionCheckpoint(); }
+    this.editor.insertNewlineAbove();
+    this.editor.getLastCursor().skipLeadingWhitespace();
 
-    if @typingCompleted
-      # We'll have captured the inserted newline, but we want to do that
-      # over again by hand, or differing indentations will be wrong.
-      @typedText = @typedText.trimLeft()
-      return super
+    if (this.typingCompleted) {
+      // We'll have captured the inserted newline, but we want to do that
+      // over again by hand, or differing indentations will be wrong.
+      this.typedText = this.typedText.trimLeft();
+      return super.execute(...arguments);
+    }
 
-    @vimState.activateInsertMode()
-    @typingCompleted = true
+    this.vimState.activateInsertMode();
+    return this.typingCompleted = true;
+  }
+}
 
-class InsertBelowWithNewline extends Insert
-  execute: ->
-    @vimState.setInsertionCheckpoint() unless @typingCompleted
-    @editor.insertNewlineBelow()
-    @editor.getLastCursor().skipLeadingWhitespace()
+class InsertBelowWithNewline extends Insert {
+  execute() {
+    if (!this.typingCompleted) { this.vimState.setInsertionCheckpoint(); }
+    this.editor.insertNewlineBelow();
+    this.editor.getLastCursor().skipLeadingWhitespace();
 
-    if @typingCompleted
-      # We'll have captured the inserted newline, but we want to do that
-      # over again by hand, or differing indentations will be wrong.
-      @typedText = @typedText.trimLeft()
-      return super
+    if (this.typingCompleted) {
+      // We'll have captured the inserted newline, but we want to do that
+      // over again by hand, or differing indentations will be wrong.
+      this.typedText = this.typedText.trimLeft();
+      return super.execute(...arguments);
+    }
 
-    @vimState.activateInsertMode()
-    @typingCompleted = true
+    this.vimState.activateInsertMode();
+    return this.typingCompleted = true;
+  }
+}
 
-#
-# Delete the following motion and enter insert mode to replace it.
-#
-class Change extends Insert
-  standalone: false
-  register: null
+//
+// Delete the following motion and enter insert mode to replace it.
+//
+class Change extends Insert {
+  static initClass() {
+    this.prototype.standalone = false;
+    this.prototype.register = null;
+  }
 
-  constructor: (@editor, @vimState) ->
-    @register = settings.defaultRegister()
+  constructor(editor, vimState) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.editor = editor;
+    this.vimState = vimState;
+    this.register = settings.defaultRegister();
+  }
 
-  # Public: Changes the text selected by the given motion.
-  #
-  # count - The number of times to execute.
-  #
-  # Returns nothing.
-  execute: (count) ->
-    if _.contains(@motion.select(count, excludeWhitespace: true), true)
-      # If we've typed, we're being repeated. If we're being repeated,
-      # undo transactions are already handled.
-      @vimState.setInsertionCheckpoint() unless @typingCompleted
+  // Public: Changes the text selected by the given motion.
+  //
+  // count - The number of times to execute.
+  //
+  // Returns nothing.
+  execute(count) {
+    if (_.contains(this.motion.select(count, {excludeWhitespace: true}), true)) {
+      // If we've typed, we're being repeated. If we're being repeated,
+      // undo transactions are already handled.
+      let selection;
+      if (!this.typingCompleted) { this.vimState.setInsertionCheckpoint(); }
 
-      @setTextRegister(@register, @editor.getSelectedText())
-      if @motion.isLinewise?() and not @typingCompleted
-        for selection in @editor.getSelections()
-          if selection.getBufferRange().end.row is 0
-            selection.deleteSelectedText()
-          else
-            selection.insertText("\n", autoIndent: true)
-          selection.cursor.moveLeft()
-      else
-        for selection in @editor.getSelections()
-          selection.deleteSelectedText()
+      this.setTextRegister(this.register, this.editor.getSelectedText());
+      if ((typeof this.motion.isLinewise === 'function' ? this.motion.isLinewise() : undefined) && !this.typingCompleted) {
+        for (selection of Array.from(this.editor.getSelections())) {
+          if (selection.getBufferRange().end.row === 0) {
+            selection.deleteSelectedText();
+          } else {
+            selection.insertText("\n", {autoIndent: true});
+          }
+          selection.cursor.moveLeft();
+        }
+      } else {
+        for (selection of Array.from(this.editor.getSelections())) {
+          selection.deleteSelectedText();
+        }
+      }
 
-      return super if @typingCompleted
+      if (this.typingCompleted) { return super.execute(...arguments); }
 
-      @vimState.activateInsertMode()
-      @typingCompleted = true
-    else
-      @vimState.activateNormalMode()
+      this.vimState.activateInsertMode();
+      return this.typingCompleted = true;
+    } else {
+      return this.vimState.activateNormalMode();
+    }
+  }
+}
+Change.initClass();
 
 
 module.exports = {
@@ -147,4 +211,4 @@ module.exports = {
   InsertBelowWithNewline,
   ReplaceMode,
   Change
-}
+};

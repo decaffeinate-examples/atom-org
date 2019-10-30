@@ -1,121 +1,169 @@
-{CompositeDisposable, Emitter} = require 'atom'
-Grim = require 'grim'
-StatusBarView = require './status-bar-view'
-FileInfoView = require './file-info-view'
-CursorPositionView = require './cursor-position-view'
-SelectionCountView = require './selection-count-view'
-GitView = require './git-view'
-LaunchModeView = require './launch-mode-view'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {CompositeDisposable, Emitter} = require('atom');
+const Grim = require('grim');
+const StatusBarView = require('./status-bar-view');
+const FileInfoView = require('./file-info-view');
+const CursorPositionView = require('./cursor-position-view');
+const SelectionCountView = require('./selection-count-view');
+const GitView = require('./git-view');
+const LaunchModeView = require('./launch-mode-view');
 
-module.exports =
-  activate: ->
-    @emitters = new Emitter()
-    @subscriptions = new CompositeDisposable()
+module.exports = {
+  activate() {
+    this.emitters = new Emitter();
+    this.subscriptions = new CompositeDisposable();
 
-    @statusBar = new StatusBarView()
-    @attachStatusBar()
+    this.statusBar = new StatusBarView();
+    this.attachStatusBar();
 
-    @subscriptions.add atom.config.onDidChange 'status-bar.fullWidth', =>
-      @attachStatusBar()
+    this.subscriptions.add(atom.config.onDidChange('status-bar.fullWidth', () => {
+      return this.attachStatusBar();
+    })
+    );
 
-    @updateStatusBarVisibility()
+    this.updateStatusBarVisibility();
 
-    @statusBarVisibilitySubscription =
-      atom.config.observe 'status-bar.isVisible', =>
-        @updateStatusBarVisibility()
+    this.statusBarVisibilitySubscription =
+      atom.config.observe('status-bar.isVisible', () => {
+        return this.updateStatusBarVisibility();
+      });
 
-    atom.commands.add 'atom-workspace', 'status-bar:toggle', =>
-      if @statusBarPanel.isVisible()
-        atom.config.set 'status-bar.isVisible', false
-      else
-        atom.config.set 'status-bar.isVisible', true
+    atom.commands.add('atom-workspace', 'status-bar:toggle', () => {
+      if (this.statusBarPanel.isVisible()) {
+        return atom.config.set('status-bar.isVisible', false);
+      } else {
+        return atom.config.set('status-bar.isVisible', true);
+      }
+    });
 
-    {safeMode, devMode} = atom.getLoadSettings()
-    if safeMode or devMode
-      launchModeView = new LaunchModeView({safeMode, devMode})
-      @statusBar.addLeftTile(item: launchModeView.element, priority: -1)
+    const {safeMode, devMode} = atom.getLoadSettings();
+    if (safeMode || devMode) {
+      const launchModeView = new LaunchModeView({safeMode, devMode});
+      this.statusBar.addLeftTile({item: launchModeView.element, priority: -1});
+    }
 
-    @fileInfo = new FileInfoView()
-    @statusBar.addLeftTile(item: @fileInfo.element, priority: 0)
+    this.fileInfo = new FileInfoView();
+    this.statusBar.addLeftTile({item: this.fileInfo.element, priority: 0});
 
-    @cursorPosition = new CursorPositionView()
-    @statusBar.addLeftTile(item: @cursorPosition.element, priority: 1)
+    this.cursorPosition = new CursorPositionView();
+    this.statusBar.addLeftTile({item: this.cursorPosition.element, priority: 1});
 
-    @selectionCount = new SelectionCountView()
-    @statusBar.addLeftTile(item: @selectionCount.element, priority: 2)
+    this.selectionCount = new SelectionCountView();
+    this.statusBar.addLeftTile({item: this.selectionCount.element, priority: 2});
 
-    @gitInfo = new GitView()
-    @gitInfoTile = @statusBar.addRightTile(item: @gitInfo.element, priority: 0)
+    this.gitInfo = new GitView();
+    return this.gitInfoTile = this.statusBar.addRightTile({item: this.gitInfo.element, priority: 0});
+  },
 
-  deactivate: ->
-    @statusBarVisibilitySubscription?.dispose()
-    @statusBarVisibilitySubscription = null
+  deactivate() {
+    if (this.statusBarVisibilitySubscription != null) {
+      this.statusBarVisibilitySubscription.dispose();
+    }
+    this.statusBarVisibilitySubscription = null;
 
-    @gitInfo?.destroy()
-    @gitInfo = null
+    if (this.gitInfo != null) {
+      this.gitInfo.destroy();
+    }
+    this.gitInfo = null;
 
-    @fileInfo?.destroy()
-    @fileInfo = null
+    if (this.fileInfo != null) {
+      this.fileInfo.destroy();
+    }
+    this.fileInfo = null;
 
-    @cursorPosition?.destroy()
-    @cursorPosition = null
+    if (this.cursorPosition != null) {
+      this.cursorPosition.destroy();
+    }
+    this.cursorPosition = null;
 
-    @selectionCount?.destroy()
-    @selectionCount = null
+    if (this.selectionCount != null) {
+      this.selectionCount.destroy();
+    }
+    this.selectionCount = null;
 
-    @statusBarPanel?.destroy()
-    @statusBarPanel = null
+    if (this.statusBarPanel != null) {
+      this.statusBarPanel.destroy();
+    }
+    this.statusBarPanel = null;
 
-    @statusBar?.destroy()
-    @statusBar = null
+    if (this.statusBar != null) {
+      this.statusBar.destroy();
+    }
+    this.statusBar = null;
 
-    @subscriptions?.dispose()
-    @subscriptions = null
+    if (this.subscriptions != null) {
+      this.subscriptions.dispose();
+    }
+    this.subscriptions = null;
 
-    @emitters?.dispose()
-    @emitters = null
+    if (this.emitters != null) {
+      this.emitters.dispose();
+    }
+    this.emitters = null;
 
-    delete atom.__workspaceView.statusBar if atom.__workspaceView?
+    if (atom.__workspaceView != null) { return delete atom.__workspaceView.statusBar; }
+  },
 
-  updateStatusBarVisibility: ->
-    if atom.config.get 'status-bar.isVisible'
-      @statusBarPanel.show()
-    else
-      @statusBarPanel.hide()
+  updateStatusBarVisibility() {
+    if (atom.config.get('status-bar.isVisible')) {
+      return this.statusBarPanel.show();
+    } else {
+      return this.statusBarPanel.hide();
+    }
+  },
 
-  provideStatusBar: ->
-    addLeftTile: @statusBar.addLeftTile.bind(@statusBar)
-    addRightTile: @statusBar.addRightTile.bind(@statusBar)
-    getLeftTiles: @statusBar.getLeftTiles.bind(@statusBar)
-    getRightTiles: @statusBar.getRightTiles.bind(@statusBar)
-    disableGitInfoTile: @gitInfoTile.destroy.bind(@gitInfoTile)
+  provideStatusBar() {
+    return {
+      addLeftTile: this.statusBar.addLeftTile.bind(this.statusBar),
+      addRightTile: this.statusBar.addRightTile.bind(this.statusBar),
+      getLeftTiles: this.statusBar.getLeftTiles.bind(this.statusBar),
+      getRightTiles: this.statusBar.getRightTiles.bind(this.statusBar),
+      disableGitInfoTile: this.gitInfoTile.destroy.bind(this.gitInfoTile)
+    };
+  },
 
-  attachStatusBar: ->
-    @statusBarPanel.destroy() if @statusBarPanel?
+  attachStatusBar() {
+    if (this.statusBarPanel != null) { this.statusBarPanel.destroy(); }
 
-    panelArgs = {item: @statusBar, priority: 0}
-    if atom.config.get('status-bar.fullWidth')
-      @statusBarPanel = atom.workspace.addFooterPanel panelArgs
-    else
-      @statusBarPanel = atom.workspace.addBottomPanel panelArgs
+    const panelArgs = {item: this.statusBar, priority: 0};
+    if (atom.config.get('status-bar.fullWidth')) {
+      return this.statusBarPanel = atom.workspace.addFooterPanel(panelArgs);
+    } else {
+      return this.statusBarPanel = atom.workspace.addBottomPanel(panelArgs);
+    }
+  },
 
-  # Deprecated
-  #
-  # Wrap deprecation calls on the methods returned rather than
-  # Services API method which would be registered and trigger
-  # a deprecation call
-  legacyProvideStatusBar: ->
-    statusbar = @provideStatusBar()
+  // Deprecated
+  //
+  // Wrap deprecation calls on the methods returned rather than
+  // Services API method which would be registered and trigger
+  // a deprecation call
+  legacyProvideStatusBar() {
+    const statusbar = this.provideStatusBar();
 
-    addLeftTile: (args...) ->
-      Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.")
-      statusbar.addLeftTile(args...)
-    addRightTile: (args...) ->
-      Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.")
-      statusbar.addRightTile(args...)
-    getLeftTiles: ->
-      Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.")
-      statusbar.getLeftTiles()
-    getRightTiles: ->
-      Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.")
-      statusbar.getRightTiles()
+    return {
+      addLeftTile(...args) {
+        Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.");
+        return statusbar.addLeftTile(...Array.from(args || []));
+      },
+      addRightTile(...args) {
+        Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.");
+        return statusbar.addRightTile(...Array.from(args || []));
+      },
+      getLeftTiles() {
+        Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.");
+        return statusbar.getLeftTiles();
+      },
+      getRightTiles() {
+        Grim.deprecate("Use version ^1.0.0 of the status-bar Service API.");
+        return statusbar.getRightTiles();
+      }
+    };
+  }
+};

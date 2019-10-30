@@ -1,19 +1,32 @@
-provider = require('./emojis-provider')
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const provider = require('./emojis-provider');
 
-module.exports =
-  config:
-    enableUnicodeEmojis:
-      type: 'boolean'
+module.exports = {
+  config: {
+    enableUnicodeEmojis: {
+      type: 'boolean',
       default: true
-    enableMarkdownEmojis:
-      type: 'boolean'
+    },
+    enableMarkdownEmojis: {
+      type: 'boolean',
       default: true
+    }
+  },
 
-  activate: ->
-    provider.loadProperties()
+  activate() {
+    provider.loadProperties();
 
-    atom.commands.add 'atom-workspace',
-      'autocomplete-emojis:show-cheat-sheet': ->
-        require('./emoji-cheat-sheet').show()
+    return atom.commands.add('atom-workspace', {
+      'autocomplete-emojis:show-cheat-sheet'() {
+        return require('./emoji-cheat-sheet').show();
+      }
+    }
+    );
+  },
 
-  getProvider: -> provider
+  getProvider() { return provider; }
+};

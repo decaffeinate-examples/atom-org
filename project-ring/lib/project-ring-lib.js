@@ -1,514 +1,652 @@
-projectReceiverKey = Symbol 'projectReceiverKey'
-workspaceReceiverKey = Symbol 'workspaceReceiverKey'
-permanentEventKey = Symbol 'permanentEventKey'
-onceEventKey = Symbol 'onceEventKey'
-statesCacheInitializedEventKey = Symbol 'statesCacheInitializedEventKey'
-changedPathsEventKey = Symbol 'changedPathsEventKey'
-addedBufferEventKey = Symbol 'addedBufferEventKey'
-addedTextEditorEventKey = Symbol 'addedTextEditorEventKey'
-destroyedBufferEventKey = Symbol 'destroyedBufferEventKey'
-savedBufferEventKey = Symbol 'savedBufferEventKey'
-eventCallbacks = new Map()
-
-isPermanentReceiver = (receiver) ->
-	return receiver is projectReceiverKey or receiver is workspaceReceiverKey
-
-initializeEventCallbacks = ->
-	eventCallbacks.set projectReceiverKey, new Map()
-	for eventKey in [ statesCacheInitializedEventKey, changedPathsEventKey, addedBufferEventKey ]
-		eventCallbacks.get(projectReceiverKey).set eventKey, new Map()
-		eventCallbacks.get(projectReceiverKey).get(eventKey).set permanentEventKey, []
-		eventCallbacks.get(projectReceiverKey).get(eventKey).set onceEventKey, []
-	eventCallbacks.set workspaceReceiverKey, new Map()
-	for eventKey in [ addedTextEditorEventKey ]
-		eventCallbacks.get(workspaceReceiverKey).set eventKey, new Map()
-		eventCallbacks.get(workspaceReceiverKey).get(eventKey).set permanentEventKey, []
-		eventCallbacks.get(workspaceReceiverKey).get(eventKey).set onceEventKey, []
-
-addEventCallbackReceiver = (receiver, eventKey) ->
-	return unless receiver
-	eventCallbacks.set receiver, new Map() unless eventCallbacks.has receiver
-	return if eventCallbacks.get(receiver).has eventKey
-	eventCallbacks.get(receiver).set eventKey, new Map()
-	eventCallbacks.get(receiver).get(eventKey).set permanentEventKey, []
-	eventCallbacks.get(receiver).get(eventKey).set onceEventKey, []
-
-isCallbackReceiver = (receiver) ->
-	return false unless eventCallbacks.has(receiver)
-	ekIter = eventCallbacks.get(receiver).values()
-	ek = ekIter.next()
-	while not ek.done
-		return true if ek.value.get(permanentEventKey).size or ek.value.get(onceEventKey).size
-		ek = ekIter.next()
-	false
-
-removeEventCallbackReceiver = (receiver, eventKey) ->
-	return unless receiver and eventCallbacks.has receiver
-	if typeof eventKey is 'undefined'
-		eventCallbacks.delete receiver if not isPermanentReceiver(receiver)
-	else
-		return if isPermanentReceiver receiver
-		eventCallbacks.get(receiver).delete eventKey
-		eventCallbacks.delete receiver unless isCallbackReceiver receiver
-
-addEventCallback = (receiver, eventKey, once, callback) ->
-	return unless typeof callback is 'function'
-	addEventCallbackReceiver receiver, eventKey
-	eventCallbacks.get(receiver).get(eventKey).get(if once then onceEventKey else permanentEventKey).push callback
-
-removeEventCallback = (receiver, eventKey, callback) ->
-	return unless eventCallbacks.has receiver
-	if typeof callback isnt 'function'
-		removeEventCallbackReceiver receiver, eventKey
-		return
-	else
-		return unless eventCallbacks.get(receiver).has eventKey
-		pi = []; oi = []
-		for e, i in eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey)
-			pi.push i if e is callback
-		for e, i in eventCallbacks.get(receiver).get(eventKey).get(onceEventKey)
-			oi.push i if e is callback
-		eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey).splice i, 1 for i in pi
-		eventCallbacks.get(receiver).get(eventKey).get(onceEventKey).splice i, 1 for i in oi
-
-onPreSetEventHandlerFactory = (receiver, eventKey) ->
-	() ->
-		return unless eventCallbacks.has(receiver) and eventCallbacks.get(receiver).has eventKey
-		for callback in eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey)
-			callback.apply null, arguments if typeof callback is 'function'
-		for callback in eventCallbacks.get(receiver).get(eventKey).get(onceEventKey)
-			callback.apply null, arguments if typeof callback is 'function'
-		eventCallbacks.get(receiver).get(eventKey).set onceEventKey, []
-		removeEventCallbackReceiver receiver, eventKey
-
-setupPreSetEventHandling = ->
-	initializeEventCallbacks()
-	atom.project.emitter.on 'project-ring-states-cache-initialized', onPreSetEventHandlerFactory projectReceiverKey, statesCacheInitializedEventKey
-	atom.project.onDidChangePaths onPreSetEventHandlerFactory projectReceiverKey, changedPathsEventKey
-	atom.project.onDidAddBuffer onPreSetEventHandlerFactory projectReceiverKey, addedBufferEventKey
-	atom.workspace.onDidAddTextEditor onPreSetEventHandlerFactory workspaceReceiverKey, addedTextEditorEventKey
-
-regExpEscapesRegExp = /[\$\^\*\(\)\[\]\{\}\|\\\.\?\+]/g
-defaultProjectRingId = 'default'
-projectRingId = undefined
-projectRingConfigurationWatcher = undefined
-
-module.exports = Object.freeze
-	#############################
-	# Public Variables -- Start #
-	#############################
-
-	projectToLoadAtStartUpConfigurationKeyPath: 'project-ring.projectToLoadAtStartUp'
-	defaultProjectCacheKey: '<~>'
-
-	###########################
-	# Public Variables -- END #
-	###########################
-
-	####################################
-	# Public Helper Functions -- Start #
-	####################################
-
-	setProjectRingId: (id) ->
-		projectRingId = id?.trim() or defaultProjectRingId
-
-	getProjectRingId: ->
-		projectRingId or defaultProjectRingId
-
-	stripConfigurationKeyPath: (keyPath) ->
-		(keyPath or '').replace /^project-ring\./, ''
-
-	getConfigurationPath: ->
-		_path = require 'path'
-		path = _path.join process.env[if process.platform is 'win32' then 'USERPROFILE' else 'HOME'], '.atom-project-ring'
-		_fs = require 'fs'
-		_fs.mkdirSync path unless _fs.existsSync path
-		path
-
-	getConfigurationFilePath: (path) ->
-		_path = require 'path'
-		_path.join @getConfigurationPath(), path
-
-	getCSONFilePath: ->
-		return unless projectRingId
-		@getConfigurationFilePath projectRingId + '_project_ring.cson'
-
-	getDefaultProjectSpecFilePath: (_projectRingId) ->
-		return unless _projectRingId or projectRingId
-		@getConfigurationFilePath (_projectRingId or projectRingId) + '_project_ring.default_project_spec'
-
-	getDefaultProjectToLoadAtStartUp: (_projectRingId) ->
-		defaultProjectToLoadAtStartUp = undefined
-		_fs = require 'fs'
-		try
-			defaultProjectToLoadAtStartUp = _fs.readFileSync @getDefaultProjectSpecFilePath(_projectRingId), 'utf8'
-		catch error
-			return undefined
-		defaultProjectToLoadAtStartUp?.trim()
-
-	setDefaultProjectToLoadAtStartUp: (key, onlyUpdateSpecFile) ->
-		return unless typeof key is 'string'
-		unless onlyUpdateSpecFile
-			try
-				atom.config.set @projectToLoadAtStartUpConfigurationKeyPath, key
-			catch error
-				return error
-		defaultProjectToLoadAtStartUpFilePath = @getDefaultProjectSpecFilePath()
-		_fs = require 'fs'
-		unless key
-			try
-				_fs.unlinkSync defaultProjectToLoadAtStartUpFilePath if _fs.existsSync defaultProjectToLoadAtStartUpFilePath
-				return
-			catch error
-				return error
-		try
-			_fs.writeFileSync defaultProjectToLoadAtStartUpFilePath, key, 'utf8'
-		catch error
-			return error
-
-	setProjectRingConfigurationWatcher: (watcher) ->
-		projectRingConfigurationWatcher = watcher
-		undefined
-
-	unsetProjectRingConfigurationWatcher: ->
-		projectRingConfigurationWatcher?.close()
-		projectRingConfigurationWatcher = undefined
-
-	updateDefaultProjectConfiguration: (selectedProject, allProjects, oldSelectedProjectCondition, oldSelectedProject) ->
-		selectedProject = '' unless selectedProject and typeof selectedProject is 'string'
-		allProjects = [ '' ] unless allProjects instanceof Array
-		allProjects.unshift '' unless '' in allProjects
-		allProjects = @filterFromArray allProjects, @defaultProjectCacheKey
-		allProjects.sort()
-		projectKeyToLoadAtStartUp = @getDefaultProjectToLoadAtStartUp() ? ''
-		if oldSelectedProjectCondition is true
-			selectedProject = projectKeyToLoadAtStartUp unless oldSelectedProject is projectKeyToLoadAtStartUp
-		else if oldSelectedProjectCondition is false
-			projectKeyToLoadAtStartUp = @getDefaultProjectToLoadAtStartUp() ? ''
-			selectedProject = projectKeyToLoadAtStartUp if oldSelectedProject is projectKeyToLoadAtStartUp
-		else
-			selectedProject = projectKeyToLoadAtStartUp
-		selectedProject = '' unless selectedProject in allProjects
-		atom.config.setSchema \
-			@projectToLoadAtStartUpConfigurationKeyPath,
-			{ type: 'string', default: selectedProject, enum: allProjects, description: 'The project name to load at startup' }
-		@setDefaultProjectToLoadAtStartUp selectedProject
-
-	openFiles: (filePathSpec, newWindow) ->
-		filePathSpec = if filePathSpec instanceof Array then filePathSpec else [ filePathSpec ]
-		newWindow = if typeof newWindow is 'boolean' then newWindow else false
-		defer = require('q').defer()
-		defer.resolve()
-		promise = defer.promise
-		if newWindow
-			atom.open pathsToOpen: filePathSpec, newWindow: true
-		else
-			promise = promise.finally ((filePath) -> atom.workspace.open filePath).bind null, filePath for filePath in filePathSpec
-		promise
-
-	findInArray: (array, value, valueModFunc, extraModFuncArgs) ->
-		return undefined unless array instanceof Array
-		isValidFunc = typeof valueModFunc is 'function'
-		extraModFuncArgs = if extraModFuncArgs instanceof Array then extraModFuncArgs else []
-		for val in array
-			return val if (if isValidFunc then valueModFunc.apply val, extraModFuncArgs else val) is value
-		undefined
-
-	filterFromArray: (array, value, valueModFunc) ->
-		return array unless array instanceof Array
-		isValidFunc = typeof valueModFunc is 'function'
-		array = array.filter (val) -> (if isValidFunc then valueModFunc.call val else val) isnt value
-
-	makeArrayElementsDistinct: (array, valueModFunc) ->
-		return array unless array instanceof Array
-		isValidFunc = typeof valueModFunc is 'function'
-		distinctElements = new Map()
-		array.forEach (val) -> distinctElements.set (if isValidFunc then valueModFunc.call val else val), val
-		array = []
-		iter = distinctElements.values()
-		iterVal = iter.next()
-		while not iterVal.done
-			array.push iterVal.value
-			iterVal = iter.next()
-		array
-
-	getProjectRootDirectories: ->
-		atom.project.getPaths()
-
-	getProjectKey: (keySpec) ->
-		keySpec?.trim()
-
-	turnToPathRegExp: (path) ->
-		return '' unless path
-		path.replace regExpEscapesRegExp, (match) -> '\\' + match
-
-	filePathIsInProject: (filePath, projectRootDirectories) ->
-		projectRootDirectories = if projectRootDirectories instanceof Array then projectRootDirectories else @getProjectRootDirectories()
-		for rootDirectory in projectRootDirectories
-			return true if new RegExp('^' + @turnToPathRegExp(rootDirectory), 'i').test(filePath)
-		false
-
-	getTextEditorFilePaths: ->
-		(atom.workspace.getTextEditors().filter (editor) -> editor.buffer.file).map (editor) -> editor.buffer.file.path
-
-	##################
-	# Event Handling #
-	##################
-
-	#################################
-	# ---- Event Handling - Generic #
-	#################################
-
-	setupEventHandling: -> setupPreSetEventHandling()
-
-	#################################
-	# ---- Event Handling - Project #
-	#################################
-
-	onChangedPaths: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback projectReceiverKey, changedPathsEventKey, false, callback
-
-	onceChangedPaths: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback projectReceiverKey, changedPathsEventKey, true, callback
-
-	onAddedBuffer: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback projectReceiverKey, addedBufferEventKey, false, callback
-
-	offAddedBuffer: (callback) ->
-		removeEventCallback projectReceiverKey, addedBufferEventKey, callback
-
-	onceAddedBuffer: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback projectReceiverKey, addedBufferEventKey, true, callback
-
-	onceStatesCacheInitialized: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback projectReceiverKey, statesCacheInitializedEventKey, true, callback
-
-	emitStatesCacheInitialized: ->
-		atom.project.emitter.emit 'project-ring-states-cache-initialized'
-
-	################################
-	# ---- Event Handling - Buffer #
-	################################
-
-	offDestroyedBuffer: (buffer, callback) ->
-		return unless buffer
-		removeEventCallback buffer, destroyedBufferEventKey, callback
-
-	onceDestroyedBuffer: (buffer, callback) ->
-		return unless buffer and typeof callback is 'function'
-		addEventCallback buffer, destroyedBufferEventKey, true, callback
-		if not buffer.onDidDestroyProjectRingEventSet
-			buffer.onDidDestroy onPreSetEventHandlerFactory buffer, destroyedBufferEventKey
-			buffer.onDidDestroyProjectRingEventSet = true
-
-	onceSavedBuffer: (buffer, callback) ->
-		return unless buffer and typeof callback is 'function'
-		addEventCallback buffer, savedBufferEventKey, true, callback
-		if not buffer.onDidSaveProjectRingEventSet
-			buffer.onDidSave onPreSetEventHandlerFactory buffer, savedBufferEventKey
-			buffer.onDidSaveProjectRingEventSet = true
-
-	###################################
-	# ---- Event Handling - Workspace #
-	###################################
-
-	onceAddedTextEditor: (callback) ->
-		return unless typeof callback is 'function'
-		addEventCallback workspaceReceiverKey, addedTextEditorEventKey, true, callback
-
-	onAddedPane: (callback) ->
-		return unless typeof callback is 'function'
-		atom.workspace.paneContainer.emitter.on 'did-add-pane', callback
-		if typeof atom.workspace.paneContainer.projectRingOnAddedPaneCallback is 'function'
-			atom.workspace.paneContainer.emitter.off 'did-add-pane', atom.workspace.paneContainer.projectRingOnAddedPaneCallback
-		atom.workspace.paneContainer.projectRingOnAddedPaneCallback = callback
-
-	onDestroyedPane: (callback) ->
-		return unless typeof callback is 'function'
-		atom.workspace.paneContainer.emitter.on 'did-destroy-pane', callback
-		if typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback is 'function'
-			atom.workspace.paneContainer.emitter.off 'did-destroy-pane', atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback
-		atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback = callback
-
-	onDestroyedPaneItem: (callback) ->
-		return unless typeof callback is 'function'
-		atom.workspace.paneContainer.emitter.on 'did-destroy-pane-item', callback
-		if typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback is 'function'
-			atom.workspace.paneContainer.emitter.off 'did-destroy-pane-item', atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback
-		atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback = callback
-
-	offAddedPane: () ->
-		return unless typeof atom.workspace.paneContainer.projectRingOnAddedPaneCallback is 'function'
-		atom.workspace.paneContainer.emitter.off 'did-add-pane', atom.workspace.paneContainer.projectRingOnAddedPaneCallback
-		delete atom.workspace.paneContainer.projectRingOnAddedPaneCallback
-
-	offDestroyedPane: () ->
-		return unless typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback is 'function'
-		atom.workspace.paneContainer.emitter.off 'did-destroy-pane', atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback
-		delete atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback
-
-	offDestroyedPaneItem: () ->
-		return unless typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback is 'function'
-		atom.workspace.paneContainer.emitter.off 'did-destroy-pane-item', atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback
-		delete atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback
-
-	#####################
-	# Pane Manipulation #
-	#####################
-
-	getFirstNonEmptyPane: ->
-		atom.workspace.getPanes().filter((pane) -> pane.getItems().length)[0]
-
-	getRestPanes: ->
-		firstNonEmptyPane = @getFirstNonEmptyPane()
-		atom.workspace.getPanes().filter (pane) -> pane isnt firstNonEmptyPane
-
-	selectFirstNonEmptyPane: ->
-		firstNonEmptyPane = @getFirstNonEmptyPane()
-		return undefined unless firstNonEmptyPane
-		atom.workspace.activateNextPane() while firstNonEmptyPane isnt atom.workspace.getActivePane()
-		firstNonEmptyPane
-
-	moveAllEditorsToFirstNonEmptyPane: ->
-		firstNonEmptyPane = @getFirstNonEmptyPane()
-		@getRestPanes().forEach (pane) =>
-			pane.getItems().forEach (item) =>
-				return unless item.buffer
-				if item.buffer.file
-					itemBufferFilePath = item.buffer.file.path.toLowerCase()
-					if @findInArray firstNonEmptyPane.getItems(), itemBufferFilePath, (
-						-> @.buffer and @.buffer.file and @.buffer.file.path.toLowerCase() is itemBufferFilePath
-					)
-						pane.removeItem item
-						return
-				pane.moveItemToPane item, firstNonEmptyPane
-
-	destroyEmptyPanes: ->
-		panes = atom.workspace.getPanes()
-		return if panes.length is 1
-		panes.forEach (pane) ->
-			return if atom.workspace.getPanes().length is 1
-			pane.destroy() unless pane.items.length
-
-	destroyRestPanes: (allowEditorDestructionEvent) ->
-		@getRestPanes().forEach (pane) ->
-			pane.getItems().forEach (item) ->
-				return unless item.buffer and item.buffer.file
-				item.emitter.off 'did-destroy' unless allowEditorDestructionEvent
-			pane.destroy()
-
-	buildPanesMap: (mappableFilePaths) ->
-		{ $ } = require 'atom-space-pen-views'
-		mappableFilePaths = if mappableFilePaths instanceof Array then mappableFilePaths else []
-		panesMap = { root: {} }
-		currentNode = panesMap.root
-		_getPaneMappableFilePaths = ($pane, mappableFilePaths) ->
-			pane = atom.workspace.getPanes().filter((pane) -> atom.views.getView(pane) is $pane[0])[0]
-			return [] unless pane
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const projectReceiverKey = Symbol('projectReceiverKey');
+const workspaceReceiverKey = Symbol('workspaceReceiverKey');
+const permanentEventKey = Symbol('permanentEventKey');
+const onceEventKey = Symbol('onceEventKey');
+const statesCacheInitializedEventKey = Symbol('statesCacheInitializedEventKey');
+const changedPathsEventKey = Symbol('changedPathsEventKey');
+const addedBufferEventKey = Symbol('addedBufferEventKey');
+const addedTextEditorEventKey = Symbol('addedTextEditorEventKey');
+const destroyedBufferEventKey = Symbol('destroyedBufferEventKey');
+const savedBufferEventKey = Symbol('savedBufferEventKey');
+const eventCallbacks = new Map();
+
+const isPermanentReceiver = receiver => (receiver === projectReceiverKey) || (receiver === workspaceReceiverKey);
+
+const initializeEventCallbacks = function() {
+	let eventKey;
+	eventCallbacks.set(projectReceiverKey, new Map());
+	for (eventKey of [ statesCacheInitializedEventKey, changedPathsEventKey, addedBufferEventKey ]) {
+		eventCallbacks.get(projectReceiverKey).set(eventKey, new Map());
+		eventCallbacks.get(projectReceiverKey).get(eventKey).set(permanentEventKey, []);
+		eventCallbacks.get(projectReceiverKey).get(eventKey).set(onceEventKey, []);
+	}
+	eventCallbacks.set(workspaceReceiverKey, new Map());
+	return (() => {
+		const result = [];
+		for (eventKey of [ addedTextEditorEventKey ]) {
+			eventCallbacks.get(workspaceReceiverKey).set(eventKey, new Map());
+			eventCallbacks.get(workspaceReceiverKey).get(eventKey).set(permanentEventKey, []);
+			result.push(eventCallbacks.get(workspaceReceiverKey).get(eventKey).set(onceEventKey, []));
+		}
+		return result;
+	})();
+};
+
+const addEventCallbackReceiver = function(receiver, eventKey) {
+	if (!receiver) { return; }
+	if (!eventCallbacks.has(receiver)) { eventCallbacks.set(receiver, new Map()); }
+	if (eventCallbacks.get(receiver).has(eventKey)) { return; }
+	eventCallbacks.get(receiver).set(eventKey, new Map());
+	eventCallbacks.get(receiver).get(eventKey).set(permanentEventKey, []);
+	return eventCallbacks.get(receiver).get(eventKey).set(onceEventKey, []);
+};
+
+const isCallbackReceiver = function(receiver) {
+	if (!eventCallbacks.has(receiver)) { return false; }
+	const ekIter = eventCallbacks.get(receiver).values();
+	let ek = ekIter.next();
+	while (!ek.done) {
+		if (ek.value.get(permanentEventKey).size || ek.value.get(onceEventKey).size) { return true; }
+		ek = ekIter.next();
+	}
+	return false;
+};
+
+const removeEventCallbackReceiver = function(receiver, eventKey) {
+	if (!receiver || !eventCallbacks.has(receiver)) { return; }
+	if (typeof eventKey === 'undefined') {
+		if (!isPermanentReceiver(receiver)) { return eventCallbacks.delete(receiver); }
+	} else {
+		if (isPermanentReceiver(receiver)) { return; }
+		eventCallbacks.get(receiver).delete(eventKey);
+		if (!isCallbackReceiver(receiver)) { return eventCallbacks.delete(receiver); }
+	}
+};
+
+const addEventCallback = function(receiver, eventKey, once, callback) {
+	if (typeof callback !== 'function') { return; }
+	addEventCallbackReceiver(receiver, eventKey);
+	return eventCallbacks.get(receiver).get(eventKey).get(once ? onceEventKey : permanentEventKey).push(callback);
+};
+
+const removeEventCallback = function(receiver, eventKey, callback) {
+	if (!eventCallbacks.has(receiver)) { return; }
+	if (typeof callback !== 'function') {
+		removeEventCallbackReceiver(receiver, eventKey);
+		return;
+	} else {
+		let e, i;
+		if (!eventCallbacks.get(receiver).has(eventKey)) { return; }
+		const pi = []; const oi = [];
+		const iterable = eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey);
+		for (i = 0; i < iterable.length; i++) {
+			e = iterable[i];
+			if (e === callback) { pi.push(i); }
+		}
+		const iterable1 = eventCallbacks.get(receiver).get(eventKey).get(onceEventKey);
+		for (i = 0; i < iterable1.length; i++) {
+			e = iterable1[i];
+			if (e === callback) { oi.push(i); }
+		}
+		for (i of Array.from(pi)) { eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey).splice(i, 1); }
+		return (() => {
+			const result = [];
+			for (i of Array.from(oi)) { 				result.push(eventCallbacks.get(receiver).get(eventKey).get(onceEventKey).splice(i, 1));
+			}
+			return result;
+		})();
+	}
+};
+
+const onPreSetEventHandlerFactory = (receiver, eventKey) => (function() {
+    let callback;
+    if (!eventCallbacks.has(receiver) || !eventCallbacks.get(receiver).has(eventKey)) { return; }
+    for (callback of Array.from(eventCallbacks.get(receiver).get(eventKey).get(permanentEventKey))) {
+        if (typeof callback === 'function') { callback.apply(null, arguments); }
+    }
+    for (callback of Array.from(eventCallbacks.get(receiver).get(eventKey).get(onceEventKey))) {
+        if (typeof callback === 'function') { callback.apply(null, arguments); }
+    }
+    eventCallbacks.get(receiver).get(eventKey).set(onceEventKey, []);
+    return removeEventCallbackReceiver(receiver, eventKey);
+});
+
+const setupPreSetEventHandling = function() {
+	initializeEventCallbacks();
+	atom.project.emitter.on('project-ring-states-cache-initialized', onPreSetEventHandlerFactory(projectReceiverKey, statesCacheInitializedEventKey));
+	atom.project.onDidChangePaths(onPreSetEventHandlerFactory(projectReceiverKey, changedPathsEventKey));
+	atom.project.onDidAddBuffer(onPreSetEventHandlerFactory(projectReceiverKey, addedBufferEventKey));
+	return atom.workspace.onDidAddTextEditor(onPreSetEventHandlerFactory(workspaceReceiverKey, addedTextEditorEventKey));
+};
+
+const regExpEscapesRegExp = /[\$\^\*\(\)\[\]\{\}\|\\\.\?\+]/g;
+const defaultProjectRingId = 'default';
+let projectRingId = undefined;
+let projectRingConfigurationWatcher = undefined;
+
+module.exports = Object.freeze({
+	//############################
+	// Public Variables -- Start #
+	//############################
+
+	projectToLoadAtStartUpConfigurationKeyPath: 'project-ring.projectToLoadAtStartUp',
+	defaultProjectCacheKey: '<~>',
+
+	//##########################
+	// Public Variables -- END #
+	//##########################
+
+	//###################################
+	// Public Helper Functions -- Start #
+	//###################################
+
+	setProjectRingId(id) {
+		return projectRingId = (id != null ? id.trim() : undefined) || defaultProjectRingId;
+	},
+
+	getProjectRingId() {
+		return projectRingId || defaultProjectRingId;
+	},
+
+	stripConfigurationKeyPath(keyPath) {
+		return (keyPath || '').replace(/^project-ring\./, '');
+	},
+
+	getConfigurationPath() {
+		const _path = require('path');
+		const path = _path.join(process.env[process.platform === 'win32' ? 'USERPROFILE' : 'HOME'], '.atom-project-ring');
+		const _fs = require('fs');
+		if (!_fs.existsSync(path)) { _fs.mkdirSync(path); }
+		return path;
+	},
+
+	getConfigurationFilePath(path) {
+		const _path = require('path');
+		return _path.join(this.getConfigurationPath(), path);
+	},
+
+	getCSONFilePath() {
+		if (!projectRingId) { return; }
+		return this.getConfigurationFilePath(projectRingId + '_project_ring.cson');
+	},
+
+	getDefaultProjectSpecFilePath(_projectRingId) {
+		if (!_projectRingId && !projectRingId) { return; }
+		return this.getConfigurationFilePath((_projectRingId || projectRingId) + '_project_ring.default_project_spec');
+	},
+
+	getDefaultProjectToLoadAtStartUp(_projectRingId) {
+		let defaultProjectToLoadAtStartUp = undefined;
+		const _fs = require('fs');
+		try {
+			defaultProjectToLoadAtStartUp = _fs.readFileSync(this.getDefaultProjectSpecFilePath(_projectRingId), 'utf8');
+		} catch (error) {
+			return undefined;
+		}
+		return (defaultProjectToLoadAtStartUp != null ? defaultProjectToLoadAtStartUp.trim() : undefined);
+	},
+
+	setDefaultProjectToLoadAtStartUp(key, onlyUpdateSpecFile) {
+		let error;
+		if (typeof key !== 'string') { return; }
+		if (!onlyUpdateSpecFile) {
+			try {
+				atom.config.set(this.projectToLoadAtStartUpConfigurationKeyPath, key);
+			} catch (error1) {
+				error = error1;
+				return error;
+			}
+		}
+		const defaultProjectToLoadAtStartUpFilePath = this.getDefaultProjectSpecFilePath();
+		const _fs = require('fs');
+		if (!key) {
+			try {
+				if (_fs.existsSync(defaultProjectToLoadAtStartUpFilePath)) { _fs.unlinkSync(defaultProjectToLoadAtStartUpFilePath); }
+				return;
+			} catch (error2) {
+				error = error2;
+				return error;
+			}
+		}
+		try {
+			return _fs.writeFileSync(defaultProjectToLoadAtStartUpFilePath, key, 'utf8');
+		} catch (error3) {
+			error = error3;
+			return error;
+		}
+	},
+
+	setProjectRingConfigurationWatcher(watcher) {
+		projectRingConfigurationWatcher = watcher;
+		return undefined;
+	},
+
+	unsetProjectRingConfigurationWatcher() {
+		if (projectRingConfigurationWatcher != null) {
+			projectRingConfigurationWatcher.close();
+		}
+		return projectRingConfigurationWatcher = undefined;
+	},
+
+	updateDefaultProjectConfiguration(selectedProject, allProjects, oldSelectedProjectCondition, oldSelectedProject) {
+		let left;
+		if (!selectedProject || (typeof selectedProject !== 'string')) { selectedProject = ''; }
+		if (!(allProjects instanceof Array)) { allProjects = [ '' ]; }
+		if (!Array.from(allProjects).includes('')) { allProjects.unshift(''); }
+		allProjects = this.filterFromArray(allProjects, this.defaultProjectCacheKey);
+		allProjects.sort();
+		let projectKeyToLoadAtStartUp = (left = this.getDefaultProjectToLoadAtStartUp()) != null ? left : '';
+		if (oldSelectedProjectCondition === true) {
+			if (oldSelectedProject !== projectKeyToLoadAtStartUp) { selectedProject = projectKeyToLoadAtStartUp; }
+		} else if (oldSelectedProjectCondition === false) {
+			let left1;
+			projectKeyToLoadAtStartUp = (left1 = this.getDefaultProjectToLoadAtStartUp()) != null ? left1 : '';
+			if (oldSelectedProject === projectKeyToLoadAtStartUp) { selectedProject = projectKeyToLoadAtStartUp; }
+		} else {
+			selectedProject = projectKeyToLoadAtStartUp;
+		}
+		if (!Array.from(allProjects).includes(selectedProject)) { selectedProject = ''; }
+		atom.config.setSchema( 
+			this.projectToLoadAtStartUpConfigurationKeyPath,
+			{ type: 'string', default: selectedProject, enum: allProjects, description: 'The project name to load at startup' });
+		return this.setDefaultProjectToLoadAtStartUp(selectedProject);
+	},
+
+	openFiles(filePathSpec, newWindow) {
+		filePathSpec = filePathSpec instanceof Array ? filePathSpec : [ filePathSpec ];
+		newWindow = typeof newWindow === 'boolean' ? newWindow : false;
+		const defer = require('q').defer();
+		defer.resolve();
+		let {
+            promise
+        } = defer;
+		if (newWindow) {
+			atom.open({pathsToOpen: filePathSpec, newWindow: true});
+		} else {
+			for (let filePath of Array.from(filePathSpec)) { promise = promise.finally(((filePath => atom.workspace.open(filePath))).bind(null, filePath)); }
+		}
+		return promise;
+	},
+
+	findInArray(array, value, valueModFunc, extraModFuncArgs) {
+		if (!(array instanceof Array)) { return undefined; }
+		const isValidFunc = typeof valueModFunc === 'function';
+		extraModFuncArgs = extraModFuncArgs instanceof Array ? extraModFuncArgs : [];
+		for (let val of Array.from(array)) {
+			if ((isValidFunc ? valueModFunc.apply(val, extraModFuncArgs) : val) === value) { return val; }
+		}
+		return undefined;
+	},
+
+	filterFromArray(array, value, valueModFunc) {
+		if (!(array instanceof Array)) { return array; }
+		const isValidFunc = typeof valueModFunc === 'function';
+		return array = array.filter(val => (isValidFunc ? valueModFunc.call(val) : val) !== value);
+	},
+
+	makeArrayElementsDistinct(array, valueModFunc) {
+		if (!(array instanceof Array)) { return array; }
+		const isValidFunc = typeof valueModFunc === 'function';
+		const distinctElements = new Map();
+		array.forEach(val => distinctElements.set((isValidFunc ? valueModFunc.call(val) : val), val));
+		array = [];
+		const iter = distinctElements.values();
+		let iterVal = iter.next();
+		while (!iterVal.done) {
+			array.push(iterVal.value);
+			iterVal = iter.next();
+		}
+		return array;
+	},
+
+	getProjectRootDirectories() {
+		return atom.project.getPaths();
+	},
+
+	getProjectKey(keySpec) {
+		return (keySpec != null ? keySpec.trim() : undefined);
+	},
+
+	turnToPathRegExp(path) {
+		if (!path) { return ''; }
+		return path.replace(regExpEscapesRegExp, match => '\\' + match);
+	},
+
+	filePathIsInProject(filePath, projectRootDirectories) {
+		projectRootDirectories = projectRootDirectories instanceof Array ? projectRootDirectories : this.getProjectRootDirectories();
+		for (let rootDirectory of Array.from(projectRootDirectories)) {
+			if (new RegExp('^' + this.turnToPathRegExp(rootDirectory), 'i').test(filePath)) { return true; }
+		}
+		return false;
+	},
+
+	getTextEditorFilePaths() {
+		return (atom.workspace.getTextEditors().filter(editor => editor.buffer.file)).map(editor => editor.buffer.file.path);
+	},
+
+	//#################
+	// Event Handling #
+	//#################
+
+	//################################
+	// ---- Event Handling - Generic #
+	//################################
+
+	setupEventHandling() { return setupPreSetEventHandling(); },
+
+	//################################
+	// ---- Event Handling - Project #
+	//################################
+
+	onChangedPaths(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(projectReceiverKey, changedPathsEventKey, false, callback);
+	},
+
+	onceChangedPaths(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(projectReceiverKey, changedPathsEventKey, true, callback);
+	},
+
+	onAddedBuffer(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(projectReceiverKey, addedBufferEventKey, false, callback);
+	},
+
+	offAddedBuffer(callback) {
+		return removeEventCallback(projectReceiverKey, addedBufferEventKey, callback);
+	},
+
+	onceAddedBuffer(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(projectReceiverKey, addedBufferEventKey, true, callback);
+	},
+
+	onceStatesCacheInitialized(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(projectReceiverKey, statesCacheInitializedEventKey, true, callback);
+	},
+
+	emitStatesCacheInitialized() {
+		return atom.project.emitter.emit('project-ring-states-cache-initialized');
+	},
+
+	//###############################
+	// ---- Event Handling - Buffer #
+	//###############################
+
+	offDestroyedBuffer(buffer, callback) {
+		if (!buffer) { return; }
+		return removeEventCallback(buffer, destroyedBufferEventKey, callback);
+	},
+
+	onceDestroyedBuffer(buffer, callback) {
+		if (!buffer || (typeof callback !== 'function')) { return; }
+		addEventCallback(buffer, destroyedBufferEventKey, true, callback);
+		if (!buffer.onDidDestroyProjectRingEventSet) {
+			buffer.onDidDestroy(onPreSetEventHandlerFactory(buffer, destroyedBufferEventKey));
+			return buffer.onDidDestroyProjectRingEventSet = true;
+		}
+	},
+
+	onceSavedBuffer(buffer, callback) {
+		if (!buffer || (typeof callback !== 'function')) { return; }
+		addEventCallback(buffer, savedBufferEventKey, true, callback);
+		if (!buffer.onDidSaveProjectRingEventSet) {
+			buffer.onDidSave(onPreSetEventHandlerFactory(buffer, savedBufferEventKey));
+			return buffer.onDidSaveProjectRingEventSet = true;
+		}
+	},
+
+	//##################################
+	// ---- Event Handling - Workspace #
+	//##################################
+
+	onceAddedTextEditor(callback) {
+		if (typeof callback !== 'function') { return; }
+		return addEventCallback(workspaceReceiverKey, addedTextEditorEventKey, true, callback);
+	},
+
+	onAddedPane(callback) {
+		if (typeof callback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.on('did-add-pane', callback);
+		if (typeof atom.workspace.paneContainer.projectRingOnAddedPaneCallback === 'function') {
+			atom.workspace.paneContainer.emitter.off('did-add-pane', atom.workspace.paneContainer.projectRingOnAddedPaneCallback);
+		}
+		return atom.workspace.paneContainer.projectRingOnAddedPaneCallback = callback;
+	},
+
+	onDestroyedPane(callback) {
+		if (typeof callback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.on('did-destroy-pane', callback);
+		if (typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback === 'function') {
+			atom.workspace.paneContainer.emitter.off('did-destroy-pane', atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback);
+		}
+		return atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback = callback;
+	},
+
+	onDestroyedPaneItem(callback) {
+		if (typeof callback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.on('did-destroy-pane-item', callback);
+		if (typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback === 'function') {
+			atom.workspace.paneContainer.emitter.off('did-destroy-pane-item', atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback);
+		}
+		return atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback = callback;
+	},
+
+	offAddedPane() {
+		if (typeof atom.workspace.paneContainer.projectRingOnAddedPaneCallback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.off('did-add-pane', atom.workspace.paneContainer.projectRingOnAddedPaneCallback);
+		return delete atom.workspace.paneContainer.projectRingOnAddedPaneCallback;
+	},
+
+	offDestroyedPane() {
+		if (typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.off('did-destroy-pane', atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback);
+		return delete atom.workspace.paneContainer.projectRingOnDestroyedPaneCallback;
+	},
+
+	offDestroyedPaneItem() {
+		if (typeof atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback !== 'function') { return; }
+		atom.workspace.paneContainer.emitter.off('did-destroy-pane-item', atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback);
+		return delete atom.workspace.paneContainer.projectRingOnDestroyedPaneItemCallback;
+	},
+
+	//####################
+	// Pane Manipulation #
+	//####################
+
+	getFirstNonEmptyPane() {
+		return atom.workspace.getPanes().filter(pane => pane.getItems().length)[0];
+	},
+
+	getRestPanes() {
+		const firstNonEmptyPane = this.getFirstNonEmptyPane();
+		return atom.workspace.getPanes().filter(pane => pane !== firstNonEmptyPane);
+	},
+
+	selectFirstNonEmptyPane() {
+		const firstNonEmptyPane = this.getFirstNonEmptyPane();
+		if (!firstNonEmptyPane) { return undefined; }
+		while (firstNonEmptyPane !== atom.workspace.getActivePane()) { atom.workspace.activateNextPane(); }
+		return firstNonEmptyPane;
+	},
+
+	moveAllEditorsToFirstNonEmptyPane() {
+		const firstNonEmptyPane = this.getFirstNonEmptyPane();
+		return this.getRestPanes().forEach(pane => {
+			return pane.getItems().forEach(item => {
+				if (!item.buffer) { return; }
+				if (item.buffer.file) {
+					const itemBufferFilePath = item.buffer.file.path.toLowerCase();
+					if (this.findInArray(firstNonEmptyPane.getItems(), itemBufferFilePath, (
+						function() { return this.buffer && this.buffer.file && (this.buffer.file.path.toLowerCase() === itemBufferFilePath);
+					 }))) {
+						pane.removeItem(item);
+						return;
+					}
+				}
+				return pane.moveItemToPane(item, firstNonEmptyPane);
+			});
+		});
+	},
+
+	destroyEmptyPanes() {
+		const panes = atom.workspace.getPanes();
+		if (panes.length === 1) { return; }
+		return panes.forEach(function(pane) {
+			if (atom.workspace.getPanes().length === 1) { return; }
+			if (!pane.items.length) { return pane.destroy(); }
+		});
+	},
+
+	destroyRestPanes(allowEditorDestructionEvent) {
+		return this.getRestPanes().forEach(function(pane) {
+			pane.getItems().forEach(function(item) {
+				if (!item.buffer || !item.buffer.file) { return; }
+				if (!allowEditorDestructionEvent) { return item.emitter.off('did-destroy'); }
+			});
+			return pane.destroy();
+		});
+	},
+
+	buildPanesMap(mappableFilePaths) {
+		const { $ } = require('atom-space-pen-views');
+		mappableFilePaths = mappableFilePaths instanceof Array ? mappableFilePaths : [];
+		const panesMap = { root: {} };
+		const currentNode = panesMap.root;
+		const _getPaneMappableFilePaths = function($pane, mappableFilePaths) {
+			const pane = atom.workspace.getPanes().filter(pane => atom.views.getView(pane) === $pane[0])[0];
+			if (!pane) { return []; }
 			return pane
 				.getItems()
-				.filter((item) -> item.buffer && item.buffer.file && mappableFilePaths.some((filePath) -> filePath is item.buffer.file.path))
-				.map (textEditor) -> textEditor.buffer.file.path
-		_fillPanesMap = ($axis, currentNode) ->
-			unless $axis.length
-				currentNode.type = 'pane'
-				currentNode.filePaths = _getPaneMappableFilePaths $('atom-pane-container > atom-pane'), mappableFilePaths
-				return
-			$axisChildren = $axis.children 'atom-pane-axis, atom-pane'
-			isHorizontalAxis = $axis.is '.horizontal'
-			currentNode.type = 'axis'
-			currentNode.children = []
-			currentNode.orientation = if isHorizontalAxis then 'horizontal' else 'vertical'
-			$axisChildren.each ->
-				$child = $ this
-				flexGrow = parseFloat $child.css 'flex-grow'
-				flexGrow = undefined if isNaN flexGrow
-				if $child.is 'atom-pane-axis'
-					currentNode.children.push type: 'axis', children: [], orientation: null, flexGrow: flexGrow
-				else if $child.is 'atom-pane'
-					currentNode.children.push type: 'pane', filePaths: _getPaneMappableFilePaths($child, mappableFilePaths), flexGrow: flexGrow
-			currentNode.children.forEach (child, index) ->
-				return unless child.type is 'axis'
-				_fillPanesMap $($axisChildren[index]), child
-		_fillPanesMap $('atom-pane-container > atom-pane-axis'), currentNode
-		panesMap.root
+				.filter(item => item.buffer && item.buffer.file && mappableFilePaths.some(filePath => filePath === item.buffer.file.path))
+				.map(textEditor => textEditor.buffer.file.path);
+		};
+		var _fillPanesMap = function($axis, currentNode) {
+			if (!$axis.length) {
+				currentNode.type = 'pane';
+				currentNode.filePaths = _getPaneMappableFilePaths($('atom-pane-container > atom-pane'), mappableFilePaths);
+				return;
+			}
+			const $axisChildren = $axis.children('atom-pane-axis, atom-pane');
+			const isHorizontalAxis = $axis.is('.horizontal');
+			currentNode.type = 'axis';
+			currentNode.children = [];
+			currentNode.orientation = isHorizontalAxis ? 'horizontal' : 'vertical';
+			$axisChildren.each(function() {
+				const $child = $(this);
+				let flexGrow = parseFloat($child.css('flex-grow'));
+				if (isNaN(flexGrow)) { flexGrow = undefined; }
+				if ($child.is('atom-pane-axis')) {
+					return currentNode.children.push({type: 'axis', children: [], orientation: null, flexGrow});
+				} else if ($child.is('atom-pane')) {
+					return currentNode.children.push({type: 'pane', filePaths: _getPaneMappableFilePaths($child, mappableFilePaths), flexGrow});
+				}
+			});
+			return currentNode.children.forEach(function(child, index) {
+				if (child.type !== 'axis') { return; }
+				return _fillPanesMap($($axisChildren[index]), child);
+			});
+		};
+		_fillPanesMap($('atom-pane-container > atom-pane-axis'), currentNode);
+		return panesMap.root;
+	},
 
-	buildPanesLayout: (panesMap) ->
-		_openPaneFiles = (pane) => @openFiles pane.filePaths
-		return _openPaneFiles panesMap if panesMap.type is 'pane'
-		_q = require 'q'
-		{ $ } = require 'atom-space-pen-views'
-		_buildAxisLayout = (axis) ->
-			defer = _q.defer()
-			defer.resolve()
-			promise = defer.promise
-			axisPaneCache = []
-			axis.children.forEach (child, index) ->
-				promise = promise.finally ((axis, child, index) ->
-					if index > 0
-						if axis.orientation is 'horizontal'
-							atom.workspace.getActivePane().splitRight()
-						else
-							atom.workspace.getActivePane().splitDown()
-					$child = $ atom.views.getView atom.workspace.getActivePane()
-					$parent = 	$child.parent 'atom-pane-axis'
-					if typeof axis.flexGrow is 'number' and isNaN parseFloat $parent.attr 'data-project-ring-flex-grow'
-						$parent.attr 'data-project-ring-flex-grow', axis.flexGrow
-					if typeof child.flexGrow is 'number' and isNaN parseFloat $child.attr 'data-project-ring-flex-grow'
-						$child.attr 'data-project-ring-flex-grow', child.flexGrow
-					if child.type is 'axis'
-						axisPaneCache.push atom.workspace.getActivePane()
-						_defer = _q.defer()
-						_defer.resolve()
-						return _defer.promise
-					else
-						return _openPaneFiles child
-				).bind null, axis, child, index
-			axis.children.forEach (child) ->
-				promise = promise.finally ((child) ->
-					_defer = _q.defer()
-					_defer.resolve()
-					return _defer.promise unless child.type is 'axis'
-					axisPaneCache.shift().activate()
-					_buildAxisLayout child
-				).bind null, child
-			promise
-		axisLayoutBuildPromise = _buildAxisLayout panesMap
-		axisLayoutBuildPromise = axisLayoutBuildPromise.finally ->
-			setTimeout (->
-				$('atom-pane-container > atom-pane-axis atom-pane-axis, atom-pane-container > atom-pane-axis atom-pane').each ->
-					flexGrowAttr = 'data-project-ring-flex-grow'
-					$this = $ @
-					flexGrow = parseFloat $this.attr flexGrowAttr
-					$this.removeAttr flexGrowAttr
-					return if isNaN flexGrow
-					$this.css 'flex-grow', flexGrow
-			), 0
-			__defer = _q.defer()
-			__defer.resolve()
-			__defer.promise
+	buildPanesLayout(panesMap) {
+		const _openPaneFiles = pane => this.openFiles(pane.filePaths);
+		if (panesMap.type === 'pane') { return _openPaneFiles(panesMap); }
+		const _q = require('q');
+		const { $ } = require('atom-space-pen-views');
+		var _buildAxisLayout = function(axis) {
+			const defer = _q.defer();
+			defer.resolve();
+			let {
+                promise
+            } = defer;
+			const axisPaneCache = [];
+			axis.children.forEach((child, index) => promise = promise.finally((function(axis, child, index) {
+                if (index > 0) {
+                    if (axis.orientation === 'horizontal') {
+                        atom.workspace.getActivePane().splitRight();
+                    } else {
+                        atom.workspace.getActivePane().splitDown();
+                    }
+                }
+                const $child = $(atom.views.getView(atom.workspace.getActivePane()));
+                const $parent = 	$child.parent('atom-pane-axis');
+                if ((typeof axis.flexGrow === 'number') && isNaN(parseFloat($parent.attr('data-project-ring-flex-grow')))) {
+                    $parent.attr('data-project-ring-flex-grow', axis.flexGrow);
+                }
+                if ((typeof child.flexGrow === 'number') && isNaN(parseFloat($child.attr('data-project-ring-flex-grow')))) {
+                    $child.attr('data-project-ring-flex-grow', child.flexGrow);
+                }
+                if (child.type === 'axis') {
+                    axisPaneCache.push(atom.workspace.getActivePane());
+                    const _defer = _q.defer();
+                    _defer.resolve();
+                    return _defer.promise;
+                } else {
+                    return _openPaneFiles(child);
+                }
+            }).bind(null, axis, child, index)
+            ));
+			axis.children.forEach(child => promise = promise.finally((function(child) {
+                const _defer = _q.defer();
+                _defer.resolve();
+                if (child.type !== 'axis') { return _defer.promise; }
+                axisPaneCache.shift().activate();
+                return _buildAxisLayout(child);
+            }).bind(null, child)
+            ));
+			return promise;
+		};
+		let axisLayoutBuildPromise = _buildAxisLayout(panesMap);
+		return axisLayoutBuildPromise = axisLayoutBuildPromise.finally(function() {
+			setTimeout((() => $('atom-pane-container > atom-pane-axis atom-pane-axis, atom-pane-container > atom-pane-axis atom-pane').each(function() {
+                const flexGrowAttr = 'data-project-ring-flex-grow';
+                const $this = $(this);
+                const flexGrow = parseFloat($this.attr(flexGrowAttr));
+                $this.removeAttr(flexGrowAttr);
+                if (isNaN(flexGrow)) { return; }
+                return $this.css('flex-grow', flexGrow);})), 0);
+			const __defer = _q.defer();
+			__defer.resolve();
+			return __defer.promise;
+		});
+	},
 
-	fixPanesMapFilePaths: (panesMap) ->
-		return unless panesMap and typeof panesMap is 'object' and typeof panesMap.length is 'undefined'
-		_fs = require 'fs'
-		if panesMap.type is 'pane'
-			panesMap.filePaths = panesMap.filePaths.filter (filePath) -> _fs.existsSync filePath
-			panesMap.filePaths = @makeArrayElementsDistinct panesMap.filePaths
-			return
-		_fixPanesAxisFilePaths = (axis) =>
-			axis.children.forEach (child) =>
-				if child.type is 'pane'
-					child.filePaths = child.filePaths.filter (filePath) -> _fs.existsSync filePath
-					child.filePaths = @makeArrayElementsDistinct child.filePaths
-				else
-					_fixPanesAxisFilePaths child
-		_fixPanesAxisFilePaths panesMap
+	fixPanesMapFilePaths(panesMap) {
+		if (!panesMap || (typeof panesMap !== 'object') || (typeof panesMap.length !== 'undefined')) { return; }
+		const _fs = require('fs');
+		if (panesMap.type === 'pane') {
+			panesMap.filePaths = panesMap.filePaths.filter(filePath => _fs.existsSync(filePath));
+			panesMap.filePaths = this.makeArrayElementsDistinct(panesMap.filePaths);
+			return;
+		}
+		var _fixPanesAxisFilePaths = axis => {
+			return axis.children.forEach(child => {
+				if (child.type === 'pane') {
+					child.filePaths = child.filePaths.filter(filePath => _fs.existsSync(filePath));
+					return child.filePaths = this.makeArrayElementsDistinct(child.filePaths);
+				} else {
+					return _fixPanesAxisFilePaths(child);
+				}
+			});
+		};
+		return _fixPanesAxisFilePaths(panesMap);
+	}
+});
 
-	##################################
-	# Public Helper Functions -- END #
-	##################################
+	//#################################
+	// Public Helper Functions -- END #
+	//#################################

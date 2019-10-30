@@ -1,18 +1,27 @@
-deferredRequire = require '../src/deferred-require'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const deferredRequire = require('../src/deferred-require');
 
-describe "deferredRequire", ->
-  it "allows requiring of objects to be deferred", ->
-    module = deferredRequire './fixtures/object'
-    expect(module.foo).toBe 'bar'
+describe("deferredRequire", function() {
+  it("allows requiring of objects to be deferred", function() {
+    const module = deferredRequire('./fixtures/object');
+    return expect(module.foo).toBe('bar');
+  });
 
-  it "allows requiring of constructors to be deferred", ->
-    Constructor = deferredRequire './fixtures/constructor'
-    object = new Constructor
-    expect(object.calledConstructor).toBe true
+  it("allows requiring of constructors to be deferred", function() {
+    const Constructor = deferredRequire('./fixtures/constructor');
+    const object = new Constructor;
+    return expect(object.calledConstructor).toBe(true);
+  });
 
-  it "allows an error handler to be specified in case requiring the module throws an exception", ->
-    errorHandler = jasmine.createSpy("handler").andReturn(foo: 'baz')
-    module = deferredRequire './fixtures/exception-thrower', errorHandler
-    expect(errorHandler).not.toHaveBeenCalled()
-    expect(module.foo).toBe 'baz'
-    expect(errorHandler).toHaveBeenCalled()
+  return it("allows an error handler to be specified in case requiring the module throws an exception", function() {
+    const errorHandler = jasmine.createSpy("handler").andReturn({foo: 'baz'});
+    const module = deferredRequire('./fixtures/exception-thrower', errorHandler);
+    expect(errorHandler).not.toHaveBeenCalled();
+    expect(module.foo).toBe('baz');
+    return expect(errorHandler).toHaveBeenCalled();
+  });
+});

@@ -1,50 +1,77 @@
-module.exports = (jasmine) ->
-  originalExecute = jasmine.WaitsForBlock::execute
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS202: Simplify dynamic range loops
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = function(jasmine) {
+  let CallbackCompletion;
+  const originalExecute = jasmine.WaitsForBlock.prototype.execute;
 
-  jasmine.WaitsForBlock::execute = (onComplete) ->
-    if @latchFunction.length > 0
-      @waitForCallback(onComplete)
-    else
-      originalExecute.call(this, onComplete)
+  jasmine.WaitsForBlock.prototype.execute = function(onComplete) {
+    if (this.latchFunction.length > 0) {
+      return this.waitForCallback(onComplete);
+    } else {
+      return originalExecute.call(this, onComplete);
+    }
+  };
 
-  jasmine.WaitsForBlock::waitForCallback = (onComplete) ->
-    onTimeout = =>
-      @spec.fail
+  jasmine.WaitsForBlock.prototype.waitForCallback = function(onComplete) {
+    const onTimeout = () => {
+      this.spec.fail({
         name: 'timeout',
-        message: 'timed out after ' + @timeout + ' ms waiting for ' + (@message ? 'something to happen')
-      callbackCompletion.cancelled = true
-      @abort = true
-      onComplete()
+        message: 'timed out after ' + this.timeout + ' ms waiting for ' + (this.message != null ? this.message : 'something to happen')
+      });
+      callbackCompletion.cancelled = true;
+      this.abort = true;
+      return onComplete();
+    };
 
-    timeoutHandle = @env.setTimeout(onTimeout, @timeout)
-    callbackCompletion = new CallbackCompletion(@latchFunction.length, @env, onComplete, timeoutHandle)
+    const timeoutHandle = this.env.setTimeout(onTimeout, this.timeout);
+    var callbackCompletion = new CallbackCompletion(this.latchFunction.length, this.env, onComplete, timeoutHandle);
 
-    try
-      @latchFunction.apply(@spec, callbackCompletion.completionFunctions)
-    catch e
-      @spec.fail(e)
-      onComplete()
-      return
+    try {
+      return this.latchFunction.apply(this.spec, callbackCompletion.completionFunctions);
+    } catch (e) {
+      this.spec.fail(e);
+      onComplete();
+      return;
+    }
+  };
 
-  class CallbackCompletion
-    constructor: (@count, @env, @onComplete, @timeoutHandle) ->
-      @completionStatuses = new Array(@count)
-      @completionFunctions = new Array(@count)
-      for i in [0...count]
-        @completionStatuses[i] = false
-        @completionFunctions[i] = @buildCompletionFunction(i)
+  return CallbackCompletion = class CallbackCompletion {
+    constructor(count, env, onComplete, timeoutHandle) {
+      this.count = count;
+      this.env = env;
+      this.onComplete = onComplete;
+      this.timeoutHandle = timeoutHandle;
+      this.completionStatuses = new Array(this.count);
+      this.completionFunctions = new Array(this.count);
+      for (let i = 0, end = count, asc = 0 <= end; asc ? i < end : i > end; asc ? i++ : i--) {
+        this.completionStatuses[i] = false;
+        this.completionFunctions[i] = this.buildCompletionFunction(i);
+      }
+    }
 
-    attemptCompletion: ->
-      return if @cancelled
-      for status in @completionStatuses
-        return if status is false
-      @env.clearTimeout(@timeoutHandle)
-      @onComplete()
+    attemptCompletion() {
+      if (this.cancelled) { return; }
+      for (let status of Array.from(this.completionStatuses)) {
+        if (status === false) { return; }
+      }
+      this.env.clearTimeout(this.timeoutHandle);
+      return this.onComplete();
+    }
 
-    buildCompletionFunction: (i) ->
-      alreadyCalled = false
-      =>
-        return if alreadyCalled
-        alreadyCalled = true
-        @completionStatuses[i] = true
-        @attemptCompletion()
+    buildCompletionFunction(i) {
+      let alreadyCalled = false;
+      return () => {
+        if (alreadyCalled) { return; }
+        alreadyCalled = true;
+        this.completionStatuses[i] = true;
+        return this.attemptCompletion();
+      };
+    }
+  };
+};

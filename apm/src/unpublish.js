@@ -1,109 +1,157 @@
-path = require 'path'
-readline = require 'readline'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Unpublish;
+const path = require('path');
+const readline = require('readline');
 
-yargs = require 'yargs'
+const yargs = require('yargs');
 
-auth = require './auth'
-Command = require './command'
-config = require './apm'
-fs = require './fs'
-request = require './request'
+const auth = require('./auth');
+const Command = require('./command');
+const config = require('./apm');
+const fs = require('./fs');
+const request = require('./request');
 
 module.exports =
-class Unpublish extends Command
-  @commandNames: ['unpublish']
+(Unpublish = (function() {
+  Unpublish = class Unpublish extends Command {
+    static initClass() {
+      this.commandNames = ['unpublish'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
 
-    options.usage """
-      Usage: apm unpublish [<package_name>]
-             apm unpublish <package_name>@<package_version>
+      options.usage(`\
+Usage: apm unpublish [<package_name>]
+       apm unpublish <package_name>@<package_version>
 
-      Remove a published package or package version from the atom.io registry.
+Remove a published package or package version from the atom.io registry.
 
-      The package in the current working directory will be used if no package
-      name is specified.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.alias('f', 'force').boolean('force').describe('force', 'Do not prompt for confirmation')
+The package in the current working directory will be used if no package
+name is specified.\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      return options.alias('f', 'force').boolean('force').describe('force', 'Do not prompt for confirmation');
+    }
 
-  unpublishPackage: (packageName, packageVersion, callback) ->
-    packageLabel = packageName
-    packageLabel += "@#{packageVersion}" if packageVersion
+    unpublishPackage(packageName, packageVersion, callback) {
+      let packageLabel = packageName;
+      if (packageVersion) { packageLabel += `@${packageVersion}`; }
 
-    process.stdout.write "Unpublishing #{packageLabel} "
+      process.stdout.write(`Unpublishing ${packageLabel} `);
 
-    auth.getToken (error, token) =>
-      if error?
-        @logFailure()
-        callback(error)
-        return
+      return auth.getToken((error, token) => {
+        if (error != null) {
+          this.logFailure();
+          callback(error);
+          return;
+        }
 
-      options =
-        uri: "#{config.getAtomPackagesUrl()}/#{packageName}"
-        headers:
-          authorization: token
-        json: true
+        const options = {
+          uri: `${config.getAtomPackagesUrl()}/${packageName}`,
+          headers: {
+            authorization: token
+          },
+          json: true
+        };
 
-      options.uri += "/versions/#{packageVersion}" if packageVersion
+        if (packageVersion) { options.uri += `/versions/${packageVersion}`; }
 
-      request.del options, (error, response, body={}) =>
-        if error?
-          @logFailure()
-          callback(error)
-        else if response.statusCode isnt 204
-          @logFailure()
-          message = body.message ? body.error ? body
-          callback("Unpublishing failed: #{message}")
-        else
-          @logSuccess()
-          callback()
+        return request.del(options, (error, response, body) => {
+          if (body == null) { body = {}; }
+          if (error != null) {
+            this.logFailure();
+            return callback(error);
+          } else if (response.statusCode !== 204) {
+            let left;
+            this.logFailure();
+            const message = (left = body.message != null ? body.message : body.error) != null ? left : body;
+            return callback(`Unpublishing failed: ${message}`);
+          } else {
+            this.logSuccess();
+            return callback();
+          }
+        });
+      });
+    }
 
-  promptForConfirmation: (packageName, packageVersion, callback) ->
-    packageLabel = packageName
-    packageLabel += "@#{packageVersion}" if packageVersion
+    promptForConfirmation(packageName, packageVersion, callback) {
+      let question;
+      let packageLabel = packageName;
+      if (packageVersion) { packageLabel += `@${packageVersion}`; }
 
-    if packageVersion
-      question = "Are you sure you want to unpublish '#{packageLabel}'? (no) "
-    else
-      question = "Are you sure you want to unpublish ALL VERSIONS of '#{packageLabel}'? " +
-                 "This will remove it from the apm registry, including " +
-                 "download counts and stars, and this action is irreversible. (no)"
+      if (packageVersion) {
+        question = `Are you sure you want to unpublish '${packageLabel}'? (no) `;
+      } else {
+        question = `Are you sure you want to unpublish ALL VERSIONS of '${packageLabel}'? ` +
+                   "This will remove it from the apm registry, including " +
+                   "download counts and stars, and this action is irreversible. (no)";
+      }
 
-    @prompt question, (answer) =>
-      answer = if answer then answer.trim().toLowerCase() else 'no'
-      if answer in ['y', 'yes']
-        @unpublishPackage(packageName, packageVersion, callback)
-      else
-        callback("Cancelled unpublishing #{packageLabel}")
+      return this.prompt(question, answer => {
+        answer = answer ? answer.trim().toLowerCase() : 'no';
+        if (['y', 'yes'].includes(answer)) {
+          return this.unpublishPackage(packageName, packageVersion, callback);
+        } else {
+          return callback(`Cancelled unpublishing ${packageLabel}`);
+        }
+      });
+    }
 
-  prompt: (question, callback) ->
-    prompt = readline.createInterface(process.stdin, process.stdout)
+    prompt(question, callback) {
+      const prompt = readline.createInterface(process.stdin, process.stdout);
 
-    prompt.question question, (answer) ->
-      prompt.close()
-      callback(answer)
+      return prompt.question(question, function(answer) {
+        prompt.close();
+        return callback(answer);
+      });
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
-    [name] = options.argv._
+    run(options) {
+      let version;
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
+      let [name] = Array.from(options.argv._);
 
-    if name?.length > 0
-      atIndex = name.indexOf('@')
-      if atIndex isnt -1
-        version = name.substring(atIndex + 1)
-        name = name.substring(0, atIndex)
+      if ((name != null ? name.length : undefined) > 0) {
+        const atIndex = name.indexOf('@');
+        if (atIndex !== -1) {
+          version = name.substring(atIndex + 1);
+          name = name.substring(0, atIndex);
+        }
+      }
 
-    unless name
-      try
-        name = JSON.parse(fs.readFileSync('package.json'))?.name
+      if (!name) {
+        try {
+          name = __guard__(JSON.parse(fs.readFileSync('package.json')), x => x.name);
+        } catch (error) {}
+      }
 
-    unless name
-      name = path.basename(process.cwd())
+      if (!name) {
+        name = path.basename(process.cwd());
+      }
 
-    if options.argv.force
-      @unpublishPackage(name, version, callback)
-    else
-      @promptForConfirmation(name, version, callback)
+      if (options.argv.force) {
+        return this.unpublishPackage(name, version, callback);
+      } else {
+        return this.promptForConfirmation(name, version, callback);
+      }
+    }
+  };
+  Unpublish.initClass();
+  return Unpublish;
+})());
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

@@ -1,8 +1,10 @@
-SpecChecker = require './spec-checker'
+const SpecChecker = require('./spec-checker');
 
-class KnownUnicodeSpecChecker extends SpecChecker
-  constructor: ->
-    super("known-unicode", false, ["абырг"])
+class KnownUnicodeSpecChecker extends SpecChecker {
+  constructor() {
+    super("known-unicode", false, ["абырг"]);
+  }
+}
 
-checker = new KnownUnicodeSpecChecker
-module.exports = checker
+const checker = new KnownUnicodeSpecChecker;
+module.exports = checker;

@@ -1,88 +1,126 @@
-fs = require("fs")
-isBinaryFile = require("isbinaryfile")
-{Readable} = require 'stream'
-{StringDecoder} = require 'string_decoder'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ChunkedLineReader;
+const fs = require("fs");
+const isBinaryFile = require("isbinaryfile");
+const {Readable} = require('stream');
+const {StringDecoder} = require('string_decoder');
 
-lastIndexOf = (buffer, length, char) ->
-  i = length
-  while i--
-    return i if buffer[i] == char
-  -1
+const lastIndexOf = function(buffer, length, char) {
+  let i = length;
+  while (i--) {
+    if (buffer[i] === char) { return i; }
+  }
+  return -1;
+};
 
-# Will ensure data will be read on a line boundary. So this will always do the
-# right thing:
-#
-#   lines = []
-#   reader = new ChunkedLineReader('some/file.txt')
-#   reader.on 'data', (chunk) ->
-#     line = chunk.toString().replace(/\r?\n?$/, '')
-#     lines = lines.concat(line.split(/\r\n|\n|\r/))
-#
-# This will collect all the lines in the file, or you can process each line in
-# the data handler for more efficiency.
+// Will ensure data will be read on a line boundary. So this will always do the
+// right thing:
+//
+//   lines = []
+//   reader = new ChunkedLineReader('some/file.txt')
+//   reader.on 'data', (chunk) ->
+//     line = chunk.toString().replace(/\r?\n?$/, '')
+//     lines = lines.concat(line.split(/\r\n|\n|\r/))
+//
+// This will collect all the lines in the file, or you can process each line in
+// the data handler for more efficiency.
 module.exports =
-class ChunkedLineReader extends Readable
+(ChunkedLineReader = (function() {
+  ChunkedLineReader = class ChunkedLineReader extends Readable {
+    static initClass() {
+  
+      this.CHUNK_SIZE = 10240;
+      this.chunkedBuffer = null;
+      this.headerBuffer = new Buffer(256);
+    }
 
-  @CHUNK_SIZE: 10240
-  @chunkedBuffer: null
-  @headerBuffer: new Buffer(256)
+    constructor(filePath, options) {
+      {
+        // Hack: trick Babel/TypeScript into allowing this before super.
+        if (false) { super(); }
+        let thisFn = (() => { return this; }).toString();
+        let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+        eval(`${thisName} = this;`);
+      }
+      this.filePath = filePath;
+      this.encoding = (options != null ? options.encoding : undefined) != null ? (options != null ? options.encoding : undefined) : "utf8";
+      super();
+    }
 
-  constructor: (@filePath, options) ->
-    @encoding = options?.encoding ? "utf8"
-    super()
+    isBinaryFile() {
+      const fd = fs.openSync(this.filePath, "r");
+      const isBin = isBinaryFile(this.constructor.headerBuffer, fs.readSync(fd, this.constructor.headerBuffer, 0, 256));
+      fs.closeSync(fd);
+      return isBin;
+    }
 
-  isBinaryFile: ->
-    fd = fs.openSync(@filePath, "r")
-    isBin = isBinaryFile(@constructor.headerBuffer, fs.readSync(fd, @constructor.headerBuffer, 0, 256))
-    fs.closeSync(fd)
-    isBin
+    _read() {
+      let fd;
+      try {
+        fd = fs.openSync(this.filePath, "r");
+        const line = 0;
+        let offset = 0;
+        let remainder = '';
+        const chunkSize = this.constructor.CHUNK_SIZE;
+        if (isBinaryFile(this.constructor.headerBuffer, fs.readSync(fd, this.constructor.headerBuffer, 0, 256))) { return; }
 
-  _read: ->
-    try
-      fd = fs.openSync(@filePath, "r")
-      line = 0
-      offset = 0
-      remainder = ''
-      chunkSize = @constructor.CHUNK_SIZE
-      return if isBinaryFile(@constructor.headerBuffer, fs.readSync(fd, @constructor.headerBuffer, 0, 256))
+        if (this.constructor.chunkedBuffer == null) { this.constructor.chunkedBuffer = new Buffer(chunkSize); }
+        const {
+          chunkedBuffer
+        } = this.constructor;
+        let bytesRead = fs.readSync(fd, chunkedBuffer, 0, chunkSize, 0);
+        const decoder = new StringDecoder(this.encoding);
 
-      @constructor.chunkedBuffer ?= new Buffer(chunkSize)
-      chunkedBuffer = @constructor.chunkedBuffer
-      bytesRead = fs.readSync(fd, chunkedBuffer, 0, chunkSize, 0)
-      decoder = new StringDecoder(@encoding)
+        while (bytesRead) {
+          // Scary looking. Uses very few new objects
+          var newRemainder, str;
+          const char = 10;
+          const index = lastIndexOf(chunkedBuffer, bytesRead, char);
 
-      while bytesRead
-        # Scary looking. Uses very few new objects
-        char = 10
-        index = lastIndexOf(chunkedBuffer, bytesRead, char)
+          if (index < 0) {
+            // no newlines here, the whole thing is a remainder
+            newRemainder = decoder.write(chunkedBuffer.slice(0, bytesRead));
+            str = null;
+          } else if ((index > -1) && (index === (bytesRead - 1))) {
+            // the last char is a newline
+            newRemainder = '';
+            str = decoder.write(chunkedBuffer.slice(0, bytesRead));
+          } else {
+            str = decoder.write(chunkedBuffer.slice(0, index+1));
+            newRemainder = decoder.write(chunkedBuffer.slice(index+1, bytesRead));
+          }
 
-        if index < 0
-          # no newlines here, the whole thing is a remainder
-          newRemainder = decoder.write(chunkedBuffer.slice(0, bytesRead))
-          str = null
-        else if index > -1 and index == bytesRead - 1
-          # the last char is a newline
-          newRemainder = ''
-          str = decoder.write(chunkedBuffer.slice(0, bytesRead))
-        else
-          str = decoder.write(chunkedBuffer.slice(0, index+1))
-          newRemainder = decoder.write(chunkedBuffer.slice(index+1, bytesRead))
+          if (str) {
+            if (remainder) { str = remainder + str; }
+            this.push(str);
+            remainder = newRemainder;
+          } else {
+            remainder = remainder + newRemainder;
+          }
 
-        if str
-          str = remainder + str if remainder
-          @push(str)
-          remainder = newRemainder
-        else
-          remainder = remainder + newRemainder
+          offset += bytesRead;
+          bytesRead = fs.readSync(fd, chunkedBuffer, 0, chunkSize, offset);
+        }
 
-        offset += bytesRead
-        bytesRead = fs.readSync(fd, chunkedBuffer, 0, chunkSize, offset)
+        if (remainder) { return this.push(remainder); }
 
-      @push(remainder) if remainder
+      } catch (error) {
+        return this.emit('error', error);
+      }
 
-    catch error
-      @emit('error', error)
-
-    finally
-      fs.closeSync(fd) if fd?
-      @push(null)
+      finally {
+        if (fd != null) { fs.closeSync(fd); }
+        this.push(null);
+      }
+    }
+  };
+  ChunkedLineReader.initClass();
+  return ChunkedLineReader;
+})());

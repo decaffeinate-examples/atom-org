@@ -1,222 +1,322 @@
-_ = require "underscore-plus"
-{CompositeDisposable, GitRepositoryAsync} = require "atom"
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS104: Avoid inline assignments
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let GitView;
+const _ = require("underscore-plus");
+const {CompositeDisposable, GitRepositoryAsync} = require("atom");
 
 module.exports =
-class GitView
-  constructor: ->
-    @element = document.createElement('status-bar-git')
-    @element.classList.add('git-view')
+(GitView = class GitView {
+  constructor() {
+    this.element = document.createElement('status-bar-git');
+    this.element.classList.add('git-view');
 
-    @createBranchArea()
-    @createCommitsArea()
-    @createStatusArea()
+    this.createBranchArea();
+    this.createCommitsArea();
+    this.createStatusArea();
 
-    @activeItemSubscription = atom.workspace.getCenter().onDidChangeActivePaneItem =>
-      @subscribeToActiveItem()
-    @projectPathSubscription = atom.project.onDidChangePaths =>
-      @subscribeToRepositories()
-    @subscribeToRepositories()
-    @subscribeToActiveItem()
+    this.activeItemSubscription = atom.workspace.getCenter().onDidChangeActivePaneItem(() => {
+      return this.subscribeToActiveItem();
+    });
+    this.projectPathSubscription = atom.project.onDidChangePaths(() => {
+      return this.subscribeToRepositories();
+    });
+    this.subscribeToRepositories();
+    this.subscribeToActiveItem();
+  }
 
-  createBranchArea: ->
-    @branchArea = document.createElement('div')
-    @branchArea.classList.add('git-branch', 'inline-block')
-    @element.appendChild(@branchArea)
-    @element.branchArea = @branchArea
+  createBranchArea() {
+    this.branchArea = document.createElement('div');
+    this.branchArea.classList.add('git-branch', 'inline-block');
+    this.element.appendChild(this.branchArea);
+    this.element.branchArea = this.branchArea;
 
-    branchIcon = document.createElement('span')
-    branchIcon.classList.add('icon', 'icon-git-branch')
-    @branchArea.appendChild(branchIcon)
+    const branchIcon = document.createElement('span');
+    branchIcon.classList.add('icon', 'icon-git-branch');
+    this.branchArea.appendChild(branchIcon);
 
-    @branchLabel = document.createElement('span')
-    @branchLabel.classList.add('branch-label')
-    @branchArea.appendChild(@branchLabel)
-    @element.branchLabel = @branchLabel
+    this.branchLabel = document.createElement('span');
+    this.branchLabel.classList.add('branch-label');
+    this.branchArea.appendChild(this.branchLabel);
+    return this.element.branchLabel = this.branchLabel;
+  }
 
-  createCommitsArea: ->
-    @commitsArea = document.createElement('div')
-    @commitsArea.classList.add('git-commits', 'inline-block')
-    @element.appendChild(@commitsArea)
+  createCommitsArea() {
+    this.commitsArea = document.createElement('div');
+    this.commitsArea.classList.add('git-commits', 'inline-block');
+    this.element.appendChild(this.commitsArea);
 
-    @commitsAhead = document.createElement('span')
-    @commitsAhead.classList.add('icon', 'icon-arrow-up', 'commits-ahead-label')
-    @commitsArea.appendChild(@commitsAhead)
+    this.commitsAhead = document.createElement('span');
+    this.commitsAhead.classList.add('icon', 'icon-arrow-up', 'commits-ahead-label');
+    this.commitsArea.appendChild(this.commitsAhead);
 
-    @commitsBehind = document.createElement('span')
-    @commitsBehind.classList.add('icon', 'icon-arrow-down', 'commits-behind-label')
-    @commitsArea.appendChild(@commitsBehind)
+    this.commitsBehind = document.createElement('span');
+    this.commitsBehind.classList.add('icon', 'icon-arrow-down', 'commits-behind-label');
+    return this.commitsArea.appendChild(this.commitsBehind);
+  }
 
-  createStatusArea: ->
-    @gitStatus = document.createElement('div')
-    @gitStatus.classList.add('git-status', 'inline-block')
-    @element.appendChild(@gitStatus)
+  createStatusArea() {
+    this.gitStatus = document.createElement('div');
+    this.gitStatus.classList.add('git-status', 'inline-block');
+    this.element.appendChild(this.gitStatus);
 
-    @gitStatusIcon = document.createElement('span')
-    @gitStatusIcon.classList.add('icon')
-    @gitStatus.appendChild(@gitStatusIcon)
-    @element.gitStatusIcon = @gitStatusIcon
+    this.gitStatusIcon = document.createElement('span');
+    this.gitStatusIcon.classList.add('icon');
+    this.gitStatus.appendChild(this.gitStatusIcon);
+    return this.element.gitStatusIcon = this.gitStatusIcon;
+  }
 
-  subscribeToActiveItem: ->
-    activeItem = @getActiveItem()
+  subscribeToActiveItem() {
+    const activeItem = this.getActiveItem();
 
-    @savedSubscription?.dispose()
-    @savedSubscription = activeItem?.onDidSave? => @update()
+    if (this.savedSubscription != null) {
+      this.savedSubscription.dispose();
+    }
+    this.savedSubscription = __guardMethod__(activeItem, 'onDidSave', o => o.onDidSave(() => this.update()));
 
-    @update()
+    return this.update();
+  }
 
-  subscribeToRepositories: ->
-    @repositorySubscriptions?.dispose()
-    @repositorySubscriptions = new CompositeDisposable
+  subscribeToRepositories() {
+    if (this.repositorySubscriptions != null) {
+      this.repositorySubscriptions.dispose();
+    }
+    this.repositorySubscriptions = new CompositeDisposable;
 
-    for repo in atom.project.getRepositories() when repo?
-      @repositorySubscriptions.add repo.onDidChangeStatus ({path, status}) =>
-        @update() if path is @getActiveItemPath()
-      @repositorySubscriptions.add repo.onDidChangeStatuses =>
-        @update()
+    return (() => {
+      const result = [];
+      for (let repo of Array.from(atom.project.getRepositories())) {
+        if (repo != null) {
+          this.repositorySubscriptions.add(repo.onDidChangeStatus(({path, status}) => {
+            if (path === this.getActiveItemPath()) { return this.update(); }
+          })
+          );
+          result.push(this.repositorySubscriptions.add(repo.onDidChangeStatuses(() => {
+            return this.update();
+          })
+          ));
+        }
+      }
+      return result;
+    })();
+  }
 
-  destroy: ->
-    @activeItemSubscription?.dispose()
-    @projectPathSubscription?.dispose()
-    @savedSubscription?.dispose()
-    @repositorySubscriptions?.dispose()
-    @branchTooltipDisposable?.dispose()
-    @commitsAheadTooltipDisposable?.dispose()
-    @commitsBehindTooltipDisposable?.dispose()
-    @statusTooltipDisposable?.dispose()
+  destroy() {
+    if (this.activeItemSubscription != null) {
+      this.activeItemSubscription.dispose();
+    }
+    if (this.projectPathSubscription != null) {
+      this.projectPathSubscription.dispose();
+    }
+    if (this.savedSubscription != null) {
+      this.savedSubscription.dispose();
+    }
+    if (this.repositorySubscriptions != null) {
+      this.repositorySubscriptions.dispose();
+    }
+    if (this.branchTooltipDisposable != null) {
+      this.branchTooltipDisposable.dispose();
+    }
+    if (this.commitsAheadTooltipDisposable != null) {
+      this.commitsAheadTooltipDisposable.dispose();
+    }
+    if (this.commitsBehindTooltipDisposable != null) {
+      this.commitsBehindTooltipDisposable.dispose();
+    }
+    return (this.statusTooltipDisposable != null ? this.statusTooltipDisposable.dispose() : undefined);
+  }
 
-  getActiveItemPath: ->
-    @getActiveItem()?.getPath?()
+  getActiveItemPath() {
+    return __guardMethod__(this.getActiveItem(), 'getPath', o => o.getPath());
+  }
 
-  getRepositoryForActiveItem: ->
-    [rootDir] = atom.project.relativizePath(@getActiveItemPath())
-    rootDirIndex = atom.project.getPaths().indexOf(rootDir)
-    if rootDirIndex >= 0
-      atom.project.getRepositories()[rootDirIndex]
-    else
-      for repo in atom.project.getRepositories() when repo
-        return repo
+  getRepositoryForActiveItem() {
+    const [rootDir] = Array.from(atom.project.relativizePath(this.getActiveItemPath()));
+    const rootDirIndex = atom.project.getPaths().indexOf(rootDir);
+    if (rootDirIndex >= 0) {
+      return atom.project.getRepositories()[rootDirIndex];
+    } else {
+      for (let repo of Array.from(atom.project.getRepositories())) {
+        if (repo) {
+          return repo;
+        }
+      }
+    }
+  }
 
-  getActiveItem: ->
-    atom.workspace.getCenter().getActivePaneItem()
+  getActiveItem() {
+    return atom.workspace.getCenter().getActivePaneItem();
+  }
 
-  update: ->
-    repo = @getRepositoryForActiveItem()
-    @updateBranchText(repo)
-    @updateAheadBehindCount(repo)
-    @updateStatusText(repo)
+  update() {
+    const repo = this.getRepositoryForActiveItem();
+    this.updateBranchText(repo);
+    this.updateAheadBehindCount(repo);
+    return this.updateStatusText(repo);
+  }
 
-  updateBranchText: (repo) ->
-    if @showGitInformation(repo)
-      head = repo.getShortHead(@getActiveItemPath())
-      @branchLabel.textContent = head
-      @branchArea.style.display = '' if head
-      @branchTooltipDisposable?.dispose()
-      @branchTooltipDisposable = atom.tooltips.add @branchArea, title: "On branch #{head}"
-    else
-      @branchArea.style.display = 'none'
+  updateBranchText(repo) {
+    if (this.showGitInformation(repo)) {
+      const head = repo.getShortHead(this.getActiveItemPath());
+      this.branchLabel.textContent = head;
+      if (head) { this.branchArea.style.display = ''; }
+      if (this.branchTooltipDisposable != null) {
+        this.branchTooltipDisposable.dispose();
+      }
+      return this.branchTooltipDisposable = atom.tooltips.add(this.branchArea, {title: `On branch ${head}`});
+    } else {
+      return this.branchArea.style.display = 'none';
+    }
+  }
 
-  showGitInformation: (repo) ->
-    return false unless repo?
+  showGitInformation(repo) {
+    let itemPath;
+    if (repo == null) { return false; }
 
-    if itemPath = @getActiveItemPath()
-      atom.project.contains(itemPath)
-    else
-      not @getActiveItem()?
+    if ((itemPath = this.getActiveItemPath())) {
+      return atom.project.contains(itemPath);
+    } else {
+      return (this.getActiveItem() == null);
+    }
+  }
 
-  updateAheadBehindCount: (repo) ->
-    unless @showGitInformation(repo)
-      @commitsArea.style.display = 'none'
-      return
+  updateAheadBehindCount(repo) {
+    if (!this.showGitInformation(repo)) {
+      this.commitsArea.style.display = 'none';
+      return;
+    }
 
-    itemPath = @getActiveItemPath()
-    {ahead, behind} = repo.getCachedUpstreamAheadBehindCount(itemPath)
-    if ahead > 0
-      @commitsAhead.textContent = ahead
-      @commitsAhead.style.display = ''
-      @commitsAheadTooltipDisposable?.dispose()
-      @commitsAheadTooltipDisposable = atom.tooltips.add @commitsAhead, title: "#{_.pluralize(ahead, 'commit')} ahead of upstream"
-    else
-      @commitsAhead.style.display = 'none'
+    const itemPath = this.getActiveItemPath();
+    const {ahead, behind} = repo.getCachedUpstreamAheadBehindCount(itemPath);
+    if (ahead > 0) {
+      this.commitsAhead.textContent = ahead;
+      this.commitsAhead.style.display = '';
+      if (this.commitsAheadTooltipDisposable != null) {
+        this.commitsAheadTooltipDisposable.dispose();
+      }
+      this.commitsAheadTooltipDisposable = atom.tooltips.add(this.commitsAhead, {title: `${_.pluralize(ahead, 'commit')} ahead of upstream`});
+    } else {
+      this.commitsAhead.style.display = 'none';
+    }
 
-    if behind > 0
-      @commitsBehind.textContent = behind
-      @commitsBehind.style.display = ''
-      @commitsBehindTooltipDisposable?.dispose()
-      @commitsBehindTooltipDisposable = atom.tooltips.add @commitsBehind, title: "#{_.pluralize(behind, 'commit')} behind upstream"
-    else
-      @commitsBehind.style.display = 'none'
+    if (behind > 0) {
+      this.commitsBehind.textContent = behind;
+      this.commitsBehind.style.display = '';
+      if (this.commitsBehindTooltipDisposable != null) {
+        this.commitsBehindTooltipDisposable.dispose();
+      }
+      this.commitsBehindTooltipDisposable = atom.tooltips.add(this.commitsBehind, {title: `${_.pluralize(behind, 'commit')} behind upstream`});
+    } else {
+      this.commitsBehind.style.display = 'none';
+    }
 
-    if ahead > 0 or behind > 0
-      @commitsArea.style.display = ''
-    else
-      @commitsArea.style.display = 'none'
+    if ((ahead > 0) || (behind > 0)) {
+      return this.commitsArea.style.display = '';
+    } else {
+      return this.commitsArea.style.display = 'none';
+    }
+  }
 
-  clearStatus: ->
-    @gitStatusIcon.classList.remove('icon-diff-modified', 'status-modified', 'icon-diff-added', 'status-added', 'icon-diff-ignored', 'status-ignored')
+  clearStatus() {
+    return this.gitStatusIcon.classList.remove('icon-diff-modified', 'status-modified', 'icon-diff-added', 'status-added', 'icon-diff-ignored', 'status-ignored');
+  }
 
-  updateAsNewFile: ->
-    @clearStatus()
+  updateAsNewFile() {
+    let textEditor;
+    this.clearStatus();
 
-    @gitStatusIcon.classList.add('icon-diff-added', 'status-added')
-    if textEditor = atom.workspace.getActiveTextEditor()
-      @gitStatusIcon.textContent = "+#{textEditor.getLineCount()}"
-      @updateTooltipText("#{_.pluralize(textEditor.getLineCount(), 'line')} in this new file not yet committed")
-    else
-      @gitStatusIcon.textContent = ''
-      @updateTooltipText()
+    this.gitStatusIcon.classList.add('icon-diff-added', 'status-added');
+    if (textEditor = atom.workspace.getActiveTextEditor()) {
+      this.gitStatusIcon.textContent = `+${textEditor.getLineCount()}`;
+      this.updateTooltipText(`${_.pluralize(textEditor.getLineCount(), 'line')} in this new file not yet committed`);
+    } else {
+      this.gitStatusIcon.textContent = '';
+      this.updateTooltipText();
+    }
 
-    @gitStatus.style.display = ''
+    return this.gitStatus.style.display = '';
+  }
 
-  updateAsModifiedFile: (repo, path) ->
-    stats = repo.getDiffStats(path)
-    @clearStatus()
+  updateAsModifiedFile(repo, path) {
+    const stats = repo.getDiffStats(path);
+    this.clearStatus();
 
-    @gitStatusIcon.classList.add('icon-diff-modified', 'status-modified')
-    if stats.added and stats.deleted
-      @gitStatusIcon.textContent = "+#{stats.added}, -#{stats.deleted}"
-      @updateTooltipText("#{_.pluralize(stats.added, 'line')} added and #{_.pluralize(stats.deleted, 'line')} deleted in this file not yet committed")
-    else if stats.added
-      @gitStatusIcon.textContent = "+#{stats.added}"
-      @updateTooltipText("#{_.pluralize(stats.added, 'line')} added to this file not yet committed")
-    else if stats.deleted
-      @gitStatusIcon.textContent = "-#{stats.deleted}"
-      @updateTooltipText("#{_.pluralize(stats.deleted, 'line')} deleted from this file not yet committed")
-    else
-      @gitStatusIcon.textContent = ''
-      @updateTooltipText()
+    this.gitStatusIcon.classList.add('icon-diff-modified', 'status-modified');
+    if (stats.added && stats.deleted) {
+      this.gitStatusIcon.textContent = `+${stats.added}, -${stats.deleted}`;
+      this.updateTooltipText(`${_.pluralize(stats.added, 'line')} added and ${_.pluralize(stats.deleted, 'line')} deleted in this file not yet committed`);
+    } else if (stats.added) {
+      this.gitStatusIcon.textContent = `+${stats.added}`;
+      this.updateTooltipText(`${_.pluralize(stats.added, 'line')} added to this file not yet committed`);
+    } else if (stats.deleted) {
+      this.gitStatusIcon.textContent = `-${stats.deleted}`;
+      this.updateTooltipText(`${_.pluralize(stats.deleted, 'line')} deleted from this file not yet committed`);
+    } else {
+      this.gitStatusIcon.textContent = '';
+      this.updateTooltipText();
+    }
 
-    @gitStatus.style.display = ''
+    return this.gitStatus.style.display = '';
+  }
 
-  updateAsIgnoredFile: ->
-    @clearStatus()
+  updateAsIgnoredFile() {
+    this.clearStatus();
 
-    @gitStatusIcon.classList.add('icon-diff-ignored',  'status-ignored')
-    @gitStatusIcon.textContent = ''
-    @gitStatus.style.display = ''
-    @updateTooltipText("File is ignored by git")
+    this.gitStatusIcon.classList.add('icon-diff-ignored',  'status-ignored');
+    this.gitStatusIcon.textContent = '';
+    this.gitStatus.style.display = '';
+    return this.updateTooltipText("File is ignored by git");
+  }
 
-  updateTooltipText: (text) ->
-    @statusTooltipDisposable?.dispose()
-    if text
-      @statusTooltipDisposable = atom.tooltips.add @gitStatusIcon, title: text
+  updateTooltipText(text) {
+    if (this.statusTooltipDisposable != null) {
+      this.statusTooltipDisposable.dispose();
+    }
+    if (text) {
+      return this.statusTooltipDisposable = atom.tooltips.add(this.gitStatusIcon, {title: text});
+    }
+  }
 
-  updateStatusText: (repo) ->
-    hideStatus = =>
-      @clearStatus()
-      @gitStatus.style.display = 'none'
+  updateStatusText(repo) {
+    const hideStatus = () => {
+      this.clearStatus();
+      return this.gitStatus.style.display = 'none';
+    };
 
-    itemPath = @getActiveItemPath()
-    if @showGitInformation(repo) and itemPath?
-      status = repo.getCachedPathStatus(itemPath) ? 0
-      if repo.isStatusNew(status)
-        return @updateAsNewFile()
+    const itemPath = this.getActiveItemPath();
+    if (this.showGitInformation(repo) && (itemPath != null)) {
+      let left;
+      const status = (left = repo.getCachedPathStatus(itemPath)) != null ? left : 0;
+      if (repo.isStatusNew(status)) {
+        return this.updateAsNewFile();
+      }
 
-      if repo.isStatusModified(status)
-        return @updateAsModifiedFile(repo, itemPath)
+      if (repo.isStatusModified(status)) {
+        return this.updateAsModifiedFile(repo, itemPath);
+      }
 
-      if repo.isPathIgnored(itemPath)
-        @updateAsIgnoredFile()
-      else
-        hideStatus()
-    else
-      hideStatus()
+      if (repo.isPathIgnored(itemPath)) {
+        return this.updateAsIgnoredFile();
+      } else {
+        return hideStatus();
+      }
+    } else {
+      return hideStatus();
+    }
+  }
+});
+
+function __guardMethod__(obj, methodName, transform) {
+  if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
+    return transform(obj, methodName);
+  } else {
+    return undefined;
+  }
+}

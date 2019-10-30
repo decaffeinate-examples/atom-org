@@ -1,322 +1,344 @@
-{Notification} = require 'atom'
-NotificationElement = require '../lib/notification-element'
-NotificationIssue = require '../lib/notification-issue'
-NotificationsLog = require '../lib/notifications-log'
-{generateFakeFetchResponses, generateException} = require './helper'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {Notification} = require('atom');
+const NotificationElement = require('../lib/notification-element');
+const NotificationIssue = require('../lib/notification-issue');
+const NotificationsLog = require('../lib/notifications-log');
+const {generateFakeFetchResponses, generateException} = require('./helper');
 
-describe "Notifications Log", ->
-  workspaceElement = null
+describe("Notifications Log", function() {
+  let workspaceElement = null;
 
-  beforeEach ->
-    workspaceElement = atom.views.getView(atom.workspace)
-    atom.notifications.clear()
+  beforeEach(function() {
+    workspaceElement = atom.views.getView(atom.workspace);
+    atom.notifications.clear();
 
-    waitsForPromise ->
-      atom.packages.activatePackage('notifications')
+    waitsForPromise(() => atom.packages.activatePackage('notifications'));
 
-    waitsForPromise ->
-      atom.workspace.open(NotificationsLog::getURI())
+    return waitsForPromise(() => atom.workspace.open(NotificationsLog.prototype.getURI()));
+  });
 
-  describe "when the package is activated", ->
-    it "attaches an atom-notifications element to the dom", ->
-      expect(workspaceElement.querySelector('.notifications-log-items')).toBeDefined()
+  describe("when the package is activated", () => it("attaches an atom-notifications element to the dom", () => expect(workspaceElement.querySelector('.notifications-log-items')).toBeDefined()));
 
-  describe "when there are notifications before activation", ->
-    beforeEach ->
-      waitsForPromise ->
-        atom.packages.deactivatePackage('notifications')
+  describe("when there are notifications before activation", function() {
+    beforeEach(() => waitsForPromise(() => atom.packages.deactivatePackage('notifications')));
 
-    it "displays all non displayed notifications", ->
-      warning = new Notification('warning', 'Un-displayed warning')
-      error = new Notification('error', 'Displayed error')
-      error.setDisplayed(true)
+    return it("displays all non displayed notifications", function() {
+      const warning = new Notification('warning', 'Un-displayed warning');
+      const error = new Notification('error', 'Displayed error');
+      error.setDisplayed(true);
 
-      atom.notifications.addNotification(error)
-      atom.notifications.addNotification(warning)
+      atom.notifications.addNotification(error);
+      atom.notifications.addNotification(warning);
 
-      waitsForPromise ->
-        atom.packages.activatePackage('notifications')
+      waitsForPromise(() => atom.packages.activatePackage('notifications'));
 
-      waitsForPromise ->
-        atom.workspace.open(NotificationsLog::getURI())
+      waitsForPromise(() => atom.workspace.open(NotificationsLog.prototype.getURI()));
 
-      runs ->
-        notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items')
-        notification = notificationsLogContainer.querySelector('.notifications-log-notification.warning')
-        expect(notification).toExist()
-        notification = notificationsLogContainer.querySelector('.notifications-log-notification.error')
-        expect(notification).toExist()
+      return runs(function() {
+        const notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items');
+        let notification = notificationsLogContainer.querySelector('.notifications-log-notification.warning');
+        expect(notification).toExist();
+        notification = notificationsLogContainer.querySelector('.notifications-log-notification.error');
+        return expect(notification).toExist();
+      });
+    });
+  });
 
-  describe "when notifications are added to atom.notifications", ->
-    notificationsLogContainer = null
+  describe("when notifications are added to atom.notifications", function() {
+    let notificationsLogContainer = null;
 
-    beforeEach ->
-      enableInitNotification = atom.notifications.addSuccess('A message to trigger initialization', dismissable: true)
-      enableInitNotification.dismiss()
-      advanceClock(NotificationElement::visibilityDuration)
-      advanceClock(NotificationElement::animationDuration)
+    beforeEach(function() {
+      const enableInitNotification = atom.notifications.addSuccess('A message to trigger initialization', {dismissable: true});
+      enableInitNotification.dismiss();
+      advanceClock(NotificationElement.prototype.visibilityDuration);
+      advanceClock(NotificationElement.prototype.animationDuration);
 
-      notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items')
-      jasmine.attachToDOM(workspaceElement)
+      notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items');
+      jasmine.attachToDOM(workspaceElement);
 
-      generateFakeFetchResponses()
+      return generateFakeFetchResponses();
+    });
 
-    it "adds an .notifications-log-item element to the container with a class corresponding to the type", ->
-      atom.notifications.addSuccess('A message')
-      notification = notificationsLogContainer.querySelector('.notifications-log-item.success')
-      expect(notificationsLogContainer.childNodes).toHaveLength 2
-      expect(notification.querySelector('.message').textContent.trim()).toBe 'A message'
-      expect(notification.querySelector('.btn-toolbar')).toBeEmpty()
+    it("adds an .notifications-log-item element to the container with a class corresponding to the type", function() {
+      atom.notifications.addSuccess('A message');
+      let notification = notificationsLogContainer.querySelector('.notifications-log-item.success');
+      expect(notificationsLogContainer.childNodes).toHaveLength(2);
+      expect(notification.querySelector('.message').textContent.trim()).toBe('A message');
+      expect(notification.querySelector('.btn-toolbar')).toBeEmpty();
 
-      atom.notifications.addInfo('A message')
-      expect(notificationsLogContainer.childNodes).toHaveLength 3
-      expect(notificationsLogContainer.querySelector('.notifications-log-item.info')).toBeDefined()
+      atom.notifications.addInfo('A message');
+      expect(notificationsLogContainer.childNodes).toHaveLength(3);
+      expect(notificationsLogContainer.querySelector('.notifications-log-item.info')).toBeDefined();
 
-      atom.notifications.addWarning('A message')
-      expect(notificationsLogContainer.childNodes).toHaveLength 4
-      expect(notificationsLogContainer.querySelector('.notifications-log-item.warning')).toBeDefined()
+      atom.notifications.addWarning('A message');
+      expect(notificationsLogContainer.childNodes).toHaveLength(4);
+      expect(notificationsLogContainer.querySelector('.notifications-log-item.warning')).toBeDefined();
 
-      atom.notifications.addError('A message')
-      expect(notificationsLogContainer.childNodes).toHaveLength 5
-      expect(notificationsLogContainer.querySelector('.notifications-log-item.error')).toBeDefined()
+      atom.notifications.addError('A message');
+      expect(notificationsLogContainer.childNodes).toHaveLength(5);
+      expect(notificationsLogContainer.querySelector('.notifications-log-item.error')).toBeDefined();
 
-      atom.notifications.addFatalError('A message')
-      notification = notificationsLogContainer.querySelector('.notifications-log-item.fatal')
-      expect(notificationsLogContainer.childNodes).toHaveLength 6
-      expect(notification).toBeDefined()
-      expect(notification.querySelector('.btn-toolbar')).not.toBeEmpty()
+      atom.notifications.addFatalError('A message');
+      notification = notificationsLogContainer.querySelector('.notifications-log-item.fatal');
+      expect(notificationsLogContainer.childNodes).toHaveLength(6);
+      expect(notification).toBeDefined();
+      return expect(notification.querySelector('.btn-toolbar')).not.toBeEmpty();
+    });
 
-    describe "when the `buttons` options is used", ->
-      it "displays the buttons in the .btn-toolbar element", ->
-        clicked = []
-        atom.notifications.addSuccess 'A message',
-          buttons: [{
-            text: 'Button One'
-            className: 'btn-one'
-            onDidClick: -> clicked.push 'one'
-          }, {
-            text: 'Button Two'
-            className: 'btn-two'
-            onDidClick: -> clicked.push 'two'
-          }]
+    describe("when the `buttons` options is used", () => it("displays the buttons in the .btn-toolbar element", function() {
+      const clicked = [];
+      atom.notifications.addSuccess('A message', {
+        buttons: [{
+          text: 'Button One',
+          className: 'btn-one',
+          onDidClick() { return clicked.push('one'); }
+        }, {
+          text: 'Button Two',
+          className: 'btn-two',
+          onDidClick() { return clicked.push('two'); }
+        }]
+      });
 
-        notification = notificationsLogContainer.querySelector('.notifications-log-item.success')
-        expect(notification.querySelector('.btn-toolbar')).not.toBeEmpty()
+      const notification = notificationsLogContainer.querySelector('.notifications-log-item.success');
+      expect(notification.querySelector('.btn-toolbar')).not.toBeEmpty();
 
-        btnOne = notification.querySelector('.btn-one')
-        btnTwo = notification.querySelector('.btn-two')
+      const btnOne = notification.querySelector('.btn-one');
+      const btnTwo = notification.querySelector('.btn-two');
 
-        expect(btnOne).toHaveClass 'btn-success'
-        expect(btnOne.textContent).toBe 'Button One'
-        expect(btnTwo).toHaveClass 'btn-success'
-        expect(btnTwo.textContent).toBe 'Button Two'
+      expect(btnOne).toHaveClass('btn-success');
+      expect(btnOne.textContent).toBe('Button One');
+      expect(btnTwo).toHaveClass('btn-success');
+      expect(btnTwo.textContent).toBe('Button Two');
 
-        btnTwo.click()
-        btnOne.click()
+      btnTwo.click();
+      btnOne.click();
 
-        expect(clicked).toEqual ['two', 'one']
+      return expect(clicked).toEqual(['two', 'one']);
+  }));
 
-    describe "when an exception is thrown", ->
-      fatalError = null
+    describe("when an exception is thrown", function() {
+      let fatalError = null;
 
-      describe "when the there is an error searching for the issue", ->
-        beforeEach ->
-          spyOn(atom, 'inDevMode').andReturn false
-          generateFakeFetchResponses(issuesErrorResponse: '403')
-          generateException()
-          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal')
-          waitsForPromise ->
-            fatalError.getRenderPromise()
+      describe("when the there is an error searching for the issue", function() {
+        beforeEach(function() {
+          spyOn(atom, 'inDevMode').andReturn(false);
+          generateFakeFetchResponses({issuesErrorResponse: '403'});
+          generateException();
+          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal');
+          return waitsForPromise(() => fatalError.getRenderPromise());
+        });
 
-        it "asks the user to create an issue", ->
-          button = fatalError.querySelector('.btn')
-          copyReport = fatalError.querySelector('.btn-copy-report')
-          expect(button).toBeDefined()
-          expect(button.textContent).toContain 'Create issue'
-          expect(copyReport).toBeDefined()
+        return it("asks the user to create an issue", function() {
+          const button = fatalError.querySelector('.btn');
+          const copyReport = fatalError.querySelector('.btn-copy-report');
+          expect(button).toBeDefined();
+          expect(button.textContent).toContain('Create issue');
+          return expect(copyReport).toBeDefined();
+        });
+      });
 
-      describe "when the package is out of date", ->
-        beforeEach ->
-          installedVersion = '0.9.0'
-          UserUtilities = require '../lib/user-utilities'
-          spyOn(UserUtilities, 'getPackageVersion').andCallFake -> installedVersion
-          spyOn(atom, 'inDevMode').andReturn false
-          generateFakeFetchResponses
-            packageResponse:
-              repository: url: 'https://github.com/someguy/somepackage'
-              releases: latest: '0.10.0'
-          spyOn(NotificationIssue.prototype, 'getPackageName').andCallFake -> "somepackage"
-          spyOn(NotificationIssue.prototype, 'getRepoUrl').andCallFake -> "https://github.com/someguy/somepackage"
-          generateException()
-          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal')
-          waitsForPromise ->
-            fatalError.getRenderPromise()
+      describe("when the package is out of date", function() {
+        beforeEach(function() {
+          const installedVersion = '0.9.0';
+          const UserUtilities = require('../lib/user-utilities');
+          spyOn(UserUtilities, 'getPackageVersion').andCallFake(() => installedVersion);
+          spyOn(atom, 'inDevMode').andReturn(false);
+          generateFakeFetchResponses({
+            packageResponse: {
+              repository: { url: 'https://github.com/someguy/somepackage'
+            },
+              releases: { latest: '0.10.0'
+            }
+            }
+          });
+          spyOn(NotificationIssue.prototype, 'getPackageName').andCallFake(() => "somepackage");
+          spyOn(NotificationIssue.prototype, 'getRepoUrl').andCallFake(() => "https://github.com/someguy/somepackage");
+          generateException();
+          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal');
+          return waitsForPromise(() => fatalError.getRenderPromise());
+        });
 
-        it "asks the user to update their packages", ->
-          button = fatalError.querySelector('.btn')
+        return it("asks the user to update their packages", function() {
+          const button = fatalError.querySelector('.btn');
 
-          expect(button.textContent).toContain 'Check for package updates'
-          expect(button.getAttribute('href')).toBe '#'
+          expect(button.textContent).toContain('Check for package updates');
+          return expect(button.getAttribute('href')).toBe('#');
+        });
+      });
 
-      describe "when the error has been reported", ->
-        beforeEach ->
-          spyOn(atom, 'inDevMode').andReturn false
-          generateFakeFetchResponses
-            issuesResponse:
+      return describe("when the error has been reported", function() {
+        beforeEach(function() {
+          spyOn(atom, 'inDevMode').andReturn(false);
+          generateFakeFetchResponses({
+            issuesResponse: {
               items: [
                 {
-                  title: 'ReferenceError: a is not defined in $ATOM_HOME/somewhere'
-                  html_url: 'http://url.com/ok'
+                  title: 'ReferenceError: a is not defined in $ATOM_HOME/somewhere',
+                  html_url: 'http://url.com/ok',
                   state: 'open'
                 }
               ]
-          generateException()
-          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal')
-          waitsForPromise ->
-            fatalError.getRenderPromise()
+            }});
+          generateException();
+          fatalError = notificationsLogContainer.querySelector('.notifications-log-item.fatal');
+          return waitsForPromise(() => fatalError.getRenderPromise());
+        });
 
-        it "shows the user a view issue button", ->
-          button = fatalError.querySelector('.btn')
-          expect(button.textContent).toContain 'View Issue'
-          expect(button.getAttribute('href')).toBe 'http://url.com/ok'
+        return it("shows the user a view issue button", function() {
+          const button = fatalError.querySelector('.btn');
+          expect(button.textContent).toContain('View Issue');
+          return expect(button.getAttribute('href')).toBe('http://url.com/ok');
+        });
+      });
+    });
 
-    describe "when a log item is clicked", ->
-      [notification, notificationView, logItem] = []
+    return describe("when a log item is clicked", function() {
+      let [notification, notificationView, logItem] = Array.from([]);
 
-      describe "when the notification is not dismissed", ->
+      describe("when the notification is not dismissed", () => describe("when the notification is not dismissable", function() {
 
-        describe "when the notification is not dismissable", ->
+        beforeEach(function() {
+          notification = atom.notifications.addInfo('A message');
+          notificationView = atom.views.getView(notification);
+          return logItem = notificationsLogContainer.querySelector('.notifications-log-item.info');
+        });
 
-          beforeEach ->
-            notification = atom.notifications.addInfo('A message')
-            notificationView = atom.views.getView(notification)
-            logItem = notificationsLogContainer.querySelector('.notifications-log-item.info')
+        return it("makes the notification dismissable", function() {
+          logItem.click();
+          expect(notificationView.element.classList.contains('has-close')).toBe(true);
+          expect(notification.isDismissable()).toBe(true);
 
-          it "makes the notification dismissable", ->
-            logItem.click()
-            expect(notificationView.element.classList.contains('has-close')).toBe true
-            expect(notification.isDismissable()).toBe true
+          advanceClock(NotificationElement.prototype.visibilityDuration);
+          advanceClock(NotificationElement.prototype.animationDuration);
+          return expect(notificationView.element).toBeVisible();
+        });
+      }));
 
-            advanceClock(NotificationElement::visibilityDuration)
-            advanceClock(NotificationElement::animationDuration)
-            expect(notificationView.element).toBeVisible()
+      return describe("when the notification is dismissed", function() {
 
-      describe "when the notification is dismissed", ->
+        beforeEach(function() {
+          notification = atom.notifications.addInfo('A message', {dismissable: true});
+          notificationView = atom.views.getView(notification);
+          logItem = notificationsLogContainer.querySelector('.notifications-log-item.info');
+          notification.dismiss();
+          return advanceClock(NotificationElement.prototype.animationDuration);
+        });
 
-        beforeEach ->
-          notification = atom.notifications.addInfo('A message', dismissable: true)
-          notificationView = atom.views.getView(notification)
-          logItem = notificationsLogContainer.querySelector('.notifications-log-item.info')
-          notification.dismiss()
-          advanceClock(NotificationElement::animationDuration)
+        it("displays the notification", function() {
+          let didDisplay = false;
+          notification.onDidDisplay(() => didDisplay = true);
+          logItem.click();
 
-        it "displays the notification", ->
-          didDisplay = false
-          notification.onDidDisplay -> didDisplay = true
-          logItem.click()
+          expect(didDisplay).toBe(true);
+          expect(notification.dismissed).toBe(false);
+          return expect(notificationView.element).toBeVisible();
+        });
 
-          expect(didDisplay).toBe true
-          expect(notification.dismissed).toBe false
-          expect(notificationView.element).toBeVisible()
+        return describe("when the notification is dismissed again", () => it("emits did-dismiss", function() {
+          let didDismiss = false;
+          notification.onDidDismiss(() => didDismiss = true);
+          logItem.click();
 
-        describe "when the notification is dismissed again", ->
+          notification.dismiss();
+          advanceClock(NotificationElement.prototype.animationDuration);
 
-          it "emits did-dismiss", ->
-            didDismiss = false
-            notification.onDidDismiss -> didDismiss = true
-            logItem.click()
+          expect(didDismiss).toBe(true);
+          expect(notification.dismissed).toBe(true);
+          return expect(notificationView.element).not.toBeVisible();
+        }));
+      });
+    });
+  });
 
-            notification.dismiss()
-            advanceClock(NotificationElement::animationDuration)
+  describe("when notifications are cleared", function() {
 
-            expect(didDismiss).toBe true
-            expect(notification.dismissed).toBe true
-            expect(notificationView.element).not.toBeVisible()
+    beforeEach(function() {
+      const clearButton = workspaceElement.querySelector('.notifications-log .notifications-clear-log');
+      atom.notifications.addInfo('A message', {dismissable: true});
+      atom.notifications.addInfo('non-dismissable');
+      return clearButton.click();
+    });
 
-  describe "when notifications are cleared", ->
+    return it("clears the notifications", function() {
+      expect(atom.notifications.getNotifications()).toHaveLength(0);
+      const notifications = workspaceElement.querySelector('atom-notifications');
+      advanceClock(NotificationElement.prototype.animationDuration);
+      expect(notifications.children).toHaveLength(0);
+      const logItems = workspaceElement.querySelector('.notifications-log-items');
+      return expect(logItems.children).toHaveLength(0);
+    });
+  });
 
-    beforeEach ->
-      clearButton = workspaceElement.querySelector('.notifications-log .notifications-clear-log')
-      atom.notifications.addInfo('A message', dismissable: true)
-      atom.notifications.addInfo('non-dismissable')
-      clearButton.click()
+  return describe("the dock pane", function() {
+    let notificationsLogPane = null;
 
-    it "clears the notifications", ->
-      expect(atom.notifications.getNotifications()).toHaveLength 0
-      notifications = workspaceElement.querySelector('atom-notifications')
-      advanceClock(NotificationElement::animationDuration)
-      expect(notifications.children).toHaveLength 0
-      logItems = workspaceElement.querySelector('.notifications-log-items')
-      expect(logItems.children).toHaveLength 0
+    beforeEach(() => notificationsLogPane = atom.workspace.paneForURI(NotificationsLog.prototype.getURI()));
 
-  describe "the dock pane", ->
-    notificationsLogPane = null
+    return describe("when notifications:toggle-log is dispatched", function() {
+      it("toggles the pane URI", function() {
+        spyOn(atom.workspace, "toggle");
 
-    beforeEach ->
-      notificationsLogPane = atom.workspace.paneForURI(NotificationsLog::getURI())
+        atom.commands.dispatch(workspaceElement, "notifications:toggle-log");
+        return expect(atom.workspace.toggle).toHaveBeenCalledWith(NotificationsLog.prototype.getURI());
+      });
 
-    describe "when notifications:toggle-log is dispatched", ->
-      it "toggles the pane URI", ->
-        spyOn(atom.workspace, "toggle")
+      describe("when the pane is destroyed", function() {
 
-        atom.commands.dispatch(workspaceElement, "notifications:toggle-log")
-        expect(atom.workspace.toggle).toHaveBeenCalledWith(NotificationsLog::getURI())
+        beforeEach(() => notificationsLogPane.destroyItems());
 
-      describe "when the pane is destroyed", ->
+        it("opens the pane", function() {
+          let [notificationsLog] = Array.from([]);
 
-        beforeEach ->
-          notificationsLogPane.destroyItems()
+          waitsForPromise(() => atom.workspace.toggle(NotificationsLog.prototype.getURI()).then(paneItem => notificationsLog = paneItem));
 
-        it "opens the pane", ->
-          [notificationsLog] = []
+          return runs(() => expect(notificationsLog).toBeDefined());
+        });
 
-          waitsForPromise ->
-            atom.workspace.toggle(NotificationsLog::getURI()).then (paneItem) ->
-              notificationsLog = paneItem
+        return describe("when notifications are displayed", function() {
 
-          runs ->
-            expect(notificationsLog).toBeDefined()
+          beforeEach(() => atom.notifications.addSuccess("success"));
 
-        describe "when notifications are displayed", ->
+          return it("lists all notifications", function() {
+            waitsForPromise(() => atom.workspace.toggle(NotificationsLog.prototype.getURI()));
 
-          beforeEach ->
-            atom.notifications.addSuccess("success")
+            return runs(function() {
+              const notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items');
+              return expect(notificationsLogContainer.childNodes).toHaveLength(1);
+            });
+          });
+        });
+      });
 
-          it "lists all notifications", ->
-            waitsForPromise ->
-              atom.workspace.toggle(NotificationsLog::getURI())
+      describe("when the pane is hidden", function() {
 
-            runs ->
-              notificationsLogContainer = workspaceElement.querySelector('.notifications-log-items')
-              expect(notificationsLogContainer.childNodes).toHaveLength 1
+        beforeEach(() => atom.workspace.hide(NotificationsLog.prototype.getURI()));
 
-      describe "when the pane is hidden", ->
+        return it("opens the pane", function() {
+          let [notificationsLog] = Array.from([]);
 
-        beforeEach ->
-          atom.workspace.hide(NotificationsLog::getURI())
+          waitsForPromise(() => atom.workspace.toggle(NotificationsLog.prototype.getURI()).then(paneItem => notificationsLog = paneItem));
 
-        it "opens the pane", ->
-          [notificationsLog] = []
+          return runs(() => expect(notificationsLog).toBeDefined());
+        });
+      });
 
-          waitsForPromise ->
-            atom.workspace.toggle(NotificationsLog::getURI()).then (paneItem) ->
-              notificationsLog = paneItem
+      return describe("when the pane is open", function() {
 
-          runs ->
-            expect(notificationsLog).toBeDefined()
+        beforeEach(() => waitsForPromise(() => atom.workspace.open(NotificationsLog.prototype.getURI())));
 
-      describe "when the pane is open", ->
+        return it("closes the pane", function() {
+          let notificationsLog = null;
 
-        beforeEach ->
-          waitsForPromise ->
-            atom.workspace.open(NotificationsLog::getURI())
+          waitsForPromise(() => atom.workspace.toggle(NotificationsLog.prototype.getURI()).then(paneItem => notificationsLog = paneItem));
 
-        it "closes the pane", ->
-          notificationsLog = null
-
-          waitsForPromise ->
-            atom.workspace.toggle(NotificationsLog::getURI()).then (paneItem) ->
-              notificationsLog = paneItem
-
-          runs ->
-            expect(notificationsLog).not.toBeDefined()
+          return runs(() => expect(notificationsLog).not.toBeDefined());
+        });
+      });
+    });
+  });
+});

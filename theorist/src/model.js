@@ -1,126 +1,186 @@
-{Behavior, Subscriber, Emitter} = require 'emissary'
-PropertyAccessors = require 'property-accessors'
-Delegator = require 'delegato'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Model;
+const {Behavior, Subscriber, Emitter} = require('emissary');
+const PropertyAccessors = require('property-accessors');
+const Delegator = require('delegato');
 
-nextInstanceId = 1
+let nextInstanceId = 1;
 
 module.exports =
-class Model
-  Subscriber.includeInto(this)
-  Emitter.includeInto(this)
-  PropertyAccessors.includeInto(this)
-  Delegator.includeInto(this)
+(Model = (function() {
+  Model = class Model {
+    static initClass() {
+      Subscriber.includeInto(this);
+      Emitter.includeInto(this);
+      PropertyAccessors.includeInto(this);
+      Delegator.includeInto(this);
+  
+      this.prototype.declaredPropertyValues = null;
+      this.prototype.behaviors = null;
+      this.prototype.alive = true;
+  
+      this.prototype.advisedAccessor('id',
+        {set(id) { if (id >= nextInstanceId) { return nextInstanceId = id + 1; } }});
+    }
 
-  @resetNextInstanceId: -> nextInstanceId = 1
+    static resetNextInstanceId() { return nextInstanceId = 1; }
 
-  @properties: (args...) ->
-    if typeof args[0] is 'object'
-      @property name, defaultValue for name, defaultValue of args[0]
-    else
-      @property arg for arg in args
+    static properties(...args) {
+      if (typeof args[0] === 'object') {
+        return (() => {
+          const result = [];
+          for (let name in args[0]) {
+            const defaultValue = args[0][name];
+            result.push(this.property(name, defaultValue));
+          }
+          return result;
+        })();
+      } else {
+        return Array.from(args).map((arg) => this.property(arg));
+      }
+    }
 
-  @property: (name, defaultValue) ->
-    @declaredProperties ?= {}
-    @declaredProperties[name] = defaultValue
+    static property(name, defaultValue) {
+      if (this.declaredProperties == null) { this.declaredProperties = {}; }
+      this.declaredProperties[name] = defaultValue;
 
-    @::accessor name,
-      get: -> @get(name)
-      set: (value) -> @set(name, value)
+      this.prototype.accessor(name, {
+        get() { return this.get(name); },
+        set(value) { return this.set(name, value); }
+      }
+      );
 
-    @::accessor "$#{name}",
-      get: -> @behavior(name)
+      return this.prototype.accessor(`$${name}`,
+        {get() { return this.behavior(name); }});
+    }
 
-  @behavior: (name, definition) ->
-    @declaredBehaviors ?= {}
-    @declaredBehaviors[name] = definition
+    static behavior(name, definition) {
+      if (this.declaredBehaviors == null) { this.declaredBehaviors = {}; }
+      this.declaredBehaviors[name] = definition;
 
-    @::accessor name,
-      get: -> @behavior(name).getValue()
+      this.prototype.accessor(name,
+        {get() { return this.behavior(name).getValue(); }});
 
-    @::accessor "$#{name}",
-      get: -> @behavior(name)
+      return this.prototype.accessor(`$${name}`,
+        {get() { return this.behavior(name); }});
+    }
 
-  @hasDeclaredProperty: (name) ->
-    @declaredProperties?.hasOwnProperty(name)
+    static hasDeclaredProperty(name) {
+      return (this.declaredProperties != null ? this.declaredProperties.hasOwnProperty(name) : undefined);
+    }
 
-  @hasDeclaredBehavior: (name) ->
-    @declaredBehaviors?.hasOwnProperty(name)
+    static hasDeclaredBehavior(name) {
+      return (this.declaredBehaviors != null ? this.declaredBehaviors.hasOwnProperty(name) : undefined);
+    }
 
-  @evaluateDeclaredBehavior: (name, instance) ->
-    @declaredBehaviors[name].call(instance)
+    static evaluateDeclaredBehavior(name, instance) {
+      return this.declaredBehaviors[name].call(instance);
+    }
 
-  declaredPropertyValues: null
-  behaviors: null
-  alive: true
+    constructor(params) {
+      this.assignId(params != null ? params.id : undefined);
+      for (let propertyName in this.constructor.declaredProperties) {
+        if (params != null ? params.hasOwnProperty(propertyName) : undefined) {
+          this.set(propertyName, params[propertyName]);
+        } else {
+          if (this.get(propertyName, true) == null) { this.setDefault(propertyName); }
+        }
+      }
+    }
 
-  constructor: (params) ->
-    @assignId(params?.id)
-    for propertyName of @constructor.declaredProperties
-      if params?.hasOwnProperty(propertyName)
-        @set(propertyName, params[propertyName])
-      else
-        @setDefault(propertyName) unless @get(propertyName, true)?
+    assignId(id) {
+      return this.id != null ? this.id : (this.id = id != null ? id : nextInstanceId++);
+    }
 
-  assignId: (id) ->
-    @id ?= id ? nextInstanceId++
+    setDefault(name) {
+      let defaultValue = this.constructor.declaredProperties != null ? this.constructor.declaredProperties[name] : undefined;
+      if (typeof defaultValue === 'function') { defaultValue = defaultValue.call(this); }
+      return this.set(name, defaultValue);
+    }
 
-  setDefault: (name) ->
-    defaultValue = @constructor.declaredProperties?[name]
-    defaultValue = defaultValue.call(this) if typeof defaultValue is 'function'
-    @set(name, defaultValue)
+    get(name, suppressDefault) {
+      if (this.constructor.hasDeclaredProperty(name)) {
+        if (this.declaredPropertyValues == null) { this.declaredPropertyValues = {}; }
+        if (!suppressDefault && !this.declaredPropertyValues.hasOwnProperty(name)) { this.setDefault(name); }
+        return this.declaredPropertyValues[name];
+      } else {
+        return this[name];
+      }
+    }
 
-  get: (name, suppressDefault) ->
-    if @constructor.hasDeclaredProperty(name)
-      @declaredPropertyValues ?= {}
-      @setDefault(name) unless suppressDefault or @declaredPropertyValues.hasOwnProperty(name)
-      @declaredPropertyValues[name]
-    else
-      @[name]
+    set(name, value) {
+      if (typeof name === 'object') {
+        const properties = name;
+        for (name in properties) { value = properties[name]; this.set(name, value); }
+        return properties;
+      } else {
+        if (this.get(name, true) !== value) {
+          if (this.constructor.hasDeclaredProperty(name)) {
+            if (this.declaredPropertyValues == null) { this.declaredPropertyValues = {}; }
+            this.declaredPropertyValues[name] = value;
+          } else {
+            this[name] = value;
+          }
+          __guard__(this.behaviors != null ? this.behaviors[name] : undefined, x => x.emitValue(value));
+        }
+        return value;
+      }
+    }
 
-  set: (name, value) ->
-    if typeof name is 'object'
-      properties = name
-      @set(name, value) for name, value of properties
-      properties
-    else
-      unless @get(name, true) is value
-        if @constructor.hasDeclaredProperty(name)
-          @declaredPropertyValues ?= {}
-          @declaredPropertyValues[name] = value
-        else
-          @[name] = value
-        @behaviors?[name]?.emitValue(value)
-      value
+    behavior(name) {
+      let behavior;
+      if (this.behaviors == null) { this.behaviors = {}; }
+      if (behavior = this.behaviors[name]) {
+        return behavior;
+      } else {
+        if (this.constructor.hasDeclaredProperty(name)) {
+          return this.behaviors[name] = new Behavior(this.get(name)).retain();
+        } else if (this.constructor.hasDeclaredBehavior(name)) {
+          return this.behaviors[name] = this.constructor.evaluateDeclaredBehavior(name, this).retain();
+        }
+      }
+    }
 
-  @::advisedAccessor 'id',
-    set: (id) -> nextInstanceId = id + 1 if id >= nextInstanceId
+    when(signal, action) {
+      return this.subscribe(signal, value => {
+        if (value) {
+          if (typeof action === 'function') {
+            return action.call(this);
+          } else {
+            return this[action]();
+          }
+        }
+      });
+    }
 
-  behavior: (name) ->
-    @behaviors ?= {}
-    if behavior = @behaviors[name]
-      behavior
-    else
-      if @constructor.hasDeclaredProperty(name)
-        @behaviors[name] = new Behavior(@get(name)).retain()
-      else if @constructor.hasDeclaredBehavior(name)
-        @behaviors[name] = @constructor.evaluateDeclaredBehavior(name, this).retain()
+    destroy() {
+      if (!this.isAlive()) { return; }
+      this.alive = false;
+      if (typeof this.destroyed === 'function') {
+        this.destroyed();
+      }
+      this.unsubscribe();
+      for (let name in this.behaviors) { const behavior = this.behaviors[name]; behavior.release(); }
+      return this.emit('destroyed');
+    }
 
-  when: (signal, action) ->
-    @subscribe signal, (value) =>
-      if value
-        if typeof action is 'function'
-          action.call(this)
-        else
-          this[action]()
+    isAlive() { return this.alive; }
 
-  destroy: ->
-    return unless @isAlive()
-    @alive = false
-    @destroyed?()
-    @unsubscribe()
-    behavior.release() for name, behavior of @behaviors
-    @emit 'destroyed'
+    isDestroyed() { return !this.isAlive(); }
+  };
+  Model.initClass();
+  return Model;
+})());
 
-  isAlive: -> @alive
-
-  isDestroyed: -> not @isAlive()
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

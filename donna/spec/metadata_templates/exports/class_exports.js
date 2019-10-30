@@ -1,2 +1,3 @@
+let Foo;
 module.exports =
-class Foo
+(Foo = class Foo {});

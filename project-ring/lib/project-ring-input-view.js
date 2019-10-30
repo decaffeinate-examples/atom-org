@@ -1,34 +1,51 @@
-{ View, TextEditorView } = require 'atom-space-pen-views'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ProjectRingInputView;
+const { View, TextEditorView } = require('atom-space-pen-views');
 
 module.exports =
-class ProjectRingInputView extends View
-	@content: ->
-		@div class: 'project-ring-input overlay from-top', =>
-			@div class: 'editor-container', outlet: 'editorContainer', =>
-				@subview 'editor', new TextEditorView mini: true
+(ProjectRingInputView = class ProjectRingInputView extends View {
+	static content() {
+		return this.div({class: 'project-ring-input overlay from-top'}, () => {
+			return this.div({class: 'editor-container', outlet: 'editorContainer'}, () => {
+				return this.subview('editor', new TextEditorView({mini: true}));
+			});
+		});
+	}
 
-	initialize: (projectRing) ->
-		@projectRing = @projectRing or projectRing
+	initialize(projectRing) {
+		return this.projectRing = this.projectRing || projectRing;
+	}
 
-	attach: (viewModeParameters, placeholderText, text) ->
-		@viewModeParameters = viewModeParameters
-		unless @isInitialized
-			atom.commands.add @editor[0],
-				'core:confirm': => @confirmed()
-				'core:cancel': => @destroy()
-			@isInitialized = true
-		@editor.find('input').off 'blur'
-		@editor.getModel().setPlaceholderText placeholderText
-		@editor.setText text or ''
-		@editor.getModel().selectAll()
-		@self = atom.workspace.addModalPanel item: @
-		@editor.focus()
-		@editor.find('input').on 'blur', => @destroy()
+	attach(viewModeParameters, placeholderText, text) {
+		this.viewModeParameters = viewModeParameters;
+		if (!this.isInitialized) {
+			atom.commands.add(this.editor[0], {
+				'core:confirm': () => this.confirmed(),
+				'core:cancel': () => this.destroy()
+			}
+			);
+			this.isInitialized = true;
+		}
+		this.editor.find('input').off('blur');
+		this.editor.getModel().setPlaceholderText(placeholderText);
+		this.editor.setText(text || '');
+		this.editor.getModel().selectAll();
+		this.self = atom.workspace.addModalPanel({item: this});
+		this.editor.focus();
+		return this.editor.find('input').on('blur', () => this.destroy());
+	}
 
-	destroy: ->
-		@editor.find('input').off 'blur'
-		@self.destroy()
+	destroy() {
+		this.editor.find('input').off('blur');
+		return this.self.destroy();
+	}
 
-	confirmed: ->
-		@destroy()
-		@projectRing.handleProjectRingInputViewInput @viewModeParameters, @editor.getText()
+	confirmed() {
+		this.destroy();
+		return this.projectRing.handleProjectRingInputViewInput(this.viewModeParameters, this.editor.getText());
+	}
+});

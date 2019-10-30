@@ -1,135 +1,182 @@
-_ = require 'underscore-plus'
-{CompositeDisposable, Range} = require 'atom'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let SelectNext;
+const _ = require('underscore-plus');
+const {CompositeDisposable, Range} = require('atom');
 
-# Find and select the next occurrence of the currently selected text.
-#
-# The word under the cursor will be selected if the selection is empty.
+// Find and select the next occurrence of the currently selected text.
+//
+// The word under the cursor will be selected if the selection is empty.
 module.exports =
-class SelectNext
-  selectionRanges: null
+(SelectNext = (function() {
+  SelectNext = class SelectNext {
+    static initClass() {
+      this.prototype.selectionRanges = null;
+    }
 
-  constructor: (@editor) ->
-    @selectionRanges = []
+    constructor(editor) {
+      this.editor = editor;
+      this.selectionRanges = [];
+    }
 
-  findAndSelectNext: ->
-    if @editor.getLastSelection().isEmpty()
-      @selectWord()
-    else
-      @selectNextOccurrence()
+    findAndSelectNext() {
+      if (this.editor.getLastSelection().isEmpty()) {
+        return this.selectWord();
+      } else {
+        return this.selectNextOccurrence();
+      }
+    }
 
-  findAndSelectAll: ->
-    @selectWord() if @editor.getLastSelection().isEmpty()
-    @selectAllOccurrences()
+    findAndSelectAll() {
+      if (this.editor.getLastSelection().isEmpty()) { this.selectWord(); }
+      return this.selectAllOccurrences();
+    }
 
-  undoLastSelection: ->
-    @updateSavedSelections()
+    undoLastSelection() {
+      this.updateSavedSelections();
 
-    return if @selectionRanges.length < 1
+      if (this.selectionRanges.length < 1) { return; }
 
-    if @selectionRanges.length > 1
-      @selectionRanges.pop()
-      @editor.setSelectedBufferRanges @selectionRanges
-    else
-      @editor.clearSelections()
+      if (this.selectionRanges.length > 1) {
+        this.selectionRanges.pop();
+        this.editor.setSelectedBufferRanges(this.selectionRanges);
+      } else {
+        this.editor.clearSelections();
+      }
 
-    @editor.scrollToCursorPosition()
+      return this.editor.scrollToCursorPosition();
+    }
 
-  skipCurrentSelection: ->
-    @updateSavedSelections()
+    skipCurrentSelection() {
+      this.updateSavedSelections();
 
-    return if @selectionRanges.length < 1
+      if (this.selectionRanges.length < 1) { return; }
 
-    if @selectionRanges.length > 1
-      lastSelection = @selectionRanges.pop()
-      @editor.setSelectedBufferRanges @selectionRanges
-      @selectNextOccurrence(start: lastSelection.end)
-    else
-      @selectNextOccurrence()
-      @selectionRanges.shift()
-      return if @selectionRanges.length < 1
-      @editor.setSelectedBufferRanges @selectionRanges
+      if (this.selectionRanges.length > 1) {
+        const lastSelection = this.selectionRanges.pop();
+        this.editor.setSelectedBufferRanges(this.selectionRanges);
+        return this.selectNextOccurrence({start: lastSelection.end});
+      } else {
+        this.selectNextOccurrence();
+        this.selectionRanges.shift();
+        if (this.selectionRanges.length < 1) { return; }
+        return this.editor.setSelectedBufferRanges(this.selectionRanges);
+      }
+    }
 
-  selectWord: ->
-    @editor.selectWordsContainingCursors()
-    lastSelection = @editor.getLastSelection()
-    if @wordSelected = @isWordSelected(lastSelection)
-      disposables = new CompositeDisposable
-      clearWordSelected = =>
-        @wordSelected = null
-        disposables.dispose()
-      disposables.add lastSelection.onDidChangeRange clearWordSelected
-      disposables.add lastSelection.onDidDestroy clearWordSelected
+    selectWord() {
+      this.editor.selectWordsContainingCursors();
+      const lastSelection = this.editor.getLastSelection();
+      if (this.wordSelected = this.isWordSelected(lastSelection)) {
+        const disposables = new CompositeDisposable;
+        const clearWordSelected = () => {
+          this.wordSelected = null;
+          return disposables.dispose();
+        };
+        disposables.add(lastSelection.onDidChangeRange(clearWordSelected));
+        return disposables.add(lastSelection.onDidDestroy(clearWordSelected));
+      }
+    }
 
-  selectAllOccurrences: ->
-    range = [[0, 0], @editor.getEofBufferPosition()]
-    @scanForNextOccurrence range, ({range, stop}) =>
-      @addSelection(range)
+    selectAllOccurrences() {
+      const range = [[0, 0], this.editor.getEofBufferPosition()];
+      return this.scanForNextOccurrence(range, ({range, stop}) => {
+        return this.addSelection(range);
+      });
+    }
 
-  selectNextOccurrence: (options={}) ->
-    startingRange = options.start ? @editor.getSelectedBufferRange().end
-    range = @findNextOccurrence([startingRange, @editor.getEofBufferPosition()])
-    range ?= @findNextOccurrence([[0, 0], @editor.getSelections()[0].getBufferRange().start])
-    @addSelection(range) if range?
+    selectNextOccurrence(options) {
+      if (options == null) { options = {}; }
+      const startingRange = options.start != null ? options.start : this.editor.getSelectedBufferRange().end;
+      let range = this.findNextOccurrence([startingRange, this.editor.getEofBufferPosition()]);
+      if (range == null) { range = this.findNextOccurrence([[0, 0], this.editor.getSelections()[0].getBufferRange().start]); }
+      if (range != null) { return this.addSelection(range); }
+    }
 
-  findNextOccurrence: (scanRange) ->
-    foundRange = null
-    @scanForNextOccurrence scanRange, ({range, stop}) ->
-      foundRange = range
-      stop()
-    foundRange
+    findNextOccurrence(scanRange) {
+      let foundRange = null;
+      this.scanForNextOccurrence(scanRange, function({range, stop}) {
+        foundRange = range;
+        return stop();
+      });
+      return foundRange;
+    }
 
-  addSelection: (range) ->
-    reversed = @editor.getLastSelection().isReversed()
-    selection = @editor.addSelectionForBufferRange(range, {reversed})
-    @updateSavedSelections selection
+    addSelection(range) {
+      const reversed = this.editor.getLastSelection().isReversed();
+      const selection = this.editor.addSelectionForBufferRange(range, {reversed});
+      return this.updateSavedSelections(selection);
+    }
 
-  scanForNextOccurrence: (range, callback) ->
-    selection = @editor.getLastSelection()
-    text = _.escapeRegExp(selection.getText())
+    scanForNextOccurrence(range, callback) {
+      const selection = this.editor.getLastSelection();
+      let text = _.escapeRegExp(selection.getText());
 
-    if @wordSelected
-      nonWordCharacters = atom.config.get('editor.nonWordCharacters')
-      text = "(^|[ \t#{_.escapeRegExp(nonWordCharacters)}]+)#{text}(?=$|[\\s#{_.escapeRegExp(nonWordCharacters)}]+)"
+      if (this.wordSelected) {
+        const nonWordCharacters = atom.config.get('editor.nonWordCharacters');
+        text = `(^|[ \t${_.escapeRegExp(nonWordCharacters)}]+)${text}(?=$|[\\s${_.escapeRegExp(nonWordCharacters)}]+)`;
+      }
 
-    @editor.scanInBufferRange new RegExp(text, 'g'), range, (result) ->
-      if prefix = result.match[1]
-        result.range = result.range.translate([0, prefix.length], [0, 0])
-      callback(result)
+      return this.editor.scanInBufferRange(new RegExp(text, 'g'), range, function(result) {
+        let prefix;
+        if (prefix = result.match[1]) {
+          result.range = result.range.translate([0, prefix.length], [0, 0]);
+        }
+        return callback(result);
+      });
+    }
 
-  updateSavedSelections: (selection=null) ->
-    selections = @editor.getSelections()
-    @selectionRanges = [] if selections.length < 3
-    if @selectionRanges.length is 0
-      @selectionRanges.push s.getBufferRange() for s in selections
-    else if selection
-      selectionRange = selection.getBufferRange()
-      return if @selectionRanges.some (existingRange) -> existingRange.isEqual(selectionRange)
-      @selectionRanges.push selectionRange
+    updateSavedSelections(selection=null) {
+      const selections = this.editor.getSelections();
+      if (selections.length < 3) { this.selectionRanges = []; }
+      if (this.selectionRanges.length === 0) {
+        return Array.from(selections).map((s) => this.selectionRanges.push(s.getBufferRange()));
+      } else if (selection) {
+        const selectionRange = selection.getBufferRange();
+        if (this.selectionRanges.some(existingRange => existingRange.isEqual(selectionRange))) { return; }
+        return this.selectionRanges.push(selectionRange);
+      }
+    }
 
-  isNonWordCharacter: (character) ->
-    nonWordCharacters = atom.config.get('editor.nonWordCharacters')
-    new RegExp("[ \t#{_.escapeRegExp(nonWordCharacters)}]").test(character)
+    isNonWordCharacter(character) {
+      const nonWordCharacters = atom.config.get('editor.nonWordCharacters');
+      return new RegExp(`[ \t${_.escapeRegExp(nonWordCharacters)}]`).test(character);
+    }
 
-  isNonWordCharacterToTheLeft: (selection) ->
-    selectionStart = selection.getBufferRange().start
-    range = Range.fromPointWithDelta(selectionStart, 0, -1)
-    @isNonWordCharacter(@editor.getTextInBufferRange(range))
+    isNonWordCharacterToTheLeft(selection) {
+      const selectionStart = selection.getBufferRange().start;
+      const range = Range.fromPointWithDelta(selectionStart, 0, -1);
+      return this.isNonWordCharacter(this.editor.getTextInBufferRange(range));
+    }
 
-  isNonWordCharacterToTheRight: (selection) ->
-    selectionEnd = selection.getBufferRange().end
-    range = Range.fromPointWithDelta(selectionEnd, 0, 1)
-    @isNonWordCharacter(@editor.getTextInBufferRange(range))
+    isNonWordCharacterToTheRight(selection) {
+      const selectionEnd = selection.getBufferRange().end;
+      const range = Range.fromPointWithDelta(selectionEnd, 0, 1);
+      return this.isNonWordCharacter(this.editor.getTextInBufferRange(range));
+    }
 
-  isWordSelected: (selection) ->
-    if selection.getBufferRange().isSingleLine()
-      selectionRange = selection.getBufferRange()
-      lineRange = @editor.bufferRangeForBufferRow(selectionRange.start.row)
-      nonWordCharacterToTheLeft = _.isEqual(selectionRange.start, lineRange.start) or
-        @isNonWordCharacterToTheLeft(selection)
-      nonWordCharacterToTheRight = _.isEqual(selectionRange.end, lineRange.end) or
-        @isNonWordCharacterToTheRight(selection)
-      containsOnlyWordCharacters = not @isNonWordCharacter(selection.getText())
+    isWordSelected(selection) {
+      if (selection.getBufferRange().isSingleLine()) {
+        const selectionRange = selection.getBufferRange();
+        const lineRange = this.editor.bufferRangeForBufferRow(selectionRange.start.row);
+        const nonWordCharacterToTheLeft = _.isEqual(selectionRange.start, lineRange.start) ||
+          this.isNonWordCharacterToTheLeft(selection);
+        const nonWordCharacterToTheRight = _.isEqual(selectionRange.end, lineRange.end) ||
+          this.isNonWordCharacterToTheRight(selection);
+        const containsOnlyWordCharacters = !this.isNonWordCharacter(selection.getText());
 
-      nonWordCharacterToTheLeft and nonWordCharacterToTheRight and containsOnlyWordCharacters
-    else
-      false
+        return nonWordCharacterToTheLeft && nonWordCharacterToTheRight && containsOnlyWordCharacters;
+      } else {
+        return false;
+      }
+    }
+  };
+  SelectNext.initClass();
+  return SelectNext;
+})());

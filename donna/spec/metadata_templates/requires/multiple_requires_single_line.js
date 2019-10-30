@@ -1,3 +1,3 @@
-{faz, baz} = require 'kaz'
+const {faz, baz} = require('kaz');
 
-class Bar
+class Bar {}

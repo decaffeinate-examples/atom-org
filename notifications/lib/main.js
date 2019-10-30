@@ -1,138 +1,192 @@
-{Notification, CompositeDisposable} = require 'atom'
-fs = require 'fs-plus'
-StackTraceParser = null
-NotificationElement = require './notification-element'
-NotificationsLog = require './notifications-log'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {Notification, CompositeDisposable} = require('atom');
+const fs = require('fs-plus');
+let StackTraceParser = null;
+const NotificationElement = require('./notification-element');
+const NotificationsLog = require('./notifications-log');
 
-Notifications =
-  isInitialized: false
-  subscriptions: null
-  duplicateTimeDelay: 500
-  lastNotification: null
+const Notifications = {
+  isInitialized: false,
+  subscriptions: null,
+  duplicateTimeDelay: 500,
+  lastNotification: null,
 
-  activate: (state) ->
-    CommandLogger = require './command-logger'
-    CommandLogger.start()
-    @subscriptions = new CompositeDisposable
+  activate(state) {
+    let notification;
+    const CommandLogger = require('./command-logger');
+    CommandLogger.start();
+    this.subscriptions = new CompositeDisposable;
 
-    @addNotificationView(notification) for notification in atom.notifications.getNotifications()
-    @subscriptions.add atom.notifications.onDidAddNotification (notification) => @addNotificationView(notification)
+    for (notification of Array.from(atom.notifications.getNotifications())) { this.addNotificationView(notification); }
+    this.subscriptions.add(atom.notifications.onDidAddNotification(notification => this.addNotificationView(notification)));
 
-    @subscriptions.add atom.onWillThrowError ({message, url, line, originalError, preventDefault}) ->
-      if originalError.name is 'BufferedProcessError'
-        message = message.replace('Uncaught BufferedProcessError: ', '')
-        atom.notifications.addError(message, dismissable: true)
+    this.subscriptions.add(atom.onWillThrowError(function({message, url, line, originalError, preventDefault}) {
+      let match;
+      if (originalError.name === 'BufferedProcessError') {
+        message = message.replace('Uncaught BufferedProcessError: ', '');
+        return atom.notifications.addError(message, {dismissable: true});
 
-      else if originalError.code is 'ENOENT' and not /\/atom/i.test(message) and match = /spawn (.+) ENOENT/.exec(message)
-        message = """
-          '#{match[1]}' could not be spawned.
-          Is it installed and on your path?
-          If so please open an issue on the package spawning the process.
-        """
-        atom.notifications.addError(message, dismissable: true)
+      } else if ((originalError.code === 'ENOENT') && !/\/atom/i.test(message) && (match = /spawn (.+) ENOENT/.exec(message))) {
+        message = `\
+'${match[1]}' could not be spawned.
+Is it installed and on your path?
+If so please open an issue on the package spawning the process.\
+`;
+        return atom.notifications.addError(message, {dismissable: true});
 
-      else if not atom.inDevMode() or atom.config.get('notifications.showErrorsInDevMode')
-        preventDefault()
+      } else if (!atom.inDevMode() || atom.config.get('notifications.showErrorsInDevMode')) {
+        preventDefault();
 
-        # Ignore errors with no paths in them since they are impossible to trace
-        if originalError.stack and not isCoreOrPackageStackTrace(originalError.stack)
-          return
+        // Ignore errors with no paths in them since they are impossible to trace
+        if (originalError.stack && !isCoreOrPackageStackTrace(originalError.stack)) {
+          return;
+        }
 
-        options =
-          detail: "#{url}:#{line}"
-          stack: originalError.stack
+        const options = {
+          detail: `${url}:${line}`,
+          stack: originalError.stack,
           dismissable: true
-        atom.notifications.addFatalError(message, options)
+        };
+        return atom.notifications.addFatalError(message, options);
+      }
+    })
+    );
 
-    @subscriptions.add atom.commands.add 'atom-workspace', 'core:cancel', ->
-      notification.dismiss() for notification in atom.notifications.getNotifications()
+    this.subscriptions.add(atom.commands.add('atom-workspace', 'core:cancel', () => (() => {
+      const result = [];
+      for (notification of Array.from(atom.notifications.getNotifications())) {           result.push(notification.dismiss());
+      }
+      return result;
+    })())
+    );
 
-    @subscriptions.add atom.config.observe 'notifications.defaultTimeout', (value) => @visibilityDuration = value
+    this.subscriptions.add(atom.config.observe('notifications.defaultTimeout', value => { return this.visibilityDuration = value; }));
 
-    if atom.inDevMode()
-      @subscriptions.add atom.commands.add 'atom-workspace', 'notifications:trigger-error', ->
-        try
-          abc + 2 # nope
-        catch error
-          options =
-            detail: error.stack.split('\n')[1]
-            stack: error.stack
+    if (atom.inDevMode()) {
+      this.subscriptions.add(atom.commands.add('atom-workspace', 'notifications:trigger-error', function() {
+        try {
+          return abc + 2; // nope
+        } catch (error) {
+          const options = {
+            detail: error.stack.split('\n')[1],
+            stack: error.stack,
             dismissable: true
-          atom.notifications.addFatalError("Uncaught #{error.stack.split('\n')[0]}", options)
+          };
+          return atom.notifications.addFatalError(`Uncaught ${error.stack.split('\n')[0]}`, options);
+        }
+      })
+      );
+    }
 
-    @addNotificationsLogSubscriptions() if @notificationsLog?
-    @subscriptions.add atom.workspace.addOpener (uri) => @createLog() if uri is NotificationsLog::getURI()
-    @subscriptions.add atom.commands.add 'atom-workspace', 'notifications:toggle-log', -> atom.workspace.toggle(NotificationsLog::getURI())
-    @subscriptions.add atom.commands.add 'atom-workspace', 'notifications:clear-log', ->
-      for notification in atom.notifications.getNotifications()
-        notification.options.dismissable = true
-        notification.dismissed = false
-        notification.dismiss()
-      atom.notifications.clear()
+    if (this.notificationsLog != null) { this.addNotificationsLogSubscriptions(); }
+    this.subscriptions.add(atom.workspace.addOpener(uri => { if (uri === NotificationsLog.prototype.getURI()) { return this.createLog(); } }));
+    this.subscriptions.add(atom.commands.add('atom-workspace', 'notifications:toggle-log', () => atom.workspace.toggle(NotificationsLog.prototype.getURI())));
+    return this.subscriptions.add(atom.commands.add('atom-workspace', 'notifications:clear-log', function() {
+      for (notification of Array.from(atom.notifications.getNotifications())) {
+        notification.options.dismissable = true;
+        notification.dismissed = false;
+        notification.dismiss();
+      }
+      return atom.notifications.clear();
+    })
+    );
+  },
 
-  deactivate: ->
-    @subscriptions.dispose()
-    @notificationsElement?.remove()
-    @notificationsPanel?.destroy()
-    @notificationsLog?.destroy()
+  deactivate() {
+    this.subscriptions.dispose();
+    if (this.notificationsElement != null) {
+      this.notificationsElement.remove();
+    }
+    if (this.notificationsPanel != null) {
+      this.notificationsPanel.destroy();
+    }
+    if (this.notificationsLog != null) {
+      this.notificationsLog.destroy();
+    }
 
-    @subscriptions = null
-    @notificationsElement = null
-    @notificationsPanel = null
+    this.subscriptions = null;
+    this.notificationsElement = null;
+    this.notificationsPanel = null;
 
-    @isInitialized = false
+    return this.isInitialized = false;
+  },
 
-  initializeIfNotInitialized: ->
-    return if @isInitialized
+  initializeIfNotInitialized() {
+    if (this.isInitialized) { return; }
 
-    @subscriptions.add atom.views.addViewProvider Notification, (model) =>
-      new NotificationElement(model, @visibilityDuration)
+    this.subscriptions.add(atom.views.addViewProvider(Notification, model => {
+      return new NotificationElement(model, this.visibilityDuration);
+    })
+    );
 
-    @notificationsElement = document.createElement('atom-notifications')
-    atom.views.getView(atom.workspace).appendChild(@notificationsElement)
+    this.notificationsElement = document.createElement('atom-notifications');
+    atom.views.getView(atom.workspace).appendChild(this.notificationsElement);
 
-    @isInitialized = true
+    return this.isInitialized = true;
+  },
 
-  createLog: (state) ->
-    @notificationsLog = new NotificationsLog @duplicateTimeDelay, state?.typesHidden
-    @addNotificationsLogSubscriptions() if @subscriptions?
-    @notificationsLog
+  createLog(state) {
+    this.notificationsLog = new NotificationsLog(this.duplicateTimeDelay, state != null ? state.typesHidden : undefined);
+    if (this.subscriptions != null) { this.addNotificationsLogSubscriptions(); }
+    return this.notificationsLog;
+  },
 
-  addNotificationsLogSubscriptions: ->
-    @subscriptions.add @notificationsLog.onDidDestroy => @notificationsLog = null
-    @subscriptions.add @notificationsLog.onItemClick (notification) =>
-      view = atom.views.getView(notification)
-      view.makeDismissable()
+  addNotificationsLogSubscriptions() {
+    this.subscriptions.add(this.notificationsLog.onDidDestroy(() => { return this.notificationsLog = null; }));
+    return this.subscriptions.add(this.notificationsLog.onItemClick(notification => {
+      const view = atom.views.getView(notification);
+      view.makeDismissable();
 
-      return unless view.element.classList.contains('remove')
-      view.element.classList.remove('remove')
-      @notificationsElement.appendChild(view.element)
-      notification.dismissed = false
-      notification.setDisplayed(true)
+      if (!view.element.classList.contains('remove')) { return; }
+      view.element.classList.remove('remove');
+      this.notificationsElement.appendChild(view.element);
+      notification.dismissed = false;
+      return notification.setDisplayed(true);
+    })
+    );
+  },
 
-  addNotificationView: (notification) ->
-    return unless notification?
-    @initializeIfNotInitialized()
-    return if notification.wasDisplayed()
+  addNotificationView(notification) {
+    if (notification == null) { return; }
+    this.initializeIfNotInitialized();
+    if (notification.wasDisplayed()) { return; }
 
-    if @lastNotification?
-      # do not show duplicates unless some amount of time has passed
-      timeSpan = notification.getTimestamp() - @lastNotification.getTimestamp()
-      unless timeSpan < @duplicateTimeDelay and notification.isEqual(@lastNotification)
-        @notificationsElement.appendChild(atom.views.getView(notification).element)
-        @notificationsLog?.addNotification(notification)
-    else
-      @notificationsElement.appendChild(atom.views.getView(notification).element)
-      @notificationsLog?.addNotification(notification)
+    if (this.lastNotification != null) {
+      // do not show duplicates unless some amount of time has passed
+      const timeSpan = notification.getTimestamp() - this.lastNotification.getTimestamp();
+      if (!(timeSpan < this.duplicateTimeDelay) || !notification.isEqual(this.lastNotification)) {
+        this.notificationsElement.appendChild(atom.views.getView(notification).element);
+        if (this.notificationsLog != null) {
+          this.notificationsLog.addNotification(notification);
+        }
+      }
+    } else {
+      this.notificationsElement.appendChild(atom.views.getView(notification).element);
+      if (this.notificationsLog != null) {
+        this.notificationsLog.addNotification(notification);
+      }
+    }
 
-    notification.setDisplayed(true)
-    @lastNotification = notification
+    notification.setDisplayed(true);
+    return this.lastNotification = notification;
+  }
+};
 
-isCoreOrPackageStackTrace = (stack) ->
-  StackTraceParser ?= require 'stacktrace-parser'
-  for {file} in StackTraceParser.parse(stack)
-    if file is '<embedded>' or fs.isAbsolute(file)
-      return true
-  false
+var isCoreOrPackageStackTrace = function(stack) {
+  if (StackTraceParser == null) { StackTraceParser = require('stacktrace-parser'); }
+  for (let {file} of Array.from(StackTraceParser.parse(stack))) {
+    if ((file === '<embedded>') || fs.isAbsolute(file)) {
+      return true;
+    }
+  }
+  return false;
+};
 
-module.exports = Notifications
+module.exports = Notifications;

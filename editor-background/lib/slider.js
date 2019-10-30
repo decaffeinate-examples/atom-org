@@ -1,162 +1,207 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
 
-class Slider
+var Slider = (function() {
+  let originInput = undefined;
+  let inputStyle = undefined;
+  let input = undefined;
+  let element = undefined;
+  let area = undefined;
+  let button = undefined;
+  let labelStr = undefined;
+  let label = undefined;
+  input = undefined;
+  let parent = undefined;
+  let min = undefined;
+  let max = undefined;
+  let mouseState = undefined;
+  let mousePos = undefined;
+  let mouseOffset = undefined;
+  let buttonPos = undefined;
+  Slider = class Slider {
+    static initClass() {
+  
+      originInput = null;
+      inputStyle = null;
+      input = null;
+      element = null;
+      area = null;
+      button = null;
+      labelStr = '';
+      label = null;
+      input = null;
+      parent = null;
+      min = 0;
+      max = 100;
+  
+      mouseState = false;
+      mousePos = null;
+      mouseOffset = null;
+      buttonPos = null;
+    }
 
-  originInput = null
-  inputStyle = null
-  input = null
-  element = null
-  area = null
-  button = null
-  labelStr = ''
-  label = null
-  input = null
-  parent = null
-  min = 0
-  max = 100
+    constructor(args){
+      if (((args != null ? args.input : undefined) == null)) { return; }
 
-  mouseState = false
-  mousePos = null
-  mouseOffset = null
-  buttonPos = null
-
-  constructor:(args)->
-    if !args?.input? then return
-
-    @mouseState = false
-    @mousePos = null
-    @mouseOffset = null
-
-
-    @originInput = args.input
-    @inputStyle = window.getComputedStyle @originInput
-    @originInput.style.display='none'
-
-    @input = document.createElement 'input'
-    @input.type = "text"
-    @input.style.margin = @inputStyle.margin
-    @input.style.width = '40px'
-    @input.style.textAlign = 'center'
-    @input.value = @originInput.value
-
-    @element = document.createElement 'div'
-    @element.className = 'slider-element'
-    @element.style.height = @inputStyle.height
-    @element.style.overflow = 'hidden'
-
-    @area = document.createElement 'div'
-    @area.className = 'slider-area'
-    @area.style.float = 'right'
-    @area.style.height = '10px'
-    @area.style.border = '1px solid '+@inputStyle.borderColor
-    @area.style.borderRadius = '10px'
-    @button = document.createElement 'div'
-    @button.className = 'slider-button btn btn-default'
-    @buttonPos = {x:0,y:0}
-    @label = document.createElement 'label'
-
-    @left = document.createElement 'div'
-    @left.style.float='left'
-    @left.appendChild @label
-    @left.appendChild @input
-
-    if args.min? then @min = args.min
-    if args.max? then @max = args.max
-    if args.label? then @labelStr = args.label
-
-    @label.innerText = @labelStr
-
-    @area.style.position = 'relative'
-    @area.style.height = '10px'
-    @area.style.minWidth = '110px'
-    @area.style.width = @inputStyle.width
-    @area.style.top='10px'
-    @area.style.verticalAlign = 'middle'
-    @area.style.boxShadow = 'inset 2px 2px 2px rgba(0,0,0,0.2)'
+      this.mouseState = false;
+      this.mousePos = null;
+      this.mouseOffset = null;
 
 
-    @button.style.width = '10px'
-    @buttonWidth = 10
-    @button.style.height = '12px'
-    @button.style.padding = "0"
-    if @originInput.value?
-      if @originInput.value!=''
-        @value = /[0-9]+/gi.exec(@originInput.value)[0]
+      this.originInput = args.input;
+      this.inputStyle = window.getComputedStyle(this.originInput);
+      this.originInput.style.display='none';
 
-    @button.style.left = @positionFromValue @value
-    @button.style.top = '-2px'
-    @button.style.borderRadius = '3px'
-    @button.style.position = 'absolute'
-    @button.style.transform = "scale(1,1.4)"
-    @button.addEventListener 'mousedown',(ev)=>@mouseDown.apply @,[ev]
-    window.addEventListener 'mouseup',(ev)=>@mouseUp.apply @,[ev]
-    window.addEventListener 'mousemove',(ev)=>@mouseMove.apply @,[ev]
+      this.input = document.createElement('input');
+      this.input.type = "text";
+      this.input.style.margin = this.inputStyle.margin;
+      this.input.style.width = '40px';
+      this.input.style.textAlign = 'center';
+      this.input.value = this.originInput.value;
 
-    @area.appendChild @button
-    @element.appendChild @left
-    @element.appendChild @area
-    @parent = @originInput.parentElement
-    @prev = @originInput.previousElementSibling
-    @next = @originInput.nextElementSibling
-    @
+      this.element = document.createElement('div');
+      this.element.className = 'slider-element';
+      this.element.style.height = this.inputStyle.height;
+      this.element.style.overflow = 'hidden';
 
-    if @prev?
-      @parent.insertBefore @element,@prev.nextElementSibling
-    else
-      if @next?
-        @parent.insertBefore @element,@next
-      else
-        @parent.appendChild @element
-    @
+      this.area = document.createElement('div');
+      this.area.className = 'slider-area';
+      this.area.style.float = 'right';
+      this.area.style.height = '10px';
+      this.area.style.border = '1px solid '+this.inputStyle.borderColor;
+      this.area.style.borderRadius = '10px';
+      this.button = document.createElement('div');
+      this.button.className = 'slider-button btn btn-default';
+      this.buttonPos = {x:0,y:0};
+      this.label = document.createElement('label');
 
+      this.left = document.createElement('div');
+      this.left.style.float='left';
+      this.left.appendChild(this.label);
+      this.left.appendChild(this.input);
 
-  positionFromValue:(value)->
-    w = @getAreaWidth()
-    left = Math.round((value / 100) * w)
-    left + 'px'
+      if (args.min != null) { this.min = args.min; }
+      if (args.max != null) { this.max = args.max; }
+      if (args.label != null) { this.labelStr = args.label; }
 
+      this.label.innerText = this.labelStr;
 
-  getAreaWidth:->
-    comptd = window.getComputedStyle(@area)
-    w1 = /[0-9]+/gi.exec(comptd.width)
-    w2 = /[0-9]+/gi.exec(comptd.minWidth)
-    if w1?[0]?
-      @areaWidth = w1[0]
-    else
-      if w2?[0]?
-        @areaWidth = w2[0]
-      else
-        @areaWidth = 110
-    @areaWidth
+      this.area.style.position = 'relative';
+      this.area.style.height = '10px';
+      this.area.style.minWidth = '110px';
+      this.area.style.width = this.inputStyle.width;
+      this.area.style.top='10px';
+      this.area.style.verticalAlign = 'middle';
+      this.area.style.boxShadow = 'inset 2px 2px 2px rgba(0,0,0,0.2)';
 
 
-  mouseDown:(ev)->
-    @mouseState = true
+      this.button.style.width = '10px';
+      this.buttonWidth = 10;
+      this.button.style.height = '12px';
+      this.button.style.padding = "0";
+      if (this.originInput.value != null) {
+        if (this.originInput.value!=='') {
+          this.value = /[0-9]+/gi.exec(this.originInput.value)[0];
+        }
+      }
 
-  mouseUp:(ev)->
-    @mouseState = false
-    @mousePos = null
+      this.button.style.left = this.positionFromValue(this.value);
+      this.button.style.top = '-2px';
+      this.button.style.borderRadius = '3px';
+      this.button.style.position = 'absolute';
+      this.button.style.transform = "scale(1,1.4)";
+      this.button.addEventListener('mousedown',ev=> this.mouseDown.apply(this,[ev]));
+      window.addEventListener('mouseup',ev=> this.mouseUp.apply(this,[ev]));
+      window.addEventListener('mousemove',ev=> this.mouseMove.apply(this,[ev]));
+
+      this.area.appendChild(this.button);
+      this.element.appendChild(this.left);
+      this.element.appendChild(this.area);
+      this.parent = this.originInput.parentElement;
+      this.prev = this.originInput.previousElementSibling;
+      this.next = this.originInput.nextElementSibling;
+      this;
+
+      if (this.prev != null) {
+        this.parent.insertBefore(this.element,this.prev.nextElementSibling);
+      } else {
+        if (this.next != null) {
+          this.parent.insertBefore(this.element,this.next);
+        } else {
+          this.parent.appendChild(this.element);
+        }
+      }
+      this;
+    }
 
 
-  mouseMove:(ev)->
-    if @mouseState
-      ev.preventDefault()
-      pos = {x:ev.x,y:ev.y}
-      if @mousePos?
-        diff = { x: pos.x - @mousePos.x , y: pos.y-@mousePos.y }
-        @buttonPos.x += diff.x
-
-        @areaWidth = @getAreaWidth()
-
-        if @buttonPos.x < 0 then @buttonPos.x = 0
-        if @buttonPos.x + @buttonWidth > @areaWidth
-          @buttonPos.x = @areaWidth - @buttonWidth
-        @button.style.left = @buttonPos.x+'px'
-        range = @areaWidth - @buttonWidth
-        @value = Math.round((@buttonPos.x / range) * 100)
-        @input.value = @value
-        @originInput.value = @value
-      @mousePos = pos
+    positionFromValue(value){
+      const w = this.getAreaWidth();
+      const left = Math.round((value / 100) * w);
+      return left + 'px';
+    }
 
 
+    getAreaWidth() {
+      const comptd = window.getComputedStyle(this.area);
+      const w1 = /[0-9]+/gi.exec(comptd.width);
+      const w2 = /[0-9]+/gi.exec(comptd.minWidth);
+      if ((w1 != null ? w1[0] : undefined) != null) {
+        this.areaWidth = w1[0];
+      } else {
+        if ((w2 != null ? w2[0] : undefined) != null) {
+          this.areaWidth = w2[0];
+        } else {
+          this.areaWidth = 110;
+        }
+      }
+      return this.areaWidth;
+    }
 
-module.exports = Slider
+
+    mouseDown(ev){
+      return this.mouseState = true;
+    }
+
+    mouseUp(ev){
+      this.mouseState = false;
+      return this.mousePos = null;
+    }
+
+
+    mouseMove(ev){
+      if (this.mouseState) {
+        ev.preventDefault();
+        const pos = {x:ev.x,y:ev.y};
+        if (this.mousePos != null) {
+          const diff = { x: pos.x - this.mousePos.x , y: pos.y-this.mousePos.y };
+          this.buttonPos.x += diff.x;
+
+          this.areaWidth = this.getAreaWidth();
+
+          if (this.buttonPos.x < 0) { this.buttonPos.x = 0; }
+          if ((this.buttonPos.x + this.buttonWidth) > this.areaWidth) {
+            this.buttonPos.x = this.areaWidth - this.buttonWidth;
+          }
+          this.button.style.left = this.buttonPos.x+'px';
+          const range = this.areaWidth - this.buttonWidth;
+          this.value = Math.round((this.buttonPos.x / range) * 100);
+          this.input.value = this.value;
+          this.originInput.value = this.value;
+        }
+        return this.mousePos = pos;
+      }
+    }
+  };
+  Slider.initClass();
+  return Slider;
+})();
+
+
+
+module.exports = Slider;

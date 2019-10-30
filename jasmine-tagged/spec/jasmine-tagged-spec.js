@@ -1,96 +1,106 @@
-require '../lib/jasmine-tagged'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+require('../lib/jasmine-tagged');
 
-describe "jasmine-tagged", ->
-  [env, taggedSpec, multiTaggedSpec, anotherTaggedSpec, untaggedSpec] = []
+describe("jasmine-tagged", function() {
+  let [env, taggedSpec, multiTaggedSpec, anotherTaggedSpec, untaggedSpec] = Array.from([]);
 
-  beforeEach ->
-    env = jasmine.getEnv()
+  beforeEach(function() {
+    env = jasmine.getEnv();
     taggedSpec =
-      description: '#tag'
+      {description: '#tag'};
     multiTaggedSpec =
-      description: '#tag #another-tag'
+      {description: '#tag #another-tag'};
     anotherTaggedSpec =
-      description: '#another-tag'
-    untaggedSpec =
-      description: 'no tag'
+      {description: '#another-tag'};
+    return untaggedSpec =
+      {description: 'no tag'};
+  });
 
-  describe "by default", ->
-    it "runs untagged specs", ->
-      expect(env.specFilter(untaggedSpec)).toBeTruthy()
+  describe("by default", function() {
+    it("runs untagged specs", () => expect(env.specFilter(untaggedSpec)).toBeTruthy());
 
-    it "doesn't run any tagged specs", ->
-      expect(env.specFilter(taggedSpec)).toBeFalsy()
+    return it("doesn't run any tagged specs", () => expect(env.specFilter(taggedSpec)).toBeFalsy());
+  });
 
-  describe "without untagged specs", ->
-    beforeEach ->
-      env.includeSpecsWithoutTags(false)
+  describe("without untagged specs", function() {
+    beforeEach(() => env.includeSpecsWithoutTags(false));
 
-    afterEach ->
-      env.includeSpecsWithoutTags(true)
+    afterEach(() => env.includeSpecsWithoutTags(true));
 
-    it "doesn't run untagged specs", ->
-      expect(env.specFilter(taggedSpec)).toBeFalsy()
+    return it("doesn't run untagged specs", () => expect(env.specFilter(taggedSpec)).toBeFalsy());
+  });
 
-  describe "with a specific tag specs", ->
-    beforeEach ->
-      env.setIncludedTags(['tag'])
+  describe("with a specific tag specs", function() {
+    beforeEach(() => env.setIncludedTags(['tag']));
 
-    afterEach ->
-      env.setIncludedTags([])
+    afterEach(() => env.setIncludedTags([]));
 
-    it "run specs with a matching tag", ->
-      expect(env.specFilter(taggedSpec)).toBeTruthy()
-      expect(env.specFilter(multiTaggedSpec)).toBeTruthy()
+    it("run specs with a matching tag", function() {
+      expect(env.specFilter(taggedSpec)).toBeTruthy();
+      return expect(env.specFilter(multiTaggedSpec)).toBeTruthy();
+    });
 
-    it "doesn't run specs with different tags", ->
-      expect(env.specFilter(anotherTaggedSpec)).toBeFalsy()
+    return it("doesn't run specs with different tags", () => expect(env.specFilter(anotherTaggedSpec)).toBeFalsy());
+  });
 
-  describe "with a nested spec", ->
-    [nestedTaggedSpec, nestedAnotherTaggedSpec] = []
+  describe("with a nested spec", function() {
+    let [nestedTaggedSpec, nestedAnotherTaggedSpec] = Array.from([]);
 
-    beforeEach ->
-      env = jasmine.getEnv()
-      suite =
-        description: 'another level'
-      nestedTaggedSpec =
-        description: '#tag'
+    beforeEach(function() {
+      env = jasmine.getEnv();
+      const suite =
+        {description: 'another level'};
+      nestedTaggedSpec = {
+        description: '#tag',
         parentSuite: suite
-      nestedAnotherTaggedSpec =
-        description: '#another-tag'
+      };
+      return nestedAnotherTaggedSpec = {
+        description: '#another-tag',
         parentSuite: suite
+      };
+    });
 
-    describe "with a specific tag specs", ->
-      beforeEach ->
-        env.setIncludedTags(['tag'])
+    return describe("with a specific tag specs", function() {
+      beforeEach(() => env.setIncludedTags(['tag']));
 
-      afterEach ->
-        env.setIncludedTags([])
+      afterEach(() => env.setIncludedTags([]));
 
-      it "run specs with a matching tag", ->
-        expect(env.specFilter(nestedTaggedSpec)).toBeTruthy()
+      it("run specs with a matching tag", () => expect(env.specFilter(nestedTaggedSpec)).toBeTruthy());
 
-      it "doesn't run specs with different tags", ->
-        expect(env.specFilter(nestedAnotherTaggedSpec)).toBeFalsy()
+      return it("doesn't run specs with different tags", () => expect(env.specFilter(nestedAnotherTaggedSpec)).toBeFalsy());
+    });
+  });
 
-  describe "with a tagged suite", ->
-    [taggedSuiteSpec] = []
+  return describe("with a tagged suite", function() {
+    let [taggedSuiteSpec] = Array.from([]);
 
-    beforeEach ->
-      env = jasmine.getEnv()
-      suite =
-        description: 'another #tag'
-      taggedSuiteSpec =
-        description: 'no tag'
-        suite: suite
+    beforeEach(function() {
+      env = jasmine.getEnv();
+      const suite =
+        {description: 'another #tag'};
+      return taggedSuiteSpec = {
+        description: 'no tag',
+        suite
+      };
+    });
 
-    describe "with a specific tag specs", ->
-      beforeEach ->
-        env.includeSpecsWithoutTags(false)
-        env.setIncludedTags(['tag'])
+    return describe("with a specific tag specs", function() {
+      beforeEach(function() {
+        env.includeSpecsWithoutTags(false);
+        return env.setIncludedTags(['tag']);
+      });
 
-      afterEach ->
-        env.includeSpecsWithoutTags(true)
-        env.setIncludedTags([])
+      afterEach(function() {
+        env.includeSpecsWithoutTags(true);
+        return env.setIncludedTags([]);
+      });
 
-      it "run specs with a matching tag", ->
-        expect(env.specFilter(taggedSuiteSpec)).toBeTruthy()
+      return it("run specs with a matching tag", () => expect(env.specFilter(taggedSuiteSpec)).toBeTruthy());
+    });
+  });
+});

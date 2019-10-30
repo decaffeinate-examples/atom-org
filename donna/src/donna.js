@@ -1,168 +1,241 @@
-fs = require 'fs'
-util = require 'util'
-path = require 'path'
-walkdir = require 'walkdir'
-Async = require 'async'
-_ = require 'underscore'
-CoffeeScript = require 'coffee-script'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const util = require('util');
+const path = require('path');
+const walkdir = require('walkdir');
+const Async = require('async');
+const _ = require('underscore');
+const CoffeeScript = require('coffee-script');
 
-Parser = require './parser'
-Metadata = require './metadata'
-{exec} = require 'child_process'
+const Parser = require('./parser');
+const Metadata = require('./metadata');
+const {exec} = require('child_process');
 
-SRC_DIRS = ['src', 'lib', 'app']
-BLACKLIST_FILES = ['Gruntfile.coffee']
+const SRC_DIRS = ['src', 'lib', 'app'];
+const BLACKLIST_FILES = ['Gruntfile.coffee'];
 
-main = ->
-  optimist = require('optimist')
-    .usage("""
-    Usage: $0 [options] [source_files]
-    """)
-    .options('o',
-      alias: 'output-dir'
-      describe: 'The output directory'
+const main = function() {
+  const optimist = require('optimist')
+    .usage(`\
+Usage: $0 [options] [source_files]\
+`)
+    .options('o', {
+      alias: 'output-dir',
+      describe: 'The output directory',
       default: './doc'
+    }
     )
-    .options('d',
-      alias: 'debug'
-      describe: 'Show stacktraces and converted CoffeeScript source'
-      boolean: true
+    .options('d', {
+      alias: 'debug',
+      describe: 'Show stacktraces and converted CoffeeScript source',
+      boolean: true,
       default: false
+    }
     )
-    .options('h',
-      alias: 'help'
+    .options('h', {
+      alias: 'help',
       describe: 'Show the help'
-    )
+    }
+    );
 
-  argv = optimist.argv
+  const {
+    argv
+  } = optimist;
 
-  if argv.h
-    console.log optimist.help()
-    return
+  if (argv.h) {
+    console.log(optimist.help());
+    return;
+  }
 
-  options =
-    inputs: argv._
+  const options = {
+    inputs: argv._,
     output: argv.o
+  };
 
-  writeMetadata(generateMetadata(options.inputs), options.output)
+  return writeMetadata(generateMetadata(options.inputs), options.output);
+};
 
-generateMetadata = (inputs) ->
-  metadataSlugs = []
+var generateMetadata = function(inputs) {
+  const metadataSlugs = [];
 
-  for input in inputs
-    continue unless (fs.existsSync || path.existsSync)(input)
-    parser = new Parser()
+  for (let input of Array.from(inputs)) {
+    var error, filename;
+    if (!(fs.existsSync || path.existsSync)(input)) { continue; }
+    const parser = new Parser();
 
-    # collect probable package.json path
-    packageJsonPath = path.join(input, 'package.json')
-    stats = fs.lstatSync input
-    absoluteInput = path.resolve(process.cwd(), input)
+    // collect probable package.json path
+    const packageJsonPath = path.join(input, 'package.json');
+    const stats = fs.lstatSync(input);
+    const absoluteInput = path.resolve(process.cwd(), input);
 
-    if stats.isDirectory()
-      for filename in walkdir.sync input
-        if isAcceptableFile(filename) and isInAcceptableDir(absoluteInput, filename)
-          try
-            parser.parseFile(filename, absoluteInput)
-          catch error
-            logError(filename, error)
-    else
-      if isAcceptableFile(input)
-        try
-          parser.parseFile(input, path.dirname(input))
-        catch error
-          logError(filename, error)
+    if (stats.isDirectory()) {
+      for (filename of Array.from(walkdir.sync(input))) {
+        if (isAcceptableFile(filename) && isInAcceptableDir(absoluteInput, filename)) {
+          try {
+            parser.parseFile(filename, absoluteInput);
+          } catch (error1) {
+            error = error1;
+            logError(filename, error);
+          }
+        }
+      }
+    } else {
+      if (isAcceptableFile(input)) {
+        try {
+          parser.parseFile(input, path.dirname(input));
+        } catch (error2) {
+          error = error2;
+          logError(filename, error);
+        }
+      }
+    }
 
-    metadataSlugs.push generateMetadataSlug(packageJsonPath, parser)
+    metadataSlugs.push(generateMetadataSlug(packageJsonPath, parser));
+  }
 
-  metadataSlugs
+  return metadataSlugs;
+};
 
-logError = (filename, error) ->
-  if error.location?
-    console.warn "Cannot parse file #{ filename }@#{error.location.first_line}: #{ error.message }"
-  else
-    console.warn "Cannot parse file #{ filename }: #{ error.message }"
+var logError = function(filename, error) {
+  if (error.location != null) {
+    return console.warn(`Cannot parse file ${ filename }@${error.location.first_line}: ${ error.message }`);
+  } else {
+    return console.warn(`Cannot parse file ${ filename }: ${ error.message }`);
+  }
+};
 
-isAcceptableFile = (filePath) ->
-  try
-    return false if fs.statSync(filePath).isDirectory()
+var isAcceptableFile = function(filePath) {
+  try {
+    if (fs.statSync(filePath).isDirectory()) { return false; }
+  } catch (error) {}
 
-  for file in BLACKLIST_FILES
-    return false if new RegExp(file+'$').test(filePath)
+  for (let file of Array.from(BLACKLIST_FILES)) {
+    if (new RegExp(file+'$').test(filePath)) { return false; }
+  }
 
-  filePath.match(/\._?coffee$/)
+  return filePath.match(/\._?coffee$/);
+};
 
-isInAcceptableDir = (inputPath, filePath) ->
-  # is in the root of the input?
-  return true if path.join(inputPath, path.basename(filePath)) is filePath
+var isInAcceptableDir = function(inputPath, filePath) {
+  // is in the root of the input?
+  let dir;
+  if (path.join(inputPath, path.basename(filePath)) === filePath) { return true; }
 
-  # is under src, lib, or app?
-  acceptableDirs = (path.join(inputPath, dir) for dir in SRC_DIRS)
-  for dir in acceptableDirs
-    return true if filePath.indexOf(dir) == 0
+  // is under src, lib, or app?
+  const acceptableDirs = ((() => {
+    const result = [];
+    for (dir of Array.from(SRC_DIRS)) {       result.push(path.join(inputPath, dir));
+    }
+    return result;
+  })());
+  for (dir of Array.from(acceptableDirs)) {
+    if (filePath.indexOf(dir) === 0) { return true; }
+  }
 
-  false
+  return false;
+};
 
-writeMetadata = (metadataSlugs, output) ->
-  fs.writeFileSync path.join(output, 'metadata.json'), JSON.stringify(metadataSlugs, null, "    ")
+var writeMetadata = (metadataSlugs, output) => fs.writeFileSync(path.join(output, 'metadata.json'), JSON.stringify(metadataSlugs, null, "    "));
 
-# Public: Builds and writes to metadata.json
-generateMetadataSlug = (packageJsonPath, parser) ->
-  if fs.existsSync(packageJsonPath)
-    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'))
+// Public: Builds and writes to metadata.json
+var generateMetadataSlug = function(packageJsonPath, parser) {
+  let packageJson;
+  if (fs.existsSync(packageJsonPath)) {
+    packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
+  }
 
-  metadata = new Metadata(packageJson?.dependencies ? {}, parser)
-  slug =
-    main: findMainFile(packageJsonPath, packageJson?.main)
-    repository: packageJson?.repository?.url ? packageJson?.repository
-    version: packageJson?.version
+  const metadata = new Metadata((packageJson != null ? packageJson.dependencies : undefined) != null ? (packageJson != null ? packageJson.dependencies : undefined) : {}, parser);
+  const slug = {
+    main: findMainFile(packageJsonPath, packageJson != null ? packageJson.main : undefined),
+    repository: __guard__(packageJson != null ? packageJson.repository : undefined, x => x.url) != null ? __guard__(packageJson != null ? packageJson.repository : undefined, x => x.url) : (packageJson != null ? packageJson.repository : undefined),
+    version: (packageJson != null ? packageJson.version : undefined),
     files: {}
+  };
 
-  for filename, content of parser.iteratedFiles
-    metadata.generate(CoffeeScript.nodes(content))
-    populateSlug(slug, filename, metadata)
+  for (let filename in parser.iteratedFiles) {
+    const content = parser.iteratedFiles[filename];
+    metadata.generate(CoffeeScript.nodes(content));
+    populateSlug(slug, filename, metadata);
+  }
 
-  slug
+  return slug;
+};
 
-# Public: Parse and collect metadata slugs
-populateSlug = (slug, filename, {defs:unindexedObjects, exports:exports}) ->
-  objects = {}
-  for key, value of unindexedObjects
-    startLineNumber = value.range[0][0]
-    startColNumber = value.range[0][1]
-    objects[startLineNumber] = {} unless objects[startLineNumber]?
-    objects[startLineNumber][startColNumber] = value
-    # Update the classProperties/prototypeProperties to be line numbers
-    if value.type is 'class'
-      value.classProperties = ( [prop.range[0][0], prop.range[0][1]] for prop in _.clone(value.classProperties))
-      value.prototypeProperties = ([prop.range[0][0], prop.range[0][1]] for prop in _.clone(value.prototypeProperties))
+// Public: Parse and collect metadata slugs
+var populateSlug = function(slug, filename, {defs:unindexedObjects, exports}) {
+  let key, startLineNumber, value;
+  let prop;
+  const objects = {};
+  for (key in unindexedObjects) {
+    value = unindexedObjects[key];
+    startLineNumber = value.range[0][0];
+    const startColNumber = value.range[0][1];
+    if (objects[startLineNumber] == null) { objects[startLineNumber] = {}; }
+    objects[startLineNumber][startColNumber] = value;
+    // Update the classProperties/prototypeProperties to be line numbers
+    if (value.type === 'class') {
+      value.classProperties = ((() => {
+        const result = [];
+         for (prop of Array.from(_.clone(value.classProperties))) {           result.push([prop.range[0][0], prop.range[0][1]]);
+        }
+        return result;
+      })());
+      value.prototypeProperties = ((() => {
+        const result1 = [];
+        for (prop of Array.from(_.clone(value.prototypeProperties))) {           result1.push([prop.range[0][0], prop.range[0][1]]);
+        }
+        return result1;
+      })());
+    }
+  }
 
-  if exports._default?
-    exports = exports._default.range[0][0] if exports._default.range?
-  else
-    for key, value of exports
-      exports[key] = value.startLineNumber
+  if (exports._default != null) {
+    if (exports._default.range != null) { exports = exports._default.range[0][0]; }
+  } else {
+    for (key in exports) {
+      value = exports[key];
+      exports[key] = value.startLineNumber;
+    }
+  }
 
-  slug["files"][filename] = {objects, exports}
-  slug
+  slug["files"][filename] = {objects, exports};
+  return slug;
+};
 
-findMainFile = (packageJsonPath, main_file) ->
-  return unless main_file?
+var findMainFile = function(packageJsonPath, main_file) {
+  if (main_file == null) { return; }
 
-  if main_file.match(/\.js$/)
-    main_file = main_file.replace(/\.js$/, ".coffee")
-  else
-    main_file += ".coffee"
+  if (main_file.match(/\.js$/)) {
+    main_file = main_file.replace(/\.js$/, ".coffee");
+  } else {
+    main_file += ".coffee";
+  }
 
-  filename = path.basename(main_file)
-  filepath = path.dirname(packageJsonPath)
+  const filename = path.basename(main_file);
+  const filepath = path.dirname(packageJsonPath);
 
-  for dir in SRC_DIRS
-    composite_main = path.normalize path.join(filepath, dir, filename)
+  for (let dir of Array.from(SRC_DIRS)) {
+    const composite_main = path.normalize(path.join(filepath, dir, filename));
 
-    if fs.existsSync composite_main
-      file = path.relative(packageJsonPath, composite_main)
-      file = file.substring(1, file.length) if file.match /^\.\./
-      return file
+    if (fs.existsSync(composite_main)) {
+      let file = path.relative(packageJsonPath, composite_main);
+      if (file.match(/^\.\./)) { file = file.substring(1, file.length); }
+      return file;
+    }
+  }
+};
 
-# TODO: lessen the suck enough to remove generateMetadataSlug and populateSlug. They really shouldnt be necessary.
-module.exports = {Parser, Metadata, main, generateMetadata, generateMetadataSlug, populateSlug}
+// TODO: lessen the suck enough to remove generateMetadataSlug and populateSlug. They really shouldnt be necessary.
+module.exports = {Parser, Metadata, main, generateMetadata, generateMetadataSlug, populateSlug};
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

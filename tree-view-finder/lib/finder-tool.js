@@ -1,217 +1,294 @@
-{CompositeDisposable, Disposable} = require 'event-kit'
-{AncestorsMethods, SpacePenDSL, EventsDelegation} = require 'atom-utils'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {CompositeDisposable, Disposable} = require('event-kit');
+const {AncestorsMethods, SpacePenDSL, EventsDelegation} = require('atom-utils');
 
-class FinderTool extends HTMLElement
-  EventsDelegation.includeInto(this)
-  SpacePenDSL.includeInto(this)
+class FinderTool extends HTMLElement {
+  static initClass() {
+    EventsDelegation.includeInto(this);
+    SpacePenDSL.includeInto(this);
+  
+    this.prototype.debug = false;
+    this.prototype.nameWidth = 200;
+    this.prototype.sizeWidth = 80;
+    this.prototype.mdateWidth = 180;
+    this.prototype.minWidth = 40;
+    this.prototype.sortKey = 'name';
+    this.prototype.sortOrder = 'ascent';
+  }
 
-  debug: false
-  nameWidth: 200
-  sizeWidth: 80
-  mdateWidth: 180
-  minWidth: 40
-  sortKey: 'name'
-  sortOrder: 'ascent'
+  static content() {
+    return this.tag('atom-panel', {class: 'tree-view-finder-tool tool-panel'}, () => {
+      return this.div({outlet: 'toolBar', class: 'btn-group'}, () => {
+        this.div({outlet: 'backBtn', class: 'btn disable', id: 'back-btn'}, '<');
+        this.div({outlet: 'forwBtn', class: 'btn disable', id: 'forw-btn'}, '>');
+        this.div({outlet: 'homeBtn', class: 'btn disable', id: 'home-btn'}, 'Home');
+        this.div({outlet: 'name', class: 'btn', id: 'name'}, () => {
+          return this.span({class: 'finder-tool-btn-label', id: 'name-btn-label'}, 'Name');
+        });
+        this.div({outlet: 'nameRsz', class: 'btn rsz', id: 'name-rsz'}, '');
+        this.div({outlet: 'size', class: 'btn', id: 'size'}, () => {
+          return this.span({class: 'finder-tool-btn-label', id: 'size-btn-label'}, 'Size');
+        });
+        this.div({outlet: 'sizeRsz', class: 'btn rsz', id: 'size-rsz'}, '');
+        this.div({outlet: 'mdate', class: 'btn', id: 'mdate'}, () => {
+          return this.span({class: 'finder-tool-btn-label', id: 'mdate-btn-label'}, 'Date Modified');
+        });
+        return this.div({outlet: 'mdateRsz', class: 'btn rsz', id: 'mdate-rsz'}, '');
+      });
+    });
+  }
 
-  @content: ->
-    @tag 'atom-panel', class: 'tree-view-finder-tool tool-panel', =>
-      @div outlet: 'toolBar', class: 'btn-group', =>
-        @div outlet: 'backBtn', class: 'btn disable', id: 'back-btn', '<'
-        @div outlet: 'forwBtn', class: 'btn disable', id: 'forw-btn', '>'
-        @div outlet: 'homeBtn', class: 'btn disable', id: 'home-btn', 'Home'
-        @div outlet: 'name', class: 'btn', id: 'name', =>
-          @span class: 'finder-tool-btn-label', id: 'name-btn-label', 'Name'
-        @div outlet: 'nameRsz', class: 'btn rsz', id: 'name-rsz', ''
-        @div outlet: 'size', class: 'btn', id: 'size', =>
-          @span class: 'finder-tool-btn-label', id: 'size-btn-label', 'Size'
-        @div outlet: 'sizeRsz', class: 'btn rsz', id: 'size-rsz', ''
-        @div outlet: 'mdate', class: 'btn', id: 'mdate', =>
-          @span class: 'finder-tool-btn-label', id: 'mdate-btn-label', 'Date Modified'
-        @div outlet: 'mdateRsz', class: 'btn rsz', id: 'mdate-rsz', ''
+  initialize(treeViewFinder) {
+    if (this.debug) { console.log("finder-tool: initialize", treeViewFinder); }
+    this.treeViewFinder = treeViewFinder;
+    this.subscriptions = new CompositeDisposable;
+    this.updateButtonStatus();
 
-  initialize: (treeViewFinder) ->
-    console.log "finder-tool: initialize", treeViewFinder if @debug
-    @treeViewFinder = treeViewFinder
-    @subscriptions = new CompositeDisposable
-    @updateButtonStatus()
+    this.name.calcOptWidth = () => {
+      const btnWidth = this.backBtn.offsetWidth + this.forwBtn.offsetWidth + 
+        this.homeBtn.offsetWidth;
+      let optWidth = this.treeViewFinder.fileInfo.calcOptWidthName();
+      optWidth -= btnWidth;
+      if  (optWidth < 0) {
+        optWidth = 0;
+      }
+      return optWidth;
+    };
+    this.size.calcOptWidth = () => {
+      return this.treeViewFinder.fileInfo.calcOptWidthSize();
+    };
+    this.mdate.calcOptWidth = () => {
+      return this.treeViewFinder.fileInfo.calcOptWidthMdate();
+    };
+    this.name.sortKey = 'name';
+    this.size.sortKey = 'size';
+    this.mdate.sortKey = 'mdate';
 
-    @name.calcOptWidth = =>
-      btnWidth = @backBtn.offsetWidth + @forwBtn.offsetWidth + 
-        @homeBtn.offsetWidth
-      optWidth = @treeViewFinder.fileInfo.calcOptWidthName()
-      optWidth -= btnWidth
-      if  optWidth < 0
-        optWidth = 0
-      optWidth
-    @size.calcOptWidth = =>
-      @treeViewFinder.fileInfo.calcOptWidthSize()
-    @mdate.calcOptWidth = =>
-      @treeViewFinder.fileInfo.calcOptWidthMdate()
-    @name.sortKey = 'name'
-    @size.sortKey = 'size'
-    @mdate.sortKey = 'mdate'
+    this.subscriptions.add(this.subscribeTo(this.toolBar, '.btn', {
+      'click': e => {
+        if (this.debug) { console.log("finder-tool: click:", e.target.id, e); }
+        //
+        // history, back and forth
+        //
+        if (e.target === this.backBtn) {
+          this.treeViewFinder.history.back();
+        }
+        if (e.target === this.forwBtn) {
+          this.treeViewFinder.history.forw();
+        }
+        if (e.target === this.homeBtn) {
+          this.treeViewFinder.history.goHome();
+        }
+        //
+        // sort by name, size and date
+        //
+        let {
+          target
+        } = e;
+        if (!target.classList.contains('btn')) {
+          target = target.parentElement;
+        }
+        if (target.sortKey) {
+          e.stopPropagation();
+          if (target.sortKey === this.sortKey) {
+            if (this.sortOrder === 'ascent') {
+              this.sortOrder = 'descent';
+            } else {
+              this.sortOrder = 'ascent';
+            }
+          } else {
+            this.sortKey = target.sortKey;
+          }
+        }
+        this.updateButtonStatus();
+        return this.treeViewFinder.fileInfo.sort(this.sortKey, this.sortOrder);
+      }
+    }
+    )
+    );
 
-    @subscriptions.add @subscribeTo @toolBar, '.btn',
-      'click': (e) =>
-        console.log "finder-tool: click:", e.target.id, e if @debug
-        #
-        # history, back and forth
-        #
-        if e.target == @backBtn
-          @treeViewFinder.history.back()
-        if e.target == @forwBtn
-          @treeViewFinder.history.forw()
-        if e.target == @homeBtn
-          @treeViewFinder.history.goHome()
-        #
-        # sort by name, size and date
-        #
-        target = e.target
-        if not target.classList.contains('btn')
-          target = target.parentElement
-        if target.sortKey
-          e.stopPropagation()
-          if target.sortKey is @sortKey
-            if @sortOrder is 'ascent'
-              @sortOrder = 'descent'
-            else
-              @sortOrder = 'ascent'
-          else
-            @sortKey = target.sortKey
-        @updateButtonStatus()
-        @treeViewFinder.fileInfo.sort(@sortKey, @sortOrder)
-
-    state = treeViewFinder?.state?.finderTool
-    if state
-      console.log 'finde-tool: initiliaze: state =', state if @debug
-      if state.nameWidth
-        @nameWidth = state.nameWidth
-      if state.sizeWidth
-        @sizeWidth = state.sizeWidth
-      if state.mdateWidth
-        @mdateWidth = state.mdateWidth
+    const state = __guard__(treeViewFinder != null ? treeViewFinder.state : undefined, x => x.finderTool);
+    if (state) {
+      if (this.debug) { console.log('finde-tool: initiliaze: state =', state); }
+      if (state.nameWidth) {
+        this.nameWidth = state.nameWidth;
+      }
+      if (state.sizeWidth) {
+        this.sizeWidth = state.sizeWidth;
+      }
+      if (state.mdateWidth) {
+        this.mdateWidth = state.mdateWidth;
+      }
+    }
       
-    @name.style.width = @nameWidth + 'px'
-    @size.style.width = @sizeWidth + 'px'
-    @mdate.style.width = @mdateWidth + 'px'
+    this.name.style.width = this.nameWidth + 'px';
+    this.size.style.width = this.sizeWidth + 'px';
+    this.mdate.style.width = this.mdateWidth + 'px';
 
-    drag = null
+    let drag = null;
 
-    getTargetRsz = (e) =>
-      return @name if e.target.id == 'name-rsz'
-      return @size if e.target.id == 'size-rsz'
-      return @mdate if e.target.id == 'mdate-rsz'
-      return null
+    const getTargetRsz = e => {
+      if (e.target.id === 'name-rsz') { return this.name; }
+      if (e.target.id === 'size-rsz') { return this.size; }
+      if (e.target.id === 'mdate-rsz') { return this.mdate; }
+      return null;
+    };
         
-    @subscriptions.add @subscribeTo @toolBar, '.rsz',
-      'dblclick': (e) =>
-        console.log "finder-tool: double click:", e.target.id, e if @debug
-        # optimize column width
-        return if not target = getTargetRsz(e)
-        if @debug
-          console.log 'finder-tool: opt width:', target.id, 
-            target.calcOptWidth()
-        target.style.width = Math.max(target.calcOptWidth(), @minWidth) + 'px'
-        @updateFileInfo()
-      'mousedown': (e) =>
-        console.log "finder-tool: drag:", e.target.id, e if @debug
-        return if not target = getTargetRsz(e)
-        drag = { 
+    this.subscriptions.add(this.subscribeTo(this.toolBar, '.rsz', {
+      'dblclick': e => {
+        let target;
+        if (this.debug) { console.log("finder-tool: double click:", e.target.id, e); }
+        // optimize column width
+        if (!(target = getTargetRsz(e))) { return; }
+        if (this.debug) {
+          console.log('finder-tool: opt width:', target.id, 
+            target.calcOptWidth());
+        }
+        target.style.width = Math.max(target.calcOptWidth(), this.minWidth) + 'px';
+        return this.updateFileInfo();
+      },
+      'mousedown': e => {
+        let target;
+        if (this.debug) { console.log("finder-tool: drag:", e.target.id, e); }
+        if (!(target = getTargetRsz(e))) { return; }
+        return drag = { 
           x: e.clientX, 
           y: e.clientY,
-          target: target,
+          target,
           originalWidth: target.offsetWidth,
-        } 
-    updateButtonWidths = (e) =>
-      d = e.clientX - drag.x
-      if drag.originalWidth + d < @minWidth
-        d = @minWidth - drag.originalWidth
-      drag.target.style.width = drag.originalWidth + d + 'px'
+        };
+      }
+    })); 
+    const updateButtonWidths = e => {
+      let d = e.clientX - drag.x;
+      if ((drag.originalWidth + d) < this.minWidth) {
+        d = this.minWidth - drag.originalWidth;
+      }
+      return drag.target.style.width = drag.originalWidth + d + 'px';
+    };
 
-    document.onmousemove = (e) =>
-      if drag
-        updateButtonWidths(e)
-        @updateFileInfo()
+    document.onmousemove = e => {
+      if (drag) {
+        updateButtonWidths(e);
+        return this.updateFileInfo();
+      }
+    };
 
-    document.onmouseup = (e) =>
-      if drag
-        updateButtonWidths(e)
-        console.log "finder-tool: ", drag.target.id, drag.target.offsetLeft+ drag.target.offsetWidth if @debug
-        @updateFileInfo()
-        drag = null
+    return document.onmouseup = e => {
+      if (drag) {
+        updateButtonWidths(e);
+        if (this.debug) { console.log("finder-tool: ", drag.target.id, drag.target.offsetLeft+ drag.target.offsetWidth); }
+        this.updateFileInfo();
+        return drag = null;
+      }
+    };
+  }
 
-  updateButtonStatus: ->
-    if @debug
-      console.log 'finder-tool: updateButtonStatus:',
-        @treeViewFinder.history.canBack(),
-        @treeViewFinder.history.canForw(),
-        @treeViewFinder.history.canGoHome()
-    if @treeViewFinder.history.canBack()
-      @backBtn.classList.remove('disable')
-    else
-      @backBtn.classList.add('disable')
-    if @treeViewFinder.history.canForw()
-      @forwBtn.classList.remove('disable')
-    else
-      @forwBtn.classList.add('disable')
-    if @treeViewFinder.history.canGoHome()
-      @homeBtn.classList.remove('disable')
-    else
-      @homeBtn.classList.add('disable')
+  updateButtonStatus() {
+    let label;
+    if (this.debug) {
+      console.log('finder-tool: updateButtonStatus:',
+        this.treeViewFinder.history.canBack(),
+        this.treeViewFinder.history.canForw(),
+        this.treeViewFinder.history.canGoHome());
+    }
+    if (this.treeViewFinder.history.canBack()) {
+      this.backBtn.classList.remove('disable');
+    } else {
+      this.backBtn.classList.add('disable');
+    }
+    if (this.treeViewFinder.history.canForw()) {
+      this.forwBtn.classList.remove('disable');
+    } else {
+      this.forwBtn.classList.add('disable');
+    }
+    if (this.treeViewFinder.history.canGoHome()) {
+      this.homeBtn.classList.remove('disable');
+    } else {
+      this.homeBtn.classList.add('disable');
+    }
 
-    if @debug
-      console.log 'finder-tool: sort:',
-        'key =', @sortKey, ', order =', @sortOrder
-    for label in @toolBar.querySelectorAll('.finder-tool-btn-label')
-      label.classList.remove('finder-tool-btn-label-ascent')
-      label.classList.remove('finder-tool-btn-label-descent')
-      label.classList.add('finder-tool-btn-label-nosort')
-    if label = @toolBar.querySelector('#' + @sortKey + '-btn-label')
-      label.classList.remove('finder-tool-btn-label-nosort')
-      label.classList.add('finder-tool-btn-label-' + @sortOrder)
+    if (this.debug) {
+      console.log('finder-tool: sort:',
+        'key =', this.sortKey, ', order =', this.sortOrder);
+    }
+    for (label of Array.from(this.toolBar.querySelectorAll('.finder-tool-btn-label'))) {
+      label.classList.remove('finder-tool-btn-label-ascent');
+      label.classList.remove('finder-tool-btn-label-descent');
+      label.classList.add('finder-tool-btn-label-nosort');
+    }
+    if (label = this.toolBar.querySelector('#' + this.sortKey + '-btn-label')) {
+      label.classList.remove('finder-tool-btn-label-nosort');
+      return label.classList.add('finder-tool-btn-label-' + this.sortOrder);
+    }
+  }
 
-  serialize: ->
-    nameWidth: @nameWidth
-    sizeWidth: @sizeWidth
-    mdateWidth: @mdateWidth
+  serialize() {
+    return {
+      nameWidth: this.nameWidth,
+      sizeWidth: this.sizeWidth,
+      mdateWidth: this.mdateWidth
+    };
+  }
 
-  updateFileInfo: ->
-    @nameWidth = @size.offsetLeft - @name.offsetLeft
-    @sizeWidth = @mdate.offsetLeft - @size.offsetLeft
-    @mdateWidth = @mdate.offsetWidth
-    console.log 'finder-tool: updateFileInfo: ', @nameWidth, @sizeWidth, @mdateWidth if @debug
-    @treeViewFinder.fileInfo.updateWidth(
-      @name.offsetLeft + @nameWidth,
-      @sizeWidth,
-      @mdateWidth)
+  updateFileInfo() {
+    this.nameWidth = this.size.offsetLeft - this.name.offsetLeft;
+    this.sizeWidth = this.mdate.offsetLeft - this.size.offsetLeft;
+    this.mdateWidth = this.mdate.offsetWidth;
+    if (this.debug) { console.log('finder-tool: updateFileInfo: ', this.nameWidth, this.sizeWidth, this.mdateWidth); }
+    return this.treeViewFinder.fileInfo.updateWidth(
+      this.name.offsetLeft + this.nameWidth,
+      this.sizeWidth,
+      this.mdateWidth);
+  }
 
-  attach: ->
-    console.log "finder-tool: attach" if @debug
-    workspace = atom.views.getView(atom.workspace)
-    @treeViewResizer = workspace.querySelector('.tree-view-resizer')
-    @treeViewScroller = workspace.querySelector('.tree-view-scroller')
-    @treeView = workspace.querySelector('.tree-view')
-    return if not @treeViewResizer
-    @treeViewResizer.insertBefore(this, @treeViewScroller)
-    @treeViewScroller.classList.add('with-finder')
-    @updateFileInfo()
-    @attached = true
-    @scrollSubscription = @subscribeTo @treeViewScroller,'.tree-view-scroller',
-      'scroll': (e) =>
-        treeViewScrollerLeft = @treeViewScroller.getBoundingClientRect().left
-        treeViewLeft = @treeView.getBoundingClientRect().left
-        @toolBar.style.left = treeViewLeft - treeViewScrollerLeft + 'px'
+  attach() {
+    if (this.debug) { console.log("finder-tool: attach"); }
+    const workspace = atom.views.getView(atom.workspace);
+    this.treeViewResizer = workspace.querySelector('.tree-view-resizer');
+    this.treeViewScroller = workspace.querySelector('.tree-view-scroller');
+    this.treeView = workspace.querySelector('.tree-view');
+    if (!this.treeViewResizer) { return; }
+    this.treeViewResizer.insertBefore(this, this.treeViewScroller);
+    this.treeViewScroller.classList.add('with-finder');
+    this.updateFileInfo();
+    this.attached = true;
+    return this.scrollSubscription = this.subscribeTo(this.treeViewScroller,'.tree-view-scroller', {
+      'scroll': e => {
+        const treeViewScrollerLeft = this.treeViewScroller.getBoundingClientRect().left;
+        const treeViewLeft = this.treeView.getBoundingClientRect().left;
+        return this.toolBar.style.left = (treeViewLeft - treeViewScrollerLeft) + 'px';
+      }
+    }
+    );
+  }
 
-  detach: ->
-    console.log "finder-tool: detach" if @debug
-    return if not @treeViewResizer
-    @scrollSubscription.dispose()
-    @treeViewScroller.classList.remove('with-finder')
-    @treeViewResizer.removeChild(this)
-    @attached = false
-    @treeViewResizer = null
+  detach() {
+    if (this.debug) { console.log("finder-tool: detach"); }
+    if (!this.treeViewResizer) { return; }
+    this.scrollSubscription.dispose();
+    this.treeViewScroller.classList.remove('with-finder');
+    this.treeViewResizer.removeChild(this);
+    this.attached = false;
+    return this.treeViewResizer = null;
+  }
 
-  destroy: ->
-    @detach()
+  destroy() {
+    return this.detach();
+  }
+}
+FinderTool.initClass();
 
-module.exports = FinderTool = document.registerElement 'tree-view-finder-tool', prototype: FinderTool.prototype
+module.exports = (FinderTool = document.registerElement('tree-view-finder-tool', {prototype: FinderTool.prototype}));
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

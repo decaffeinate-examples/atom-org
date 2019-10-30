@@ -1,40 +1,59 @@
-ContentsByMode =
-  'insert': ["status-bar-vim-mode-insert", "Insert"]
-  'insert.replace': ["status-bar-vim-mode-insert", "Replace"]
-  'normal': ["status-bar-vim-mode-normal", "Normal"]
-  'visual': ["status-bar-vim-mode-visual", "Visual"]
-  'visual.characterwise': ["status-bar-vim-mode-visual", "Visual"]
-  'visual.linewise': ["status-bar-vim-mode-visual", "Visual Line"]
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let StatusBarManager;
+const ContentsByMode = {
+  'insert': ["status-bar-vim-mode-insert", "Insert"],
+  'insert.replace': ["status-bar-vim-mode-insert", "Replace"],
+  'normal': ["status-bar-vim-mode-normal", "Normal"],
+  'visual': ["status-bar-vim-mode-visual", "Visual"],
+  'visual.characterwise': ["status-bar-vim-mode-visual", "Visual"],
+  'visual.linewise': ["status-bar-vim-mode-visual", "Visual Line"],
   'visual.blockwise': ["status-bar-vim-mode-visual", "Visual Block"]
+};
 
 module.exports =
-class StatusBarManager
-  constructor: ->
-    @element = document.createElement("div")
-    @element.id = "status-bar-vim-mode"
+(StatusBarManager = class StatusBarManager {
+  constructor() {
+    this.element = document.createElement("div");
+    this.element.id = "status-bar-vim-mode";
 
-    @container = document.createElement("div")
-    @container.className = "inline-block"
-    @container.appendChild(@element)
+    this.container = document.createElement("div");
+    this.container.className = "inline-block";
+    this.container.appendChild(this.element);
+  }
 
-  initialize: (@statusBar) ->
+  initialize(statusBar) {
+    this.statusBar = statusBar;
+  }
 
-  update: (currentMode, currentSubmode) ->
-    currentMode = currentMode + "." + currentSubmode if currentSubmode?
-    if newContents = ContentsByMode[currentMode]
-      [klass, text] = newContents
-      @element.className = klass
-      @element.textContent = text
-    else
-      @hide()
+  update(currentMode, currentSubmode) {
+    let newContents;
+    if (currentSubmode != null) { currentMode = currentMode + "." + currentSubmode; }
+    if (newContents = ContentsByMode[currentMode]) {
+      const [klass, text] = Array.from(newContents);
+      this.element.className = klass;
+      return this.element.textContent = text;
+    } else {
+      return this.hide();
+    }
+  }
 
-  hide: ->
-    @element.className = 'hidden'
+  hide() {
+    return this.element.className = 'hidden';
+  }
 
-  # Private
+  // Private
 
-  attach: ->
-    @tile = @statusBar.addRightTile(item: @container, priority: 20)
+  attach() {
+    return this.tile = this.statusBar.addRightTile({item: this.container, priority: 20});
+  }
 
-  detach: ->
-    @tile.destroy()
+  detach() {
+    return this.tile.destroy();
+  }
+});

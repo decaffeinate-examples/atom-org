@@ -1,39 +1,52 @@
-#!/usr/bin/env coffee
+#!/usr/bin/env node
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
 
-Fs = require 'fs'
-Path = require 'path'
-marked = require 'marked'
-emoji = require 'emoji-images'
-taskLists = require 'task-lists'
-toc = require 'toc'
+const Fs = require('fs');
+const Path = require('path');
+const marked = require('marked');
+const emoji = require('emoji-images');
+const taskLists = require('task-lists');
+const toc = require('toc');
 
-emojiFolder = Path.join(Path.dirname( require.resolve('emoji-images') ), "pngs")
+const emojiFolder = Path.join(Path.dirname( require.resolve('emoji-images') ), "pngs");
 
-module.exports = (file, opts, callback) ->
-  options =
-    isFile: false
-    header: '<h<%= level %>><a name="<%= anchor %>" class="anchor" href="#<%= anchor %>"><span class="octicon octicon-link"></span></a><%= header %></h<%= level %>>'
+module.exports = function(file, opts, callback) {
+  const options = {
+    isFile: false,
+    header: '<h<%= level %>><a name="<%= anchor %>" class="anchor" href="#<%= anchor %>"><span class="octicon octicon-link"></span></a><%= header %></h<%= level %>>',
     anchorMin: 1
+  };
 
-  conversion = (data) ->
-    emojified = emoji(data, emojiFolder, 20).replace(/\\</g, "&lt;")
-    mdToHtml = marked(emojified)
-    contents = taskLists(mdToHtml)
-    contents = toc.process(contents, options)
+  const conversion = function(data) {
+    const emojified = emoji(data, emojiFolder, 20).replace(/\\</g, "&lt;");
+    const mdToHtml = marked(emojified);
+    let contents = taskLists(mdToHtml);
+    return contents = toc.process(contents, options);
+  };
 
-  if typeof opts is 'function'
-    callback = opts
-  else
-    for key of opts
-      options[key] = opts[key]
+  if (typeof opts === 'function') {
+    callback = opts;
+  } else {
+    for (let key in opts) {
+      options[key] = opts[key];
+    }
+  }
 
-  marked.setOptions(options)
+  marked.setOptions(options);
 
-  if options.isFile
-    Fs.readFile file, "utf8", (err, data) =>
-      if err
-        callback(err, null)
-      else
-        callback(null, conversion(data))
-  else
-    callback(null, conversion(file))
+  if (options.isFile) {
+    return Fs.readFile(file, "utf8", (err, data) => {
+      if (err) {
+        return callback(err, null);
+      } else {
+        return callback(null, conversion(data));
+      }
+    });
+  } else {
+    return callback(null, conversion(file));
+  }
+};

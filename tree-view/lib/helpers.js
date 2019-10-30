@@ -1,22 +1,36 @@
-path = require "path"
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require("path");
 
-module.exports =
-  repoForPath: (goalPath) ->
-    for projectPath, i in atom.project.getPaths()
-      if goalPath is projectPath or goalPath.indexOf(projectPath + path.sep) is 0
-        return atom.project.getRepositories()[i]
-    null
+module.exports = {
+  repoForPath(goalPath) {
+    const iterable = atom.project.getPaths();
+    for (let i = 0; i < iterable.length; i++) {
+      const projectPath = iterable[i];
+      if ((goalPath === projectPath) || (goalPath.indexOf(projectPath + path.sep) === 0)) {
+        return atom.project.getRepositories()[i];
+      }
+    }
+    return null;
+  },
 
-  getStyleObject: (el) ->
-    styleProperties = window.getComputedStyle(el)
-    styleObject = {}
-    for property of styleProperties
-      value = styleProperties.getPropertyValue property
-      camelizedAttr = property.replace /\-([a-z])/g, (a, b) -> b.toUpperCase()
-      styleObject[camelizedAttr] = value
-    styleObject
+  getStyleObject(el) {
+    const styleProperties = window.getComputedStyle(el);
+    const styleObject = {};
+    for (let property in styleProperties) {
+      const value = styleProperties.getPropertyValue(property);
+      const camelizedAttr = property.replace(/\-([a-z])/g, (a, b) => b.toUpperCase());
+      styleObject[camelizedAttr] = value;
+    }
+    return styleObject;
+  },
 
-  getFullExtension: (filePath) ->
-    basename = path.basename(filePath)
-    position = basename.indexOf('.')
-    if position > 0 then basename[position..] else ''
+  getFullExtension(filePath) {
+    const basename = path.basename(filePath);
+    const position = basename.indexOf('.');
+    if (position > 0) { return basename.slice(position); } else { return ''; }
+  }
+};

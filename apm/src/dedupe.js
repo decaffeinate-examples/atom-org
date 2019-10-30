@@ -1,75 +1,100 @@
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Dedupe;
+const path = require('path');
 
-async = require 'async'
-_ = require 'underscore-plus'
-yargs = require 'yargs'
+const async = require('async');
+const _ = require('underscore-plus');
+const yargs = require('yargs');
 
-config = require './apm'
-Command = require './command'
-fs = require './fs'
+const config = require('./apm');
+const Command = require('./command');
+const fs = require('./fs');
 
 module.exports =
-class Dedupe extends Command
-  @commandNames: ['dedupe']
+(Dedupe = (function() {
+  Dedupe = class Dedupe extends Command {
+    static initClass() {
+      this.commandNames = ['dedupe'];
+    }
 
-  constructor: ->
-    super()
-    @atomDirectory = config.getAtomDirectory()
-    @atomPackagesDirectory = path.join(@atomDirectory, 'packages')
-    @atomNodeDirectory = path.join(@atomDirectory, '.node-gyp')
-    @atomNpmPath = require.resolve('npm/bin/npm-cli')
+    constructor() {
+      super();
+      this.atomDirectory = config.getAtomDirectory();
+      this.atomPackagesDirectory = path.join(this.atomDirectory, 'packages');
+      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp');
+      this.atomNpmPath = require.resolve('npm/bin/npm-cli');
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm dedupe [<package_name>...]
+Usage: apm dedupe [<package_name>...]
 
-      Reduce duplication in the node_modules folder in the current directory.
+Reduce duplication in the node_modules folder in the current directory.
 
-      This command is experimental.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
+This command is experimental.\
+`
+      );
+      return options.alias('h', 'help').describe('help', 'Print this usage message');
+    }
 
-  dedupeModules: (options, callback) ->
-    process.stdout.write 'Deduping modules '
+    dedupeModules(options, callback) {
+      process.stdout.write('Deduping modules ');
 
-    @forkDedupeCommand options, (args...) =>
-      @logCommandResults(callback, args...)
+      return this.forkDedupeCommand(options, (...args) => {
+        return this.logCommandResults(callback, ...Array.from(args));
+      });
+    }
 
-  forkDedupeCommand: (options, callback) ->
-    dedupeArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'dedupe']
-    dedupeArgs.push(@getNpmBuildFlags()...)
-    dedupeArgs.push('--silent') if options.argv.silent
-    dedupeArgs.push('--quiet') if options.argv.quiet
+    forkDedupeCommand(options, callback) {
+      let vsArgs;
+      const dedupeArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'dedupe'];
+      dedupeArgs.push(...Array.from(this.getNpmBuildFlags() || []));
+      if (options.argv.silent) { dedupeArgs.push('--silent'); }
+      if (options.argv.quiet) { dedupeArgs.push('--quiet'); }
 
-    if vsArgs = @getVisualStudioFlags()
-      dedupeArgs.push(vsArgs)
+      if (vsArgs = this.getVisualStudioFlags()) {
+        dedupeArgs.push(vsArgs);
+      }
 
-    dedupeArgs.push(packageName) for packageName in options.argv._
+      for (let packageName of Array.from(options.argv._)) { dedupeArgs.push(packageName); }
 
-    fs.makeTreeSync(@atomDirectory)
+      fs.makeTreeSync(this.atomDirectory);
 
-    env = _.extend({}, process.env, {HOME: @atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()})
-    @addBuildEnvVars(env)
+      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
+      this.addBuildEnvVars(env);
 
-    dedupeOptions = {env}
-    dedupeOptions.cwd = options.cwd if options.cwd
+      const dedupeOptions = {env};
+      if (options.cwd) { dedupeOptions.cwd = options.cwd; }
 
-    @fork(@atomNpmPath, dedupeArgs, dedupeOptions, callback)
+      return this.fork(this.atomNpmPath, dedupeArgs, dedupeOptions, callback);
+    }
 
-  createAtomDirectories: ->
-    fs.makeTreeSync(@atomDirectory)
-    fs.makeTreeSync(@atomNodeDirectory)
+    createAtomDirectories() {
+      fs.makeTreeSync(this.atomDirectory);
+      return fs.makeTreeSync(this.atomNodeDirectory);
+    }
 
-  run: (options) ->
-    {callback, cwd} = options
-    options = @parseOptions(options.commandArgs)
-    options.cwd = cwd
+    run(options) {
+      const {callback, cwd} = options;
+      options = this.parseOptions(options.commandArgs);
+      options.cwd = cwd;
 
-    @createAtomDirectories()
+      this.createAtomDirectories();
 
-    commands = []
-    commands.push (callback) => @loadInstalledAtomMetadata(callback)
-    commands.push (callback) => @dedupeModules(options, callback)
-    async.waterfall commands, callback
+      const commands = [];
+      commands.push(callback => this.loadInstalledAtomMetadata(callback));
+      commands.push(callback => this.dedupeModules(options, callback));
+      return async.waterfall(commands, callback);
+    }
+  };
+  Dedupe.initClass();
+  return Dedupe;
+})());

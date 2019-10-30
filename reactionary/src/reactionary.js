@@ -1,1 +1,1 @@
-module.exports = require './dom-helpers'
+module.exports = require('./dom-helpers');

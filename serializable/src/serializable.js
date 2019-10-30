@@ -1,50 +1,77 @@
-{extend} = require 'underscore-plus'
-Mixin = require 'mixto'
-getParameterNames = require 'get-parameter-names'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Serializable;
+const {extend} = require('underscore-plus');
+const Mixin = require('mixto');
+const getParameterNames = require('get-parameter-names');
 
 module.exports =
-class Serializable extends Mixin
-  deserializers: null
+(Serializable = (function() {
+  Serializable = class Serializable extends Mixin {
+    static initClass() {
+      this.prototype.deserializers = null;
+    }
 
-  @registerDeserializers: (deserializers...) ->
-    @registerDeserializer(deserializer) for deserializer in deserializers
+    static registerDeserializers(...deserializers) {
+      return Array.from(deserializers).map((deserializer) => this.registerDeserializer(deserializer));
+    }
 
-  @registerDeserializer: (deserializer) ->
-    @deserializers ?= {}
-    @deserializers[deserializer.name] = deserializer
+    static registerDeserializer(deserializer) {
+      if (this.deserializers == null) { this.deserializers = {}; }
+      return this.deserializers[deserializer.name] = deserializer;
+    }
 
-  @deserialize: (state, params) ->
-    return unless state?
+    static deserialize(state, params) {
+      let deserializer;
+      if (state == null) { return; }
 
-    if state.deserializer is @name
-      deserializer = this
-    else
-      deserializer = @deserializers?[state.deserializer]
+      if (state.deserializer === this.name) {
+        deserializer = this;
+      } else {
+        deserializer = this.deserializers != null ? this.deserializers[state.deserializer] : undefined;
+      }
 
-    return unless deserializer? and deserializer.version is state.version
+      if ((deserializer == null) || (deserializer.version !== state.version)) { return; }
 
-    object = Object.create(deserializer.prototype)
-    params = extend({}, state, params)
-    delete params.deserializer
+      const object = Object.create(deserializer.prototype);
+      params = extend({}, state, params);
+      delete params.deserializer;
 
-    if typeof object.deserializeParams is 'function'
-      params = object.deserializeParams(params)
+      if (typeof object.deserializeParams === 'function') {
+        params = object.deserializeParams(params);
+      }
 
-    return unless params?
+      if (params == null) { return; }
 
-    deserializer.parameterNames ?= getParameterNames(deserializer)
-    if deserializer.parameterNames.length > 1 or params.hasOwnProperty(deserializer.parameterNames[0])
-      orderedParams = deserializer.parameterNames.map (name) -> params[name]
-      deserializer.call(object, orderedParams...)
-    else
-      deserializer.call(object, params)
-    object
+      if (deserializer.parameterNames == null) { deserializer.parameterNames = getParameterNames(deserializer); }
+      if ((deserializer.parameterNames.length > 1) || params.hasOwnProperty(deserializer.parameterNames[0])) {
+        const orderedParams = deserializer.parameterNames.map(name => params[name]);
+        deserializer.call(object, ...Array.from(orderedParams));
+      } else {
+        deserializer.call(object, params);
+      }
+      return object;
+    }
 
-  serialize: ->
-    state = @serializeParams?() ? {}
-    state.deserializer = @constructor.name
-    state.version = @constructor.version if @constructor.version?
-    state
+    serialize() {
+      let left;
+      const state = (left = (typeof this.serializeParams === 'function' ? this.serializeParams() : undefined)) != null ? left : {};
+      state.deserializer = this.constructor.name;
+      if (this.constructor.version != null) { state.version = this.constructor.version; }
+      return state;
+    }
 
-  testSerialization: (params) ->
-    @constructor.deserialize(@serialize(), params)
+    testSerialization(params) {
+      return this.constructor.deserialize(this.serialize(), params);
+    }
+  };
+  Serializable.initClass();
+  return Serializable;
+})());

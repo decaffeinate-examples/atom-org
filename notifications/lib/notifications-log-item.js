@@ -1,78 +1,110 @@
-{Emitter, CompositeDisposable, Disposable} = require 'atom'
-moment = require 'moment'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let NotificationsLogItem;
+const {Emitter, CompositeDisposable, Disposable} = require('atom');
+const moment = require('moment');
 
-module.exports = class NotificationsLogItem
-  subscriptions: null
-  timestampInterval: null
+module.exports = (NotificationsLogItem = (function() {
+  NotificationsLogItem = class NotificationsLogItem {
+    static initClass() {
+      this.prototype.subscriptions = null;
+      this.prototype.timestampInterval = null;
+    }
 
-  constructor: (@notification) ->
-    @emitter = new Emitter
-    @subscriptions = new CompositeDisposable
-    @render()
+    constructor(notification) {
+      this.notification = notification;
+      this.emitter = new Emitter;
+      this.subscriptions = new CompositeDisposable;
+      this.render();
+    }
 
-  render: ->
-    notificationView = atom.views.getView(@notification)
-    notificationElement = @renderNotification(notificationView)
+    render() {
+      const notificationView = atom.views.getView(this.notification);
+      const notificationElement = this.renderNotification(notificationView);
 
-    @timestamp = document.createElement('div')
-    @timestamp.classList.add('timestamp')
-    @notification.moment = moment(@notification.getTimestamp())
-    @subscriptions.add atom.tooltips.add(@timestamp, title: @notification.moment.format("ll LTS"))
-    @updateTimestamp()
-    @timestampInterval = setInterval(@updateTimestamp.bind(this), 60 * 1000)
-    @subscriptions.add new Disposable => clearInterval @timestampInterval
+      this.timestamp = document.createElement('div');
+      this.timestamp.classList.add('timestamp');
+      this.notification.moment = moment(this.notification.getTimestamp());
+      this.subscriptions.add(atom.tooltips.add(this.timestamp, {title: this.notification.moment.format("ll LTS")}));
+      this.updateTimestamp();
+      this.timestampInterval = setInterval(this.updateTimestamp.bind(this), 60 * 1000);
+      this.subscriptions.add(new Disposable(() => clearInterval(this.timestampInterval)));
 
-    @element = document.createElement('li')
-    @element.classList.add('notifications-log-item', @notification.getType())
-    @element.appendChild(notificationElement)
-    @element.appendChild(@timestamp)
-    @element.addEventListener 'click', (e) =>
-      unless e.target.closest('.btn-toolbar a, .btn-toolbar button')?
-        @emitter.emit 'click'
+      this.element = document.createElement('li');
+      this.element.classList.add('notifications-log-item', this.notification.getType());
+      this.element.appendChild(notificationElement);
+      this.element.appendChild(this.timestamp);
+      this.element.addEventListener('click', e => {
+        if (e.target.closest('.btn-toolbar a, .btn-toolbar button') == null) {
+          return this.emitter.emit('click');
+        }
+      });
 
-    @element.getRenderPromise = -> notificationView.getRenderPromise()
-    if @notification.getType() is 'fatal'
-      notificationView.getRenderPromise().then =>
-        @element.replaceChild(@renderNotification(notificationView), notificationElement)
+      this.element.getRenderPromise = () => notificationView.getRenderPromise();
+      if (this.notification.getType() === 'fatal') {
+        notificationView.getRenderPromise().then(() => {
+          return this.element.replaceChild(this.renderNotification(notificationView), notificationElement);
+        });
+      }
 
-    @subscriptions.add new Disposable => @element.remove()
+      return this.subscriptions.add(new Disposable(() => this.element.remove()));
+    }
 
-  renderNotification: (view) ->
-    message = document.createElement('div')
-    message.classList.add('message')
-    message.innerHTML = view.element.querySelector(".content > .message").innerHTML
+    renderNotification(view) {
+      const message = document.createElement('div');
+      message.classList.add('message');
+      message.innerHTML = view.element.querySelector(".content > .message").innerHTML;
 
-    buttons = document.createElement('div')
-    buttons.classList.add('btn-toolbar')
-    nButtons = view.element.querySelector(".content > .meta > .btn-toolbar")
-    if nButtons?
-      for button in nButtons.children
-        logButton = button.cloneNode(true)
-        logButton.originalButton = button
-        logButton.addEventListener 'click', (e) ->
-          newEvent = new MouseEvent('click', e)
-          e.target.originalButton.dispatchEvent(newEvent)
-        for tooltip in atom.tooltips.findTooltips button
-          @subscriptions.add atom.tooltips.add(logButton, tooltip.options)
-        buttons.appendChild(logButton)
+      const buttons = document.createElement('div');
+      buttons.classList.add('btn-toolbar');
+      const nButtons = view.element.querySelector(".content > .meta > .btn-toolbar");
+      if (nButtons != null) {
+        for (let button of Array.from(nButtons.children)) {
+          const logButton = button.cloneNode(true);
+          logButton.originalButton = button;
+          logButton.addEventListener('click', function(e) {
+            const newEvent = new MouseEvent('click', e);
+            return e.target.originalButton.dispatchEvent(newEvent);
+          });
+          for (let tooltip of Array.from(atom.tooltips.findTooltips(button))) {
+            this.subscriptions.add(atom.tooltips.add(logButton, tooltip.options));
+          }
+          buttons.appendChild(logButton);
+        }
+      }
 
-    nElement = document.createElement('div')
-    nElement.classList.add('notifications-log-notification', 'icon', "icon-#{@notification.getIcon()}", @notification.getType())
-    nElement.appendChild(message)
-    nElement.appendChild(buttons)
-    nElement
+      const nElement = document.createElement('div');
+      nElement.classList.add('notifications-log-notification', 'icon', `icon-${this.notification.getIcon()}`, this.notification.getType());
+      nElement.appendChild(message);
+      nElement.appendChild(buttons);
+      return nElement;
+    }
 
-  getElement: -> @element
+    getElement() { return this.element; }
 
-  destroy: ->
-    @subscriptions.dispose()
-    @emitter.emit 'did-destroy'
+    destroy() {
+      this.subscriptions.dispose();
+      return this.emitter.emit('did-destroy');
+    }
 
-  onClick: (callback) ->
-    @emitter.on 'click', callback
+    onClick(callback) {
+      return this.emitter.on('click', callback);
+    }
 
-  onDidDestroy: (callback) ->
-    @emitter.on 'did-destroy', callback
+    onDidDestroy(callback) {
+      return this.emitter.on('did-destroy', callback);
+    }
 
-  updateTimestamp: ->
-    @timestamp.textContent = @notification.moment.fromNow()
+    updateTimestamp() {
+      return this.timestamp.textContent = this.notification.moment.fromNow();
+    }
+  };
+  NotificationsLogItem.initClass();
+  return NotificationsLogItem;
+})());

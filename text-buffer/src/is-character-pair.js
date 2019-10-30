@@ -1,31 +1,30 @@
-module.exports = (character1, character2) ->
-  charCodeA = character1.charCodeAt(0)
-  charCodeB = character2.charCodeAt(0)
-  isSurrogatePair(charCodeA, charCodeB) or
-    isVariationSequence(charCodeA, charCodeB) or
-    isCombinedCharacter(charCodeA, charCodeB)
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = function(character1, character2) {
+  const charCodeA = character1.charCodeAt(0);
+  const charCodeB = character2.charCodeAt(0);
+  return isSurrogatePair(charCodeA, charCodeB) ||
+    isVariationSequence(charCodeA, charCodeB) ||
+    isCombinedCharacter(charCodeA, charCodeB);
+};
 
-isCombinedCharacter = (charCodeA, charCodeB) ->
-  not isCombiningCharacter(charCodeA) and isCombiningCharacter(charCodeB)
+var isCombinedCharacter = (charCodeA, charCodeB) => !isCombiningCharacter(charCodeA) && isCombiningCharacter(charCodeB);
 
-isSurrogatePair = (charCodeA, charCodeB) ->
-  isHighSurrogate(charCodeA) and isLowSurrogate(charCodeB)
+var isSurrogatePair = (charCodeA, charCodeB) => isHighSurrogate(charCodeA) && isLowSurrogate(charCodeB);
 
-isVariationSequence = (charCodeA, charCodeB) ->
-  not isVariationSelector(charCodeA) and isVariationSelector(charCodeB)
+var isVariationSequence = (charCodeA, charCodeB) => !isVariationSelector(charCodeA) && isVariationSelector(charCodeB);
 
-isHighSurrogate = (charCode) ->
-  0xD800 <= charCode <= 0xDBFF
+var isHighSurrogate = charCode => 0xD800 <= charCode && charCode <= 0xDBFF;
 
-isLowSurrogate = (charCode) ->
-  0xDC00 <= charCode <= 0xDFFF
+var isLowSurrogate = charCode => 0xDC00 <= charCode && charCode <= 0xDFFF;
 
-isVariationSelector = (charCode) ->
-  0xFE00 <= charCode <= 0xFE0F
+var isVariationSelector = charCode => 0xFE00 <= charCode && charCode <= 0xFE0F;
 
-isCombiningCharacter = (charCode) ->
-  0x0300 <= charCode <= 0x036F or
-  0x1AB0 <= charCode <= 0x1AFF or
-  0x1DC0 <= charCode <= 0x1DFF or
-  0x20D0 <= charCode <= 0x20FF or
-  0xFE20 <= charCode <= 0xFE2F
+var isCombiningCharacter = charCode => (0x0300 <= charCode && charCode <= 0x036F) ||
+(0x1AB0 <= charCode && charCode <= 0x1AFF) ||
+(0x1DC0 <= charCode && charCode <= 0x1DFF) ||
+(0x20D0 <= charCode && charCode <= 0x20FF) ||
+(0xFE20 <= charCode && charCode <= 0xFE2F);

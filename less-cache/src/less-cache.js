@@ -1,244 +1,314 @@
-crypto = require 'crypto'
-{basename, dirname, extname, join, relative} = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let LessCache;
+const crypto = require('crypto');
+const {basename, dirname, extname, join, relative} = require('path');
 
-_ = require 'underscore-plus'
-fs = require 'fs-plus'
-less = null # Defer until it is actually used
-lessFs = null # Defer until it is actually used
-walkdir = require('walkdir').sync
+const _ = require('underscore-plus');
+const fs = require('fs-plus');
+let less = null; // Defer until it is actually used
+let lessFs = null; // Defer until it is actually used
+const walkdir = require('walkdir').sync;
 
-cacheVersion = 1
+const cacheVersion = 1;
 
 module.exports =
-class LessCache
-  @digestForContent: (content) ->
-    crypto.createHash('SHA1').update(content, 'utf8').digest('hex')
+(LessCache = class LessCache {
+  static digestForContent(content) {
+    return crypto.createHash('SHA1').update(content, 'utf8').digest('hex');
+  }
 
-  # Create a new Less cache with the given options.
-  #
-  # options - An object with following keys
-  #   * cacheDir: A string path to the directory to store cached files in (required)
-  #
-  #   * importPaths: An array of strings to configure the Less parser with (optional)
-  #
-  #   * resourcePath: A string path to use for relativizing paths. This is useful if
-  #                   you want to make caches transferable between directories or
-  #                   machines. (optional)
-  #
-  #   * fallbackDir: A string path to a directory containing a readable cache to read
-  #                  from an entry is not found in this cache (optional)
-  constructor: (params={}) ->
-    {
-      @cacheDir, @importPaths, @resourcePath, @fallbackDir, @syncCaches,
-      @lessSourcesByRelativeFilePath, @importedFilePathsByRelativeImportPath
-    } = params
+  // Create a new Less cache with the given options.
+  //
+  // options - An object with following keys
+  //   * cacheDir: A string path to the directory to store cached files in (required)
+  //
+  //   * importPaths: An array of strings to configure the Less parser with (optional)
+  //
+  //   * resourcePath: A string path to use for relativizing paths. This is useful if
+  //                   you want to make caches transferable between directories or
+  //                   machines. (optional)
+  //
+  //   * fallbackDir: A string path to a directory containing a readable cache to read
+  //                  from an entry is not found in this cache (optional)
+  constructor(params) {
+    if (params == null) { params = {}; }
+    ({
+      cacheDir: this.cacheDir, importPaths: this.importPaths, resourcePath: this.resourcePath, fallbackDir: this.fallbackDir, syncCaches: this.syncCaches,
+      lessSourcesByRelativeFilePath: this.lessSourcesByRelativeFilePath, importedFilePathsByRelativeImportPath: this.importedFilePathsByRelativeImportPath
+    } = params);
 
-    @lessSourcesByRelativeFilePath ?= {}
-    @importedFilePathsByRelativeImportPath ?= {}
-    @importsCacheDir = @cacheDirectoryForImports(@importPaths)
-    if @fallbackDir
-      @importsFallbackDir = join(@fallbackDir, basename(@importsCacheDir))
+    if (this.lessSourcesByRelativeFilePath == null) { this.lessSourcesByRelativeFilePath = {}; }
+    if (this.importedFilePathsByRelativeImportPath == null) { this.importedFilePathsByRelativeImportPath = {}; }
+    this.importsCacheDir = this.cacheDirectoryForImports(this.importPaths);
+    if (this.fallbackDir) {
+      this.importsFallbackDir = join(this.fallbackDir, basename(this.importsCacheDir));
+    }
 
-    try
-      {@importedFiles} = @readJson(join(@importsCacheDir, 'imports.json'))
+    try {
+      ({importedFiles: this.importedFiles} = this.readJson(join(this.importsCacheDir, 'imports.json')));
+    } catch (error) {}
 
-    @setImportPaths(@importPaths)
+    this.setImportPaths(this.importPaths);
 
-    @stats =
-      hits: 0
+    this.stats = {
+      hits: 0,
       misses: 0
+    };
+  }
 
-  cacheDirectoryForImports: (importPaths=[]) ->
-    if @resourcePath
-      importPaths = importPaths.map (importPath) =>
-        @relativize(@resourcePath, importPath)
-    join(@cacheDir, LessCache.digestForContent(importPaths.join('\n')))
+  cacheDirectoryForImports(importPaths) {
+    if (importPaths == null) { importPaths = []; }
+    if (this.resourcePath) {
+      importPaths = importPaths.map(importPath => {
+        return this.relativize(this.resourcePath, importPath);
+      });
+    }
+    return join(this.cacheDir, LessCache.digestForContent(importPaths.join('\n')));
+  }
 
-  getDirectory: -> @cacheDir
+  getDirectory() { return this.cacheDir; }
 
-  getImportPaths: -> _.clone(@importPaths)
+  getImportPaths() { return _.clone(this.importPaths); }
 
-  getImportedFiles: (importPaths) ->
-    importedFiles = []
-    for absoluteImportPath in importPaths
-      importPath = null
-      if @resourcePath?
-        importPath = @relativize(@resourcePath, absoluteImportPath)
-      else
-        importPath = absoluteImportPath
+  getImportedFiles(importPaths) {
+    let importedFiles = [];
+    for (let absoluteImportPath of Array.from(importPaths)) {
+      let importPath = null;
+      if (this.resourcePath != null) {
+        importPath = this.relativize(this.resourcePath, absoluteImportPath);
+      } else {
+        importPath = absoluteImportPath;
+      }
 
-      importedFilePaths = @importedFilePathsByRelativeImportPath[importPath]
-      if importedFilePaths?
-        importedFiles = importedFiles.concat(importedFilePaths)
-      else
-        try
-          walkdir absoluteImportPath, no_return: true, (filePath, stat) =>
-            return unless stat.isFile()
-            if @resourcePath?
-              importedFiles.push(@relativize(@resourcePath, filePath))
-            else
-              importedFiles.push(filePath)
-        catch error
-          continue
+      const importedFilePaths = this.importedFilePathsByRelativeImportPath[importPath];
+      if (importedFilePaths != null) {
+        importedFiles = importedFiles.concat(importedFilePaths);
+      } else {
+        try {
+          walkdir(absoluteImportPath, {no_return: true}, (filePath, stat) => {
+            if (!stat.isFile()) { return; }
+            if (this.resourcePath != null) {
+              return importedFiles.push(this.relativize(this.resourcePath, filePath));
+            } else {
+              return importedFiles.push(filePath);
+            }
+          });
+        } catch (error) {
+          continue;
+        }
+      }
+    }
 
-    importedFiles
+    return importedFiles;
+  }
 
-  setImportPaths: (importPaths=[]) ->
-    importedFiles = @getImportedFiles(importPaths)
+  setImportPaths(importPaths) {
+    if (importPaths == null) { importPaths = []; }
+    const importedFiles = this.getImportedFiles(importPaths);
 
-    pathsChanged = not _.isEqual(@importPaths, importPaths)
-    filesChanged = not _.isEqual(@importedFiles, importedFiles)
-    if pathsChanged
-      @importsCacheDir = @cacheDirectoryForImports(importPaths)
-      if @fallbackDir
-        @importsFallbackDir = join(@fallbackDir, basename(@importsCacheDir))
-    else if filesChanged
-      try
-        fs.removeSync(@importsCacheDir)
-      catch error
-        if error?.code is 'ENOENT'
-          try
-            fs.removeSync(@importsCacheDir) # Retry once
+    const pathsChanged = !_.isEqual(this.importPaths, importPaths);
+    const filesChanged = !_.isEqual(this.importedFiles, importedFiles);
+    if (pathsChanged) {
+      this.importsCacheDir = this.cacheDirectoryForImports(importPaths);
+      if (this.fallbackDir) {
+        this.importsFallbackDir = join(this.fallbackDir, basename(this.importsCacheDir));
+      }
+    } else if (filesChanged) {
+      try {
+        fs.removeSync(this.importsCacheDir);
+      } catch (error) {
+        if ((error != null ? error.code : undefined) === 'ENOENT') {
+          try {
+            fs.removeSync(this.importsCacheDir); // Retry once
+          } catch (error1) {}
+        }
+      }
+    }
 
-    @writeJson(join(@importsCacheDir, 'imports.json'), {importedFiles})
+    this.writeJson(join(this.importsCacheDir, 'imports.json'), {importedFiles});
 
-    @importedFiles = importedFiles
-    @importPaths = importPaths
+    this.importedFiles = importedFiles;
+    return this.importPaths = importPaths;
+  }
 
-  observeImportedFilePaths: (callback) ->
-    importedPaths = []
-    lessFs ?= require 'less/lib/less-node/fs.js'
-    originalFsReadFileSync = lessFs.readFileSync
-    lessFs.readFileSync = (filePath, args...) =>
-      relativeFilePath = @relativize(@resourcePath, filePath) if @resourcePath
-      lessSource = @lessSourcesByRelativeFilePath[relativeFilePath]
-      content = null
-      digest = null
-      if lessSource?
-        content = lessSource.content
-        digest = lessSource.digest
-      else
-        content = originalFsReadFileSync(filePath, args...)
-        digest = LessCache.digestForContent(content)
+  observeImportedFilePaths(callback) {
+    const importedPaths = [];
+    if (lessFs == null) { lessFs = require('less/lib/less-node/fs.js'); }
+    const originalFsReadFileSync = lessFs.readFileSync;
+    lessFs.readFileSync = (filePath, ...args) => {
+      let relativeFilePath;
+      if (this.resourcePath) { relativeFilePath = this.relativize(this.resourcePath, filePath); }
+      const lessSource = this.lessSourcesByRelativeFilePath[relativeFilePath];
+      let content = null;
+      let digest = null;
+      if (lessSource != null) {
+        ({
+          content
+        } = lessSource);
+        ({
+          digest
+        } = lessSource);
+      } else {
+        content = originalFsReadFileSync(filePath, ...Array.from(args));
+        digest = LessCache.digestForContent(content);
+      }
 
-      importedPaths.push({path: relativeFilePath ? filePath, digest: digest})
-      content
+      importedPaths.push({path: relativeFilePath != null ? relativeFilePath : filePath, digest});
+      return content;
+    };
 
-    try
-      callback()
-    finally
-      lessFs.readFileSync = originalFsReadFileSync
+    try {
+      callback();
+    } finally {
+      lessFs.readFileSync = originalFsReadFileSync;
+    }
 
-    importedPaths
+    return importedPaths;
+  }
 
-  readJson: (filePath) -> JSON.parse(fs.readFileSync(filePath))
+  readJson(filePath) { return JSON.parse(fs.readFileSync(filePath)); }
 
-  writeJson: (filePath, object) -> fs.writeFileSync(filePath, JSON.stringify(object))
+  writeJson(filePath, object) { return fs.writeFileSync(filePath, JSON.stringify(object)); }
 
-  digestForPath: (relativeFilePath) ->
-    lessSource = @lessSourcesByRelativeFilePath[relativeFilePath]
-    if lessSource?
-      lessSource.digest
-    else
-      absoluteFilePath = null
-      if @resourcePath and not fs.isAbsolute(relativeFilePath)
-        absoluteFilePath = join(@resourcePath, relativeFilePath)
-      else
-        absoluteFilePath = relativeFilePath
-      LessCache.digestForContent(fs.readFileSync(absoluteFilePath))
+  digestForPath(relativeFilePath) {
+    const lessSource = this.lessSourcesByRelativeFilePath[relativeFilePath];
+    if (lessSource != null) {
+      return lessSource.digest;
+    } else {
+      let absoluteFilePath = null;
+      if (this.resourcePath && !fs.isAbsolute(relativeFilePath)) {
+        absoluteFilePath = join(this.resourcePath, relativeFilePath);
+      } else {
+        absoluteFilePath = relativeFilePath;
+      }
+      return LessCache.digestForContent(fs.readFileSync(absoluteFilePath));
+    }
+  }
 
-  relativize: (from, to) ->
-    relativePath = relative(from, to)
-    if relativePath.indexOf('..') is 0
-      to
-    else
-      relativePath
+  relativize(from, to) {
+    const relativePath = relative(from, to);
+    if (relativePath.indexOf('..') === 0) {
+      return to;
+    } else {
+      return relativePath;
+    }
+  }
 
-  getCachePath: (directory, filePath) ->
-    cacheFile = "#{basename(filePath, extname(filePath))}.json"
-    directoryPath = dirname(filePath)
-    directoryPath = @relativize(@resourcePath, directoryPath) if @resourcePath
-    directoryPath = LessCache.digestForContent(directoryPath) if directoryPath
-    join(directory, 'content', directoryPath, cacheFile)
+  getCachePath(directory, filePath) {
+    const cacheFile = `${basename(filePath, extname(filePath))}.json`;
+    let directoryPath = dirname(filePath);
+    if (this.resourcePath) { directoryPath = this.relativize(this.resourcePath, directoryPath); }
+    if (directoryPath) { directoryPath = LessCache.digestForContent(directoryPath); }
+    return join(directory, 'content', directoryPath, cacheFile);
+  }
 
-  getCachedCss: (filePath, digest) ->
-    try
-      cacheEntry = @readJson(@getCachePath(@importsCacheDir, filePath))
-    catch error
-      if @importsFallbackDir?
-        try
-          cacheEntry = @readJson(@getCachePath(@importsFallbackDir, filePath))
-          fallbackDirUsed = true
+  getCachedCss(filePath, digest) {
+    let cacheEntry, error, fallbackDirUsed;
+    let path;
+    try {
+      cacheEntry = this.readJson(this.getCachePath(this.importsCacheDir, filePath));
+    } catch (error1) {
+      error = error1;
+      if (this.importsFallbackDir != null) {
+        try {
+          cacheEntry = this.readJson(this.getCachePath(this.importsFallbackDir, filePath));
+          fallbackDirUsed = true;
+        } catch (error3) {}
+      }
+    }
 
-    return unless digest is cacheEntry?.digest
+    if (digest !== (cacheEntry != null ? cacheEntry.digest : undefined)) { return; }
 
-    for {path, digest} in cacheEntry.imports
-      try
-        return if @digestForPath(path) isnt digest
-      catch error
-        return
+    for ({path, digest} of Array.from(cacheEntry.imports)) {
+      try {
+        if (this.digestForPath(path) !== digest) { return; }
+      } catch (error2) {
+        error = error2;
+        return;
+      }
+    }
 
-    if @syncCaches
-      if fallbackDirUsed
-        @writeJson(@getCachePath(@importsCacheDir, filePath), cacheEntry)
-      else if @importsFallbackDir?
-        @writeJson(@getCachePath(@importsFallbackDir, filePath), cacheEntry)
+    if (this.syncCaches) {
+      if (fallbackDirUsed) {
+        this.writeJson(this.getCachePath(this.importsCacheDir, filePath), cacheEntry);
+      } else if (this.importsFallbackDir != null) {
+        this.writeJson(this.getCachePath(this.importsFallbackDir, filePath), cacheEntry);
+      }
+    }
 
-    cacheEntry.css
+    return cacheEntry.css;
+  }
 
-  putCachedCss: (filePath, digest, css, imports) ->
-    cacheEntry = {digest, css, imports, version: cacheVersion}
-    @writeJson(@getCachePath(@importsCacheDir, filePath), cacheEntry)
+  putCachedCss(filePath, digest, css, imports) {
+    const cacheEntry = {digest, css, imports, version: cacheVersion};
+    this.writeJson(this.getCachePath(this.importsCacheDir, filePath), cacheEntry);
 
-    if @syncCaches and @importsFallbackDir?
-      @writeJson(@getCachePath(@importsFallbackDir, filePath), cacheEntry)
+    if (this.syncCaches && (this.importsFallbackDir != null)) {
+      return this.writeJson(this.getCachePath(this.importsFallbackDir, filePath), cacheEntry);
+    }
+  }
 
-  parseLess: (filePath, contents) ->
-    css = null
-    options = filename: filePath, syncImport: true, paths: @importPaths
-    less ?= require('less')
-    imports = @observeImportedFilePaths ->
-      less.render contents, options, (error, result) ->
-        if error?
-          throw error
-        else
-          {css} = result
-    {imports, css}
+  parseLess(filePath, contents) {
+    let css = null;
+    const options = {filename: filePath, syncImport: true, paths: this.importPaths};
+    if (less == null) { less = require('less'); }
+    const imports = this.observeImportedFilePaths(() => less.render(contents, options, function(error, result) {
+      if (error != null) {
+        throw error;
+      } else {
+        return ({css} = result);
+      }
+    }));
+    return {imports, css};
+  }
 
-  # Read the Less file at the current path and return either the cached CSS or the newly
-  # compiled CSS. This method caches the compiled CSS after it is generated. This cached
-  # CSS will be returned as long as the Less file and any of its imports are unchanged.
-  #
-  # filePath: A string path to a Less file.
-  #
-  # Returns the compiled CSS for the given path.
-  readFileSync: (absoluteFilePath) ->
-    lessSource = null
-    if @resourcePath and fs.isAbsolute(absoluteFilePath)
-      relativeFilePath = @relativize(@resourcePath, absoluteFilePath)
-      lessSource = @lessSourcesByRelativeFilePath[relativeFilePath]
+  // Read the Less file at the current path and return either the cached CSS or the newly
+  // compiled CSS. This method caches the compiled CSS after it is generated. This cached
+  // CSS will be returned as long as the Less file and any of its imports are unchanged.
+  //
+  // filePath: A string path to a Less file.
+  //
+  // Returns the compiled CSS for the given path.
+  readFileSync(absoluteFilePath) {
+    let lessSource = null;
+    if (this.resourcePath && fs.isAbsolute(absoluteFilePath)) {
+      const relativeFilePath = this.relativize(this.resourcePath, absoluteFilePath);
+      lessSource = this.lessSourcesByRelativeFilePath[relativeFilePath];
+    }
 
-    if lessSource?
-      @cssForFile(absoluteFilePath, lessSource.content, lessSource.digest)
-    else
-      @cssForFile(absoluteFilePath, fs.readFileSync(absoluteFilePath, 'utf8'))
+    if (lessSource != null) {
+      return this.cssForFile(absoluteFilePath, lessSource.content, lessSource.digest);
+    } else {
+      return this.cssForFile(absoluteFilePath, fs.readFileSync(absoluteFilePath, 'utf8'));
+    }
+  }
 
-  # Return either cached CSS or the newly
-  # compiled CSS from `lessContent`. This method caches the compiled CSS after it is generated. This cached
-  # CSS will be returned as long as the Less file and any of its imports are unchanged.
-  #
-  # filePath: A string path to the Less file.
-  # lessContent: The contents of the filePath
-  #
-  # Returns the compiled CSS for the given path and lessContent
-  cssForFile: (filePath, lessContent, digest) ->
-    digest ?= LessCache.digestForContent(lessContent)
-    css = @getCachedCss(filePath, digest)
-    if css?
-      @stats.hits++
-      return css
+  // Return either cached CSS or the newly
+  // compiled CSS from `lessContent`. This method caches the compiled CSS after it is generated. This cached
+  // CSS will be returned as long as the Less file and any of its imports are unchanged.
+  //
+  // filePath: A string path to the Less file.
+  // lessContent: The contents of the filePath
+  //
+  // Returns the compiled CSS for the given path and lessContent
+  cssForFile(filePath, lessContent, digest) {
+    let imports;
+    if (digest == null) { digest = LessCache.digestForContent(lessContent); }
+    let css = this.getCachedCss(filePath, digest);
+    if (css != null) {
+      this.stats.hits++;
+      return css;
+    }
 
-    @stats.misses++
-    {imports, css} = @parseLess(filePath, lessContent)
-    @putCachedCss(filePath, digest, css, imports)
-    css
+    this.stats.misses++;
+    ({imports, css} = this.parseLess(filePath, lessContent));
+    this.putCachedCss(filePath, digest, css, imports);
+    return css;
+  }
+});

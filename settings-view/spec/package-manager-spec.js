@@ -1,357 +1,414 @@
-path = require 'path'
-process = require 'process'
-PackageManager = require '../lib/package-manager'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const process = require('process');
+const PackageManager = require('../lib/package-manager');
 
-describe "PackageManager", ->
-  [packageManager] = []
+describe("PackageManager", function() {
+  let [packageManager] = Array.from([]);
 
-  beforeEach ->
-    spyOn(atom.packages, 'getApmPath').andReturn('/an/invalid/apm/command/to/run')
-    packageManager = new PackageManager()
+  beforeEach(function() {
+    spyOn(atom.packages, 'getApmPath').andReturn('/an/invalid/apm/command/to/run');
+    return packageManager = new PackageManager();
+  });
 
-  it "handle errors spawning apm", ->
-    noSuchCommandError = if process.platform is 'win32' then ' cannot find the path ' else 'ENOENT'
-    waitsForPromise shouldReject: true, -> packageManager.getInstalled()
-    waitsForPromise shouldReject: true, -> packageManager.getOutdated()
-    waitsForPromise shouldReject: true, -> packageManager.getFeatured()
-    waitsForPromise shouldReject: true, -> packageManager.getPackage('foo')
+  it("handle errors spawning apm", function() {
+    const noSuchCommandError = process.platform === 'win32' ? ' cannot find the path ' : 'ENOENT';
+    waitsForPromise({shouldReject: true}, () => packageManager.getInstalled());
+    waitsForPromise({shouldReject: true}, () => packageManager.getOutdated());
+    waitsForPromise({shouldReject: true}, () => packageManager.getFeatured());
+    waitsForPromise({shouldReject: true}, () => packageManager.getPackage('foo'));
 
-    installCallback = jasmine.createSpy('installCallback')
-    uninstallCallback = jasmine.createSpy('uninstallCallback')
-    updateCallback = jasmine.createSpy('updateCallback')
+    const installCallback = jasmine.createSpy('installCallback');
+    const uninstallCallback = jasmine.createSpy('uninstallCallback');
+    const updateCallback = jasmine.createSpy('updateCallback');
 
-    runs ->
-      packageManager.install {name: 'foo', version: '1.0.0'}, installCallback
+    runs(() => packageManager.install({name: 'foo', version: '1.0.0'}, installCallback));
 
-    waitsFor ->
-      installCallback.callCount is 1
+    waitsFor(() => installCallback.callCount === 1);
 
-    runs ->
-      installArg = installCallback.argsForCall[0][0]
-      expect(installArg.message).toBe "Installing \u201Cfoo@1.0.0\u201D failed."
-      expect(installArg.packageInstallError).toBe true
-      expect(installArg.stderr).toContain noSuchCommandError
+    runs(function() {
+      const installArg = installCallback.argsForCall[0][0];
+      expect(installArg.message).toBe("Installing \u201Cfoo@1.0.0\u201D failed.");
+      expect(installArg.packageInstallError).toBe(true);
+      expect(installArg.stderr).toContain(noSuchCommandError);
 
-      packageManager.uninstall {name: 'foo'}, uninstallCallback
+      return packageManager.uninstall({name: 'foo'}, uninstallCallback);
+    });
 
-    waitsFor ->
-      uninstallCallback.callCount is 1
+    waitsFor(() => uninstallCallback.callCount === 1);
 
-    runs ->
-      uninstallArg = uninstallCallback.argsForCall[0][0]
-      expect(uninstallArg.message).toBe "Uninstalling \u201Cfoo\u201D failed."
-      expect(uninstallArg.stderr).toContain noSuchCommandError
+    runs(function() {
+      const uninstallArg = uninstallCallback.argsForCall[0][0];
+      expect(uninstallArg.message).toBe("Uninstalling \u201Cfoo\u201D failed.");
+      expect(uninstallArg.stderr).toContain(noSuchCommandError);
 
-      packageManager.update {name: 'foo'}, '1.0.0', updateCallback
+      return packageManager.update({name: 'foo'}, '1.0.0', updateCallback);
+    });
 
-    waitsFor ->
-      updateCallback.callCount is 1
+    waitsFor(() => updateCallback.callCount === 1);
 
-    runs ->
-      updateArg = updateCallback.argsForCall[0][0]
-      expect(updateArg.message).toBe "Updating to \u201Cfoo@1.0.0\u201D failed."
-      expect(updateArg.packageInstallError).toBe true
-      expect(updateArg.stderr).toContain noSuchCommandError
+    return runs(function() {
+      const updateArg = updateCallback.argsForCall[0][0];
+      expect(updateArg.message).toBe("Updating to \u201Cfoo@1.0.0\u201D failed.");
+      expect(updateArg.packageInstallError).toBe(true);
+      return expect(updateArg.stderr).toContain(noSuchCommandError);
+    });
+  });
 
-  describe "::isPackageInstalled()", ->
-    it "returns false a package is not installed", ->
-      expect(packageManager.isPackageInstalled('some-package')).toBe false
+  describe("::isPackageInstalled()", function() {
+    it("returns false a package is not installed", () => expect(packageManager.isPackageInstalled('some-package')).toBe(false));
 
-    it "returns true when a package is loaded", ->
-      spyOn(atom.packages, 'isPackageLoaded').andReturn true
-      expect(packageManager.isPackageInstalled('some-package')).toBe true
+    it("returns true when a package is loaded", function() {
+      spyOn(atom.packages, 'isPackageLoaded').andReturn(true);
+      return expect(packageManager.isPackageInstalled('some-package')).toBe(true);
+    });
 
-    it "returns true when a package is disabled", ->
-      spyOn(atom.packages, 'getAvailablePackageNames').andReturn ['some-package']
-      expect(packageManager.isPackageInstalled('some-package')).toBe true
+    return it("returns true when a package is disabled", function() {
+      spyOn(atom.packages, 'getAvailablePackageNames').andReturn(['some-package']);
+      return expect(packageManager.isPackageInstalled('some-package')).toBe(true);
+    });
+  });
 
-  describe "::install()", ->
-    [runArgs, runCallback] = []
+  describe("::install()", function() {
+    let [runArgs, runCallback] = Array.from([]);
 
-    beforeEach ->
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        runArgs = args
-        runCallback = callback
-        onWillThrowError: ->
+    beforeEach(() => spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+      runArgs = args;
+      runCallback = callback;
+      return {onWillThrowError() {}};
+    }));
 
-    it "installs the latest version when a package version is not specified", ->
-      packageManager.install {name: 'something'}, ->
-      expect(packageManager.runCommand).toHaveBeenCalled()
-      expect(runArgs).toEqual ['install', 'something', '--json']
+    it("installs the latest version when a package version is not specified", function() {
+      packageManager.install({name: 'something'}, function() {});
+      expect(packageManager.runCommand).toHaveBeenCalled();
+      return expect(runArgs).toEqual(['install', 'something', '--json']);
+  });
 
-    it "installs the package@version when a version is specified", ->
-      packageManager.install {name: 'something', version: '0.2.3'}, ->
-      expect(packageManager.runCommand).toHaveBeenCalled()
-      expect(runArgs).toEqual ['install', 'something@0.2.3', '--json']
+    it("installs the package@version when a version is specified", function() {
+      packageManager.install({name: 'something', version: '0.2.3'}, function() {});
+      expect(packageManager.runCommand).toHaveBeenCalled();
+      return expect(runArgs).toEqual(['install', 'something@0.2.3', '--json']);
+  });
 
-    describe "git url installation", ->
-      it 'installs https:// urls', ->
-        url = "https://github.com/user/repo.git"
-        packageManager.install {name: url}
-        expect(packageManager.runCommand).toHaveBeenCalled()
-        expect(runArgs).toEqual ['install', 'https://github.com/user/repo.git', '--json']
+    return describe("git url installation", function() {
+      it('installs https:// urls', function() {
+        const url = "https://github.com/user/repo.git";
+        packageManager.install({name: url});
+        expect(packageManager.runCommand).toHaveBeenCalled();
+        return expect(runArgs).toEqual(['install', 'https://github.com/user/repo.git', '--json']);
+    });
 
-      it 'installs git@ urls', ->
-        url = "git@github.com:user/repo.git"
-        packageManager.install {name: url}
-        expect(packageManager.runCommand).toHaveBeenCalled()
-        expect(runArgs).toEqual ['install', 'git@github.com:user/repo.git', '--json']
+      it('installs git@ urls', function() {
+        const url = "git@github.com:user/repo.git";
+        packageManager.install({name: url});
+        expect(packageManager.runCommand).toHaveBeenCalled();
+        return expect(runArgs).toEqual(['install', 'git@github.com:user/repo.git', '--json']);
+    });
 
-      it 'installs user/repo url shortcuts', ->
-        url = "user/repo"
-        packageManager.install {name: url}
-        expect(packageManager.runCommand).toHaveBeenCalled()
-        expect(runArgs).toEqual ['install', 'user/repo', '--json']
+      it('installs user/repo url shortcuts', function() {
+        const url = "user/repo";
+        packageManager.install({name: url});
+        expect(packageManager.runCommand).toHaveBeenCalled();
+        return expect(runArgs).toEqual(['install', 'user/repo', '--json']);
+    });
 
-      it 'installs and activates git pacakges with names different from the repo name', ->
-        spyOn(atom.packages, 'activatePackage')
-        packageManager.install(name: 'git-repo-name')
-        json =
-          metadata:
+      it('installs and activates git pacakges with names different from the repo name', function() {
+        spyOn(atom.packages, 'activatePackage');
+        packageManager.install({name: 'git-repo-name'});
+        const json = {
+          metadata: {
             name: 'real-package-name'
-        runCallback(0, JSON.stringify([json]), '')
-        expect(atom.packages.activatePackage).toHaveBeenCalledWith json.metadata.name
+          }
+        };
+        runCallback(0, JSON.stringify([json]), '');
+        return expect(atom.packages.activatePackage).toHaveBeenCalledWith(json.metadata.name);
+      });
 
-      it 'emits an installed event with a copy of the pack including the full package metadata', ->
-        spyOn(packageManager, 'emitPackageEvent')
-        originalPackObject = name: 'git-repo-name', otherData: {will: 'beCopied'}
-        packageManager.install(originalPackObject)
-        json =
-          metadata:
-            name: 'real-package-name'
+      return it('emits an installed event with a copy of the pack including the full package metadata', function() {
+        spyOn(packageManager, 'emitPackageEvent');
+        const originalPackObject = {name: 'git-repo-name', otherData: {will: 'beCopied'}};
+        packageManager.install(originalPackObject);
+        const json = {
+          metadata: {
+            name: 'real-package-name',
             moreInfo: 'yep'
-        runCallback(0, JSON.stringify([json]), '')
+          }
+        };
+        runCallback(0, JSON.stringify([json]), '');
 
-        installEmittedCount = 0
-        for call in packageManager.emitPackageEvent.calls
-          if call.args[0] is "installed"
-            expect(call.args[1]).not.toEqual originalPackObject
-            expect(call.args[1].moreInfo).toEqual "yep"
-            expect(call.args[1].otherData).toBe originalPackObject.otherData
-            installEmittedCount++
-        expect(installEmittedCount).toBe 1
+        let installEmittedCount = 0;
+        for (let call of Array.from(packageManager.emitPackageEvent.calls)) {
+          if (call.args[0] === "installed") {
+            expect(call.args[1]).not.toEqual(originalPackObject);
+            expect(call.args[1].moreInfo).toEqual("yep");
+            expect(call.args[1].otherData).toBe(originalPackObject.otherData);
+            installEmittedCount++;
+          }
+        }
+        return expect(installEmittedCount).toBe(1);
+      });
+    });
+  });
 
-  describe "::uninstall()", ->
-    [runCallback] = []
+  describe("::uninstall()", function() {
+    let [runCallback] = Array.from([]);
 
-    beforeEach ->
-      spyOn(packageManager, 'unload')
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        runCallback = callback
-        onWillThrowError: ->
+    beforeEach(function() {
+      spyOn(packageManager, 'unload');
+      return spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+        runCallback = callback;
+        return {onWillThrowError() {}};
+      });
+    });
 
-    it "removes the package from the core.disabledPackages list", ->
-      atom.config.set('core.disabledPackages', ['something'])
+    return it("removes the package from the core.disabledPackages list", function() {
+      atom.config.set('core.disabledPackages', ['something']);
 
-      packageManager.uninstall {name: 'something'}, ->
+      packageManager.uninstall({name: 'something'}, function() {});
 
-      expect(atom.config.get('core.disabledPackages')).toContain('something')
-      runCallback(0, '', '')
-      expect(atom.config.get('core.disabledPackages')).not.toContain('something')
+      expect(atom.config.get('core.disabledPackages')).toContain('something');
+      runCallback(0, '', '');
+      return expect(atom.config.get('core.disabledPackages')).not.toContain('something');
+    });
+  });
 
-  describe "::installAlternative", ->
-    beforeEach ->
-      spyOn(atom.packages, 'activatePackage')
-      spyOn(packageManager, 'runCommand').andCallFake ->
-        onWillThrowError: ->
-      atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'language-test'))
-      waitsFor ->
-        atom.packages.isPackageLoaded('language-test') is true
+  describe("::installAlternative", function() {
+    beforeEach(function() {
+      spyOn(atom.packages, 'activatePackage');
+      spyOn(packageManager, 'runCommand').andCallFake(() => ({
+        onWillThrowError() {}
+      }));
+      atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'language-test'));
+      return waitsFor(() => atom.packages.isPackageLoaded('language-test') === true);
+    });
 
-    it "installs the latest version when a package version is not specified", ->
-      installedCallback = jasmine.createSpy()
-      installingEvent = jasmine.createSpy()
-      installedEvent = jasmine.createSpy()
+    return it("installs the latest version when a package version is not specified", function() {
+      const installedCallback = jasmine.createSpy();
+      const installingEvent = jasmine.createSpy();
+      const installedEvent = jasmine.createSpy();
 
-      eventArg =
-        alternative: 'a-new-package'
-        pack:
+      const eventArg = {
+        alternative: 'a-new-package',
+        pack: {
           name: 'language-test'
+        }
+      };
 
-      packageManager.on 'package-installing-alternative', installingEvent
-      packageManager.on 'package-installed-alternative', installedEvent
+      packageManager.on('package-installing-alternative', installingEvent);
+      packageManager.on('package-installed-alternative', installedEvent);
 
-      packageManager.installAlternative({name: 'language-test'}, 'a-new-package', installedCallback)
-      expect(packageManager.runCommand).toHaveBeenCalled()
-      expect(packageManager.runCommand.calls[0].args[0]).toEqual(['uninstall', '--hard', 'language-test'])
-      expect(packageManager.runCommand.calls[1].args[0]).toEqual(['install', 'a-new-package', '--json'])
-      expect(atom.packages.isPackageLoaded('language-test')).toBe true
+      packageManager.installAlternative({name: 'language-test'}, 'a-new-package', installedCallback);
+      expect(packageManager.runCommand).toHaveBeenCalled();
+      expect(packageManager.runCommand.calls[0].args[0]).toEqual(['uninstall', '--hard', 'language-test']);
+      expect(packageManager.runCommand.calls[1].args[0]).toEqual(['install', 'a-new-package', '--json']);
+      expect(atom.packages.isPackageLoaded('language-test')).toBe(true);
 
-      expect(installedEvent).not.toHaveBeenCalled()
-      expect(installingEvent).toHaveBeenCalled()
-      expect(installingEvent.mostRecentCall.args[0]).toEqual eventArg
+      expect(installedEvent).not.toHaveBeenCalled();
+      expect(installingEvent).toHaveBeenCalled();
+      expect(installingEvent.mostRecentCall.args[0]).toEqual(eventArg);
 
-      packageManager.runCommand.calls[0].args[1](0, '', '')
+      packageManager.runCommand.calls[0].args[1](0, '', '');
 
-      waits 1
-      runs ->
-        expect(atom.packages.activatePackage).not.toHaveBeenCalled()
-        expect(atom.packages.isPackageLoaded('language-test')).toBe false
+      waits(1);
+      runs(function() {
+        expect(atom.packages.activatePackage).not.toHaveBeenCalled();
+        expect(atom.packages.isPackageLoaded('language-test')).toBe(false);
 
-        packageManager.runCommand.calls[1].args[1](0, '', '')
+        return packageManager.runCommand.calls[1].args[1](0, '', '');
+      });
 
-      waits 1
-      runs ->
-        expect(atom.packages.activatePackage).toHaveBeenCalledWith 'a-new-package'
-        expect(atom.packages.isPackageLoaded('language-test')).toBe false
+      waits(1);
+      return runs(function() {
+        expect(atom.packages.activatePackage).toHaveBeenCalledWith('a-new-package');
+        expect(atom.packages.isPackageLoaded('language-test')).toBe(false);
 
-        expect(installedEvent).toHaveBeenCalled()
-        expect(installedEvent.mostRecentCall.args[0]).toEqual eventArg
+        expect(installedEvent).toHaveBeenCalled();
+        expect(installedEvent.mostRecentCall.args[0]).toEqual(eventArg);
 
-        expect(installedCallback).toHaveBeenCalled()
-        expect(installedCallback.mostRecentCall.args[0]).toEqual null
-        expect(installedCallback.mostRecentCall.args[1]).toEqual eventArg
+        expect(installedCallback).toHaveBeenCalled();
+        expect(installedCallback.mostRecentCall.args[0]).toEqual(null);
+        return expect(installedCallback.mostRecentCall.args[1]).toEqual(eventArg);
+      });
+    });
+  });
 
-  describe "::packageHasSettings", ->
-    it "returns true when the pacakge has config", ->
-      atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'package-with-config'))
-      expect(packageManager.packageHasSettings('package-with-config')).toBe true
+  describe("::packageHasSettings", function() {
+    it("returns true when the pacakge has config", function() {
+      atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'package-with-config'));
+      return expect(packageManager.packageHasSettings('package-with-config')).toBe(true);
+    });
 
-    it "returns false when the pacakge does not have config and doesn't define language grammars", ->
-      expect(packageManager.packageHasSettings('random-package')).toBe false
+    it("returns false when the pacakge does not have config and doesn't define language grammars", () => expect(packageManager.packageHasSettings('random-package')).toBe(false));
 
-    it "returns true when the pacakge does not have config, but does define language grammars", ->
-      packageName = 'language-test'
+    return it("returns true when the pacakge does not have config, but does define language grammars", function() {
+      const packageName = 'language-test';
 
-      waitsForPromise ->
-        atom.packages.activatePackage(path.join(__dirname, 'fixtures', packageName))
+      waitsForPromise(() => atom.packages.activatePackage(path.join(__dirname, 'fixtures', packageName)));
 
-      runs ->
-        expect(packageManager.packageHasSettings(packageName)).toBe true
+      return runs(() => expect(packageManager.packageHasSettings(packageName)).toBe(true));
+    });
+  });
 
-  describe "::loadOutdated", ->
-    it "caches results", ->
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        callback(0, '[{"name": "boop"}]', '')
-        onWillThrowError: ->
+  return describe("::loadOutdated", function() {
+    it("caches results", function() {
+      spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+        callback(0, '[{"name": "boop"}]', '');
+        return {onWillThrowError() {}};
+      });
 
-      packageManager.loadOutdated false, ->
-      expect(packageManager.apmCache.loadOutdated.value).toMatch([{"name": "boop"}])
+      packageManager.loadOutdated(false, function() {});
+      expect(packageManager.apmCache.loadOutdated.value).toMatch([{"name": "boop"}]);
 
-      packageManager.loadOutdated false, ->
-      expect(packageManager.runCommand.calls.length).toBe(1)
+      packageManager.loadOutdated(false, function() {});
+      return expect(packageManager.runCommand.calls.length).toBe(1);
+    });
 
-    it "expires results after a timeout", ->
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        callback(0, '[{"name": "boop"}]', '')
-        onWillThrowError: ->
+    it("expires results after a timeout", function() {
+      spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+        callback(0, '[{"name": "boop"}]', '');
+        return {onWillThrowError() {}};
+      });
 
-      packageManager.loadOutdated false, ->
-      now = Date.now()
-      spyOn(Date, 'now') unless Date.now.andReturn
-      Date.now.andReturn((-> now + packageManager.CACHE_EXPIRY + 1)())
-      packageManager.loadOutdated false, ->
+      packageManager.loadOutdated(false, function() {});
+      const now = Date.now();
+      if (!Date.now.andReturn) { spyOn(Date, 'now'); }
+      Date.now.andReturn(((() => now + packageManager.CACHE_EXPIRY + 1))());
+      packageManager.loadOutdated(false, function() {});
 
-      expect(packageManager.runCommand.calls.length).toBe(2)
+      return expect(packageManager.runCommand.calls.length).toBe(2);
+    });
 
-    it "expires results after a package updated/installed", ->
-      packageManager.apmCache.loadOutdated =
-        value: ['hi']
+    it("expires results after a package updated/installed", function() {
+      packageManager.apmCache.loadOutdated = {
+        value: ['hi'],
         expiry: Date.now() + 999999999
+      };
 
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        callback(0, '[{"name": "boop"}]', '')
-        onWillThrowError: ->
+      spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+        callback(0, '[{"name": "boop"}]', '');
+        return {onWillThrowError() {}};
+      });
 
-      # Just prevent this stuff from calling through, it doesn't matter for this test
-      spyOn(atom.packages, 'deactivatePackage').andReturn(true)
-      spyOn(atom.packages, 'activatePackage').andReturn(true)
-      spyOn(atom.packages, 'unloadPackage').andReturn(true)
-      spyOn(atom.packages, 'loadPackage').andReturn(true)
+      // Just prevent this stuff from calling through, it doesn't matter for this test
+      spyOn(atom.packages, 'deactivatePackage').andReturn(true);
+      spyOn(atom.packages, 'activatePackage').andReturn(true);
+      spyOn(atom.packages, 'unloadPackage').andReturn(true);
+      spyOn(atom.packages, 'loadPackage').andReturn(true);
 
-      packageManager.loadOutdated false, ->
-      expect(packageManager.runCommand.calls.length).toBe(0)
+      packageManager.loadOutdated(false, function() {});
+      expect(packageManager.runCommand.calls.length).toBe(0);
 
-      packageManager.update {}, {}, -> # +1 runCommand call to update the package
-      packageManager.loadOutdated false, -> # +1 runCommand call to load outdated because the cache should be wiped
-      expect(packageManager.runCommand.calls.length).toBe(2)
+      packageManager.update({}, {}, function() {}); // +1 runCommand call to update the package
+      packageManager.loadOutdated(false, function() {}); // +1 runCommand call to load outdated because the cache should be wiped
+      expect(packageManager.runCommand.calls.length).toBe(2);
 
-      packageManager.install {}, -> # +1 runCommand call to install the package
-      packageManager.loadOutdated false, -> # +1 runCommand call to load outdated because the cache should be wiped
-      expect(packageManager.runCommand.calls.length).toBe(4)
+      packageManager.install({}, function() {}); // +1 runCommand call to install the package
+      packageManager.loadOutdated(false, function() {}); // +1 runCommand call to load outdated because the cache should be wiped
+      expect(packageManager.runCommand.calls.length).toBe(4);
 
-      packageManager.loadOutdated false, -> # +0 runCommand call, should be cached
-      expect(packageManager.runCommand.calls.length).toBe(4)
+      packageManager.loadOutdated(false, function() {}); // +0 runCommand call, should be cached
+      return expect(packageManager.runCommand.calls.length).toBe(4);
+    });
 
-    it "expires results if it is called with clearCache set to true", ->
-      packageManager.apmCache.loadOutdated =
-        value: ['hi']
+    it("expires results if it is called with clearCache set to true", function() {
+      packageManager.apmCache.loadOutdated = {
+        value: ['hi'],
         expiry: Date.now() + 999999999
+      };
 
-      spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-        callback(0, '[{"name": "boop"}]', '')
-        onWillThrowError: ->
+      spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+        callback(0, '[{"name": "boop"}]', '');
+        return {onWillThrowError() {}};
+      });
 
-      packageManager.loadOutdated true, ->
-      expect(packageManager.runCommand.calls.length).toBe(1)
-      expect(packageManager.apmCache.loadOutdated.value).toEqual [{"name": "boop"}]
+      packageManager.loadOutdated(true, function() {});
+      expect(packageManager.runCommand.calls.length).toBe(1);
+      return expect(packageManager.apmCache.loadOutdated.value).toEqual([{"name": "boop"}]);
+  });
 
-    describe "when there is a version pinned package", ->
-      beforeEach ->
-        atom.config.set('core.versionPinnedPackages', ['beep'])
+    return describe("when there is a version pinned package", function() {
+      beforeEach(() => atom.config.set('core.versionPinnedPackages', ['beep']));
 
-      it "caches results", ->
-        spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '')
-          onWillThrowError: ->
+      it("caches results", function() {
+        spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '');
+          return {onWillThrowError() {}};
+        });
 
-        packageManager.loadOutdated false, ->
-        expect(packageManager.apmCache.loadOutdated.value).toMatch([{"name": "boop"}])
+        packageManager.loadOutdated(false, function() {});
+        expect(packageManager.apmCache.loadOutdated.value).toMatch([{"name": "boop"}]);
 
-        packageManager.loadOutdated false, ->
-        expect(packageManager.runCommand.calls.length).toBe(1)
+        packageManager.loadOutdated(false, function() {});
+        return expect(packageManager.runCommand.calls.length).toBe(1);
+      });
 
-      it "expires results after a timeout", ->
-        spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '')
-          onWillThrowError: ->
+      it("expires results after a timeout", function() {
+        spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '');
+          return {onWillThrowError() {}};
+        });
 
-        packageManager.loadOutdated false, ->
-        now = Date.now()
-        spyOn(Date, 'now') unless Date.now.andReturn
-        Date.now.andReturn((-> now + packageManager.CACHE_EXPIRY + 1)())
-        packageManager.loadOutdated false, ->
+        packageManager.loadOutdated(false, function() {});
+        const now = Date.now();
+        if (!Date.now.andReturn) { spyOn(Date, 'now'); }
+        Date.now.andReturn(((() => now + packageManager.CACHE_EXPIRY + 1))());
+        packageManager.loadOutdated(false, function() {});
 
-        expect(packageManager.runCommand.calls.length).toBe(2)
+        return expect(packageManager.runCommand.calls.length).toBe(2);
+      });
 
-      it "expires results after a package updated/installed", ->
-        packageManager.apmCache.loadOutdated =
-          value: ['hi']
+      it("expires results after a package updated/installed", function() {
+        packageManager.apmCache.loadOutdated = {
+          value: ['hi'],
           expiry: Date.now() + 999999999
+        };
 
-        spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '')
-          onWillThrowError: ->
+        spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '');
+          return {onWillThrowError() {}};
+        });
 
-        # Just prevent this stuff from calling through, it doesn't matter for this test
-        spyOn(atom.packages, 'deactivatePackage').andReturn(true)
-        spyOn(atom.packages, 'activatePackage').andReturn(true)
-        spyOn(atom.packages, 'unloadPackage').andReturn(true)
-        spyOn(atom.packages, 'loadPackage').andReturn(true)
+        // Just prevent this stuff from calling through, it doesn't matter for this test
+        spyOn(atom.packages, 'deactivatePackage').andReturn(true);
+        spyOn(atom.packages, 'activatePackage').andReturn(true);
+        spyOn(atom.packages, 'unloadPackage').andReturn(true);
+        spyOn(atom.packages, 'loadPackage').andReturn(true);
 
-        packageManager.loadOutdated false, ->
-        expect(packageManager.runCommand.calls.length).toBe(0)
+        packageManager.loadOutdated(false, function() {});
+        expect(packageManager.runCommand.calls.length).toBe(0);
 
-        packageManager.update {}, {}, -> # +1 runCommand call to update the package
-        packageManager.loadOutdated false, -> # +1 runCommand call to load outdated because the cache should be wiped
-        expect(packageManager.runCommand.calls.length).toBe(2)
+        packageManager.update({}, {}, function() {}); // +1 runCommand call to update the package
+        packageManager.loadOutdated(false, function() {}); // +1 runCommand call to load outdated because the cache should be wiped
+        expect(packageManager.runCommand.calls.length).toBe(2);
 
-        packageManager.install {}, -> # +1 runCommand call to install the package
-        packageManager.loadOutdated false, -> # +1 runCommand call to load outdated because the cache should be wiped
-        expect(packageManager.runCommand.calls.length).toBe(4)
+        packageManager.install({}, function() {}); // +1 runCommand call to install the package
+        packageManager.loadOutdated(false, function() {}); // +1 runCommand call to load outdated because the cache should be wiped
+        expect(packageManager.runCommand.calls.length).toBe(4);
 
-        packageManager.loadOutdated false, -> # +0 runCommand call, should be cached
-        expect(packageManager.runCommand.calls.length).toBe(4)
+        packageManager.loadOutdated(false, function() {}); // +0 runCommand call, should be cached
+        return expect(packageManager.runCommand.calls.length).toBe(4);
+      });
 
-      it "expires results if it is called with clearCache set to true", ->
-        packageManager.apmCache.loadOutdated =
-          value: ['hi']
+      return it("expires results if it is called with clearCache set to true", function() {
+        packageManager.apmCache.loadOutdated = {
+          value: ['hi'],
           expiry: Date.now() + 999999999
+        };
 
-        spyOn(packageManager, 'runCommand').andCallFake (args, callback) ->
-          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '')
-          onWillThrowError: ->
+        spyOn(packageManager, 'runCommand').andCallFake(function(args, callback) {
+          callback(0, '[{"name": "boop"}, {"name": "beep"}]', '');
+          return {onWillThrowError() {}};
+        });
 
-        packageManager.loadOutdated true, ->
-        expect(packageManager.runCommand.calls.length).toBe(1)
-        expect(packageManager.apmCache.loadOutdated.value).toEqual [{"name": "boop"}]
+        packageManager.loadOutdated(true, function() {});
+        expect(packageManager.runCommand.calls.length).toBe(1);
+        return expect(packageManager.apmCache.loadOutdated.value).toEqual([{"name": "boop"}]);
+    });
+  });
+});
+});

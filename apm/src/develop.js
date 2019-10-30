@@ -1,108 +1,150 @@
-fs = require 'fs'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Develop;
+const fs = require('fs');
+const path = require('path');
 
-_ = require 'underscore-plus'
-async = require 'async'
-yargs = require 'yargs'
+const _ = require('underscore-plus');
+const async = require('async');
+const yargs = require('yargs');
 
-config = require './apm'
-Command = require './command'
-Install = require './install'
-git = require './git'
-Link = require './link'
-request = require './request'
+const config = require('./apm');
+const Command = require('./command');
+const Install = require('./install');
+const git = require('./git');
+const Link = require('./link');
+const request = require('./request');
 
 module.exports =
-class Develop extends Command
-  @commandNames: ['dev', 'develop']
+(Develop = (function() {
+  Develop = class Develop extends Command {
+    static initClass() {
+      this.commandNames = ['dev', 'develop'];
+    }
 
-  constructor: ->
-    super()
-    @atomDirectory = config.getAtomDirectory()
-    @atomDevPackagesDirectory = path.join(@atomDirectory, 'dev', 'packages')
+    constructor() {
+      super();
+      this.atomDirectory = config.getAtomDirectory();
+      this.atomDevPackagesDirectory = path.join(this.atomDirectory, 'dev', 'packages');
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
 
-    options.usage """
-      Usage: apm develop <package_name> [<directory>]
+      options.usage(`\
+Usage: apm develop <package_name> [<directory>]
 
-      Clone the given package's Git repository to the directory specified,
-      install its dependencies, and link it for development to
-      ~/.atom/dev/packages/<package_name>.
+Clone the given package's Git repository to the directory specified,
+install its dependencies, and link it for development to
+~/.atom/dev/packages/<package_name>.
 
-      If no directory is specified then the repository is cloned to
-      ~/github/<package_name>. The default folder to clone packages into can
-      be overridden using the ATOM_REPOS_HOME environment variable.
+If no directory is specified then the repository is cloned to
+~/github/<package_name>. The default folder to clone packages into can
+be overridden using the ATOM_REPOS_HOME environment variable.
 
-      Once this command completes you can open a dev window from atom using
-      cmd-shift-o to run the package out of the newly cloned repository.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
+Once this command completes you can open a dev window from atom using
+cmd-shift-o to run the package out of the newly cloned repository.\
+`
+      );
+      return options.alias('h', 'help').describe('help', 'Print this usage message');
+    }
 
-  getRepositoryUrl: (packageName, callback) ->
-    requestSettings =
-      url: "#{config.getAtomPackagesUrl()}/#{packageName}"
-      json: true
-    request.get requestSettings, (error, response, body={}) ->
-      if error?
-        callback("Request for package information failed: #{error.message}")
-      else if response.statusCode is 200
-        if repositoryUrl = body.repository.url
-          callback(null, repositoryUrl)
-        else
-          callback("No repository URL found for package: #{packageName}")
-      else
-        message = request.getErrorMessage(response, body)
-        callback("Request for package information failed: #{message}")
+    getRepositoryUrl(packageName, callback) {
+      const requestSettings = {
+        url: `${config.getAtomPackagesUrl()}/${packageName}`,
+        json: true
+      };
+      return request.get(requestSettings, function(error, response, body) {
+        if (body == null) { body = {}; }
+        if (error != null) {
+          return callback(`Request for package information failed: ${error.message}`);
+        } else if (response.statusCode === 200) {
+          let repositoryUrl;
+          if ((repositoryUrl = body.repository.url)) {
+            return callback(null, repositoryUrl);
+          } else {
+            return callback(`No repository URL found for package: ${packageName}`);
+          }
+        } else {
+          const message = request.getErrorMessage(response, body);
+          return callback(`Request for package information failed: ${message}`);
+        }
+      });
+    }
 
-  cloneRepository: (repoUrl, packageDirectory, options, callback = ->) ->
-    config.getSetting 'git', (command) =>
-      command ?= 'git'
-      args = ['clone', '--recursive', repoUrl, packageDirectory]
-      process.stdout.write "Cloning #{repoUrl} " unless options.argv.json
-      git.addGitToEnv(process.env)
-      @spawn command, args, (args...) =>
-        if options.argv.json
-          @logCommandResultsIfFail(callback, args...)
-        else
-          @logCommandResults(callback, args...)
+    cloneRepository(repoUrl, packageDirectory, options, callback) {
+      if (callback == null) { callback = function() {}; }
+      return config.getSetting('git', command => {
+        if (command == null) { command = 'git'; }
+        const args = ['clone', '--recursive', repoUrl, packageDirectory];
+        if (!options.argv.json) { process.stdout.write(`Cloning ${repoUrl} `); }
+        git.addGitToEnv(process.env);
+        return this.spawn(command, args, (...args) => {
+          if (options.argv.json) {
+            return this.logCommandResultsIfFail(callback, ...Array.from(args));
+          } else {
+            return this.logCommandResults(callback, ...Array.from(args));
+          }
+        });
+      });
+    }
 
-  installDependencies: (packageDirectory, options, callback = ->) ->
-    process.chdir(packageDirectory)
-    installOptions = _.clone(options)
-    installOptions.callback = callback
+    installDependencies(packageDirectory, options, callback) {
+      if (callback == null) { callback = function() {}; }
+      process.chdir(packageDirectory);
+      const installOptions = _.clone(options);
+      installOptions.callback = callback;
 
-    new Install().run(installOptions)
+      return new Install().run(installOptions);
+    }
 
-  linkPackage: (packageDirectory, options, callback) ->
-    linkOptions = _.clone(options)
-    if callback
-      linkOptions.callback = callback
-    linkOptions.commandArgs = [packageDirectory, '--dev']
-    new Link().run(linkOptions)
+    linkPackage(packageDirectory, options, callback) {
+      const linkOptions = _.clone(options);
+      if (callback) {
+        linkOptions.callback = callback;
+      }
+      linkOptions.commandArgs = [packageDirectory, '--dev'];
+      return new Link().run(linkOptions);
+    }
 
-  run: (options) ->
-    packageName = options.commandArgs.shift()
+    run(options) {
+      let left;
+      const packageName = options.commandArgs.shift();
 
-    unless packageName?.length > 0
-      return options.callback("Missing required package name")
+      if (!((packageName != null ? packageName.length : undefined) > 0)) {
+        return options.callback("Missing required package name");
+      }
 
-    packageDirectory = options.commandArgs.shift() ? path.join(config.getReposDirectory(), packageName)
-    packageDirectory = path.resolve(packageDirectory)
+      let packageDirectory = (left = options.commandArgs.shift()) != null ? left : path.join(config.getReposDirectory(), packageName);
+      packageDirectory = path.resolve(packageDirectory);
 
-    if fs.existsSync(packageDirectory)
-      @linkPackage(packageDirectory, options)
-    else
-      @getRepositoryUrl packageName, (error, repoUrl) =>
-        if error?
-          options.callback(error)
-        else
-          tasks = []
-          tasks.push (callback) => @cloneRepository repoUrl, packageDirectory, options, callback
+      if (fs.existsSync(packageDirectory)) {
+        return this.linkPackage(packageDirectory, options);
+      } else {
+        return this.getRepositoryUrl(packageName, (error, repoUrl) => {
+          if (error != null) {
+            return options.callback(error);
+          } else {
+            const tasks = [];
+            tasks.push(callback => this.cloneRepository(repoUrl, packageDirectory, options, callback));
 
-          tasks.push (callback) => @installDependencies packageDirectory, options, callback
+            tasks.push(callback => this.installDependencies(packageDirectory, options, callback));
 
-          tasks.push (callback) => @linkPackage packageDirectory, options, callback
+            tasks.push(callback => this.linkPackage(packageDirectory, options, callback));
 
-          async.waterfall tasks, options.callback
+            return async.waterfall(tasks, options.callback);
+          }
+        });
+      }
+    }
+  };
+  Develop.initClass();
+  return Develop;
+})());

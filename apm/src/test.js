@@ -1,65 +1,91 @@
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Test;
+const path = require('path');
 
-yargs = require 'yargs'
-temp = require 'temp'
+const yargs = require('yargs');
+const temp = require('temp');
 
-Command = require './command'
-fs = require './fs'
+const Command = require('./command');
+const fs = require('./fs');
 
 module.exports =
-class Test extends Command
-  @commandNames: ['test']
+(Test = (function() {
+  Test = class Test extends Command {
+    static initClass() {
+      this.commandNames = ['test'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
 
-    options.usage """
-      Usage:
-        apm test
+      options.usage(`\
+Usage:
+  apm test
 
-      Runs the package's tests contained within the spec directory (relative
-      to the current working directory).
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.alias('p', 'path').string('path').describe('path', 'Path to atom command')
+Runs the package's tests contained within the spec directory (relative
+to the current working directory).\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      return options.alias('p', 'path').string('path').describe('path', 'Path to atom command');
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
-    {env} = process
+    run(options) {
+      let atomCommand;
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
+      const {env} = process;
 
-    atomCommand = options.argv.path if options.argv.path
-    unless fs.existsSync(atomCommand)
-      atomCommand = 'atom'
-      atomCommand += '.cmd' if process.platform is 'win32'
+      if (options.argv.path) { atomCommand = options.argv.path; }
+      if (!fs.existsSync(atomCommand)) {
+        atomCommand = 'atom';
+        if (process.platform === 'win32') { atomCommand += '.cmd'; }
+      }
 
-    packagePath = process.cwd()
-    testArgs = ['--dev', '--test', path.join(packagePath, 'spec')]
+      const packagePath = process.cwd();
+      const testArgs = ['--dev', '--test', path.join(packagePath, 'spec')];
 
-    if process.platform is 'win32'
-      logFile = temp.openSync(suffix: '.log', prefix: "#{path.basename(packagePath)}-")
-      fs.closeSync(logFile.fd)
-      logFilePath = logFile.path
-      testArgs.push("--log-file=#{logFilePath}")
+      if (process.platform === 'win32') {
+        const logFile = temp.openSync({suffix: '.log', prefix: `${path.basename(packagePath)}-`});
+        fs.closeSync(logFile.fd);
+        const logFilePath = logFile.path;
+        testArgs.push(`--log-file=${logFilePath}`);
 
-      @spawn atomCommand, testArgs, (code) ->
-        try
-          loggedOutput = fs.readFileSync(logFilePath, 'utf8')
-          process.stdout.write("#{loggedOutput}\n") if loggedOutput
+        return this.spawn(atomCommand, testArgs, function(code) {
+          try {
+            const loggedOutput = fs.readFileSync(logFilePath, 'utf8');
+            if (loggedOutput) { process.stdout.write(`${loggedOutput}\n`); }
+          } catch (error) {}
 
-        if code is 0
-          process.stdout.write 'Tests passed\n'.green
-          callback()
-        else if code?.message
-          callback("Error spawning Atom: #{code.message}")
-        else
-          callback('Tests failed')
-    else
-      @spawn atomCommand, testArgs, {env, streaming: true}, (code) ->
-        if code is 0
-          process.stdout.write 'Tests passed\n'.green
-          callback()
-        else if code?.message
-          callback("Error spawning #{atomCommand}: #{code.message}")
-        else
-          callback('Tests failed')
+          if (code === 0) {
+            process.stdout.write('Tests passed\n'.green);
+            return callback();
+          } else if ((code != null ? code.message : undefined)) {
+            return callback(`Error spawning Atom: ${code.message}`);
+          } else {
+            return callback('Tests failed');
+          }
+        });
+      } else {
+        return this.spawn(atomCommand, testArgs, {env, streaming: true}, function(code) {
+          if (code === 0) {
+            process.stdout.write('Tests passed\n'.green);
+            return callback();
+          } else if ((code != null ? code.message : undefined)) {
+            return callback(`Error spawning ${atomCommand}: ${code.message}`);
+          } else {
+            return callback('Tests failed');
+          }
+        });
+      }
+    }
+  };
+  Test.initClass();
+  return Test;
+})());

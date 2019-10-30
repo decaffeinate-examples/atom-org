@@ -1,7 +1,7 @@
-# Public: Returns hello
-foo = -> 'hello'
+// Public: Returns hello
+const foo = () => 'hello';
 
-exports.foo = foo
+exports.foo = foo;
 
-# Exporting the answer to life, the universe, and everything.
-exports.bar = 42
+// Exporting the answer to life, the universe, and everything.
+exports.bar = 42;

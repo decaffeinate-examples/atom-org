@@ -1,67 +1,82 @@
-{times, random} = require 'underscore'
-SpanSkipList = require '../src/span-skip-list'
-ReferenceSpanSkipList = require './reference-span-skip-list'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {times, random} = require('underscore');
+const SpanSkipList = require('../src/span-skip-list');
+const ReferenceSpanSkipList = require('./reference-span-skip-list');
 
-counter = 1
+const counter = 1;
 
-describe "SpanSkipList", ->
-  dimensions = ['x', 'y', 'z']
-  buildRandomElement = ->
-    x: random(10)
-    y: random(10)
+describe("SpanSkipList", function() {
+  const dimensions = ['x', 'y', 'z'];
+  const buildRandomElement = () => ({
+    x: random(10),
+    y: random(10),
     z: random(10)
+  });
 
-  buildRandomElements = (count=random(10)) ->
-    elements = []
-    times count, -> elements.push(buildRandomElement())
-    elements
+  const buildRandomElements = function(count) {
+    if (count == null) { count = random(10); }
+    const elements = [];
+    times(count, () => elements.push(buildRandomElement()));
+    return elements;
+  };
 
-  spliceRandomElements = (lists...) ->
-    length = lists[0].getLength('elements')
-    index = random(0, length)
-    count = random(0, Math.floor((length - index - 1) / 2))
-    elements = buildRandomElements()
-    dimension = 'elements' #getRandomDimension()
-    for list in lists
-      list.spliceArray(dimension, index, count, elements)
+  const spliceRandomElements = function(...lists) {
+    const length = lists[0].getLength('elements');
+    const index = random(0, length);
+    const count = random(0, Math.floor((length - index - 1) / 2));
+    const elements = buildRandomElements();
+    const dimension = 'elements'; //getRandomDimension()
+    return Array.from(lists).map((list) =>
+      list.spliceArray(dimension, index, count, elements));
+  };
 
-  getRandomDimension = ->
-    dimensions[random(dimensions.length - 1)]
+  const getRandomDimension = () => dimensions[random(dimensions.length - 1)];
 
-  describe "::totalTo", ->
-    it "returns total for all dimensions up to a target total in one dimension", ->
-      times 10, ->
-        list = new SpanSkipList(dimensions...)
-        referenceList = new ReferenceSpanSkipList(dimensions...)
-        times 20, -> spliceRandomElements(list, referenceList)
+  describe("::totalTo", () => it("returns total for all dimensions up to a target total in one dimension", () => times(10, function() {
+    const list = new SpanSkipList(...Array.from(dimensions || []));
+    const referenceList = new ReferenceSpanSkipList(...Array.from(dimensions || []));
+    times(20, () => spliceRandomElements(list, referenceList));
 
-        expect(list.getElements()).toEqual referenceList.getElements()
+    expect(list.getElements()).toEqual(referenceList.getElements());
 
-        list.verifyDistanceInvariant()
+    list.verifyDistanceInvariant();
 
-        times 10, ->
-          dimension = getRandomDimension()
-          target = referenceList.getLength(dimension)
-          referenceTotal = referenceList.totalTo(target, dimension)
-          realTotal = list.totalTo(target, dimension)
-          expect(realTotal).toEqual referenceTotal
+    return times(10, function() {
+      const dimension = getRandomDimension();
+      const target = referenceList.getLength(dimension);
+      const referenceTotal = referenceList.totalTo(target, dimension);
+      const realTotal = list.totalTo(target, dimension);
+      return expect(realTotal).toEqual(referenceTotal);
+    });
+  })));
 
-  describe "::splice(dimension, index, count, elements...)", ->
-    it "maintains the distance invariant when removing / inserting elements", ->
-      times 10, ->
-        list = new SpanSkipList(dimensions...)
-        times 10, ->
-          spliceRandomElements(list)
-          list.verifyDistanceInvariant()
+  return describe("::splice(dimension, index, count, elements...)", function() {
+    it("maintains the distance invariant when removing / inserting elements", () => times(10, function() {
+      const list = new SpanSkipList(...Array.from(dimensions || []));
+      return times(10, function() {
+        spliceRandomElements(list);
+        return list.verifyDistanceInvariant();
+      });
+    }));
 
-    it "returns an array of removed elements", ->
-      list = new SpanSkipList(dimensions...)
-      elements = buildRandomElements(10)
-      list.spliceArray('elements', 0, 0, elements)
-      expect(list.splice('elements', 3, 2)).toEqual elements[3..4]
+    it("returns an array of removed elements", function() {
+      const list = new SpanSkipList(...Array.from(dimensions || []));
+      const elements = buildRandomElements(10);
+      list.spliceArray('elements', 0, 0, elements);
+      return expect(list.splice('elements', 3, 2)).toEqual(elements.slice(3, 5));
+  });
 
-    it "does not attempt to remove beyond the end of the list", ->
-      list = new SpanSkipList(dimensions...)
-      elements = buildRandomElements(10)
-      list.spliceArray('elements', 0, 0, elements)
-      expect(list.splice('elements', 9, 3)).toEqual elements[9..9]
+    return it("does not attempt to remove beyond the end of the list", function() {
+      const list = new SpanSkipList(...Array.from(dimensions || []));
+      const elements = buildRandomElements(10);
+      list.spliceArray('elements', 0, 0, elements);
+      return expect(list.splice('elements', 9, 3)).toEqual(elements.slice(9, 10));
+  });
+});
+});

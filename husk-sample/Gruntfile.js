@@ -1,20 +1,30 @@
-module.exports = (grunt) ->
-  grunt.initConfig
-    pkg: grunt.file.readJSON('package.json')
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = function(grunt) {
+  grunt.initConfig({
+    pkg: grunt.file.readJSON('package.json'),
 
-    coffeelint:
-      options:
-        no_empty_param_list:
+    coffeelint: {
+      options: {
+        no_empty_param_list: {
           level: 'error'
-        max_line_length:
+        },
+        max_line_length: {
           level: 'ignore'
+        }
+      },
 
-      src: ['src/*.coffee']
+      src: ['src/*.coffee'],
       test: ['spec/*.coffee']
+    }});
 
-  grunt.loadNpmTasks('grunt-contrib-coffee')
-  grunt.loadNpmTasks('grunt-coffeelint')
+  grunt.loadNpmTasks('grunt-contrib-coffee');
+  grunt.loadNpmTasks('grunt-coffeelint');
 
-  grunt.registerTask 'clean', -> require('rimraf').sync('lib')
-  grunt.registerTask('lint', ['coffeelint:src', 'coffeelint:test'])
-  grunt.registerTask('default', ['lint'])
+  grunt.registerTask('clean', () => require('rimraf').sync('lib'));
+  grunt.registerTask('lint', ['coffeelint:src', 'coffeelint:test']);
+  return grunt.registerTask('default', ['lint']);
+};

@@ -1,73 +1,114 @@
-idCounter = 0
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS202: Simplify dynamic range loops
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let SpellCheckTask;
+let idCounter = 0;
 
 module.exports =
-class SpellCheckTask
-  @handler: null
-  @jobs: []
+(SpellCheckTask = (function() {
+  SpellCheckTask = class SpellCheckTask {
+    static initClass() {
+      this.handler = null;
+      this.jobs = [];
+    }
 
-  constructor: (@manager) ->
-    @id = idCounter++
+    constructor(manager) {
+      this.manager = manager;
+      this.id = idCounter++;
+    }
 
-  terminate: ->
-    @constructor.removeFromArray(@constructor.jobs, (j) -> j.args.id is @id)
+    terminate() {
+      return this.constructor.removeFromArray(this.constructor.jobs, function(j) { return j.args.id === this.id; });
+    }
 
-  start: (editor, onDidSpellCheck) ->
-    # Figure out the paths since we need that for checkers that are project-specific.
-    buffer = editor.getBuffer()
-    projectPath = null
-    relativePath = null
-    if buffer?.file?.path
-      [projectPath, relativePath] = atom.project.relativizePath(buffer.file.path)
+    start(editor, onDidSpellCheck) {
+      // Figure out the paths since we need that for checkers that are project-specific.
+      const buffer = editor.getBuffer();
+      let projectPath = null;
+      let relativePath = null;
+      if (__guard__(buffer != null ? buffer.file : undefined, x => x.path)) {
+        [projectPath, relativePath] = Array.from(atom.project.relativizePath(buffer.file.path));
+      }
 
-    # Remove old jobs for this SpellCheckTask from the shared jobs list.
-    @constructor.removeFromArray(@constructor.jobs, (j) -> j.args.id is @id)
+      // Remove old jobs for this SpellCheckTask from the shared jobs list.
+      this.constructor.removeFromArray(this.constructor.jobs, function(j) { return j.args.id === this.id; });
 
-    # Create an job that contains everything we'll need to do the work.
-    job =
-      manager: @manager
-      callbacks: [onDidSpellCheck]
-      editorId: editor.id
-      args:
-        id: @id
-        projectPath: projectPath
-        relativePath: relativePath
-        text: buffer.getText()
+      // Create an job that contains everything we'll need to do the work.
+      const job = {
+        manager: this.manager,
+        callbacks: [onDidSpellCheck],
+        editorId: editor.id,
+        args: {
+          id: this.id,
+          projectPath,
+          relativePath,
+          text: buffer.getText()
+        }
+      };
 
-    # If we already have a job for this work piggy-back on it with our callback.
-    return if @constructor.piggybackExistingJob(job)
+      // If we already have a job for this work piggy-back on it with our callback.
+      if (this.constructor.piggybackExistingJob(job)) { return; }
 
-    # Do the work now if not busy or queue it for later.
-    @constructor.jobs.unshift(job)
-    @constructor.startNextJob() if @constructor.jobs.length is 1
+      // Do the work now if not busy or queue it for later.
+      this.constructor.jobs.unshift(job);
+      if (this.constructor.jobs.length === 1) { return this.constructor.startNextJob(); }
+    }
 
-  @piggybackExistingJob: (newJob) ->
-    if @jobs.length > 0
-      for job in @jobs
-        if @isDuplicateRequest(job, newJob)
-          job.callbacks = job.callbacks.concat(newJob.callbacks)
-          return true
-    return false
+    static piggybackExistingJob(newJob) {
+      if (this.jobs.length > 0) {
+        for (let job of Array.from(this.jobs)) {
+          if (this.isDuplicateRequest(job, newJob)) {
+            job.callbacks = job.callbacks.concat(newJob.callbacks);
+            return true;
+          }
+        }
+      }
+      return false;
+    }
 
-  @isDuplicateRequest: (a, b) ->
-    a.args.projectPath is b.args.projectPath and a.args.relativePath is b.args.relativePath
+    static isDuplicateRequest(a, b) {
+      return (a.args.projectPath === b.args.projectPath) && (a.args.relativePath === b.args.relativePath);
+    }
 
-  @removeFromArray: (array, predicate) ->
-    if (array.length > 0)
-      for i in [0..array.length-1]
-        if (predicate(array[i]))
-          found = array[i]
-          array.splice(i, 1)
-          return found
+    static removeFromArray(array, predicate) {
+      if (array.length > 0) {
+        for (let i = 0, end = array.length-1, asc = 0 <= end; asc ? i <= end : i >= end; asc ? i++ : i--) {
+          if (predicate(array[i])) {
+            const found = array[i];
+            array.splice(i, 1);
+            return found;
+          }
+        }
+      }
+    }
 
-  @startNextJob: ->
-    activeEditorId = atom.workspace.getActiveTextEditor()?.id
-    job = @jobs.find((j) -> j.editorId is activeEditorId) or @jobs[0]
+    static startNextJob() {
+      const activeEditorId = __guard__(atom.workspace.getActiveTextEditor(), x => x.id);
+      const job = this.jobs.find(j => j.editorId === activeEditorId) || this.jobs[0];
 
-    job.manager.check(job.args, job.args.text).then (results) =>
-      @removeFromArray(@jobs, (j) -> j.args.id is job.args.id)
-      callback(results.misspellings) for callback in job.callbacks
+      return job.manager.check(job.args, job.args.text).then(results => {
+        this.removeFromArray(this.jobs, j => j.args.id === job.args.id);
+        for (let callback of Array.from(job.callbacks)) { callback(results.misspellings); }
 
-      @startNextJob() if @jobs.length > 0
+        if (this.jobs.length > 0) { return this.startNextJob(); }
+      });
+    }
 
-  @clear: ->
-    @jobs = []
+    static clear() {
+      return this.jobs = [];
+    }
+  };
+  SpellCheckTask.initClass();
+  return SpellCheckTask;
+})());
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

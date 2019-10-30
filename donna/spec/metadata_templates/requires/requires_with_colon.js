@@ -1,3 +1,3 @@
-{defs:foof} = require 'defs2'
+const {defs:foof} = require('defs2');
 
-class Bar
+class Bar {}

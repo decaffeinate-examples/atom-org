@@ -1,3 +1,3 @@
-foo = require(foo.bar().baz)
+var foo = require(foo.bar().baz);
 
-class Bar
+class Bar {}

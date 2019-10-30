@@ -1,22 +1,38 @@
-{deepExtend} = require 'underscore-plus'
-{hasKeyPath, getValueAtKeyPath} = require 'key-path-helpers'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let PropertySet;
+const {deepExtend} = require('underscore-plus');
+const {hasKeyPath, getValueAtKeyPath} = require('key-path-helpers');
 
 module.exports =
-class PropertySet
-  constructor: (@source, @selector, @properties) ->
-    @name = @source # Supports deprecated usage
+(PropertySet = class PropertySet {
+  constructor(source, selector, properties) {
+    this.source = source;
+    this.selector = selector;
+    this.properties = properties;
+    this.name = this.source; // Supports deprecated usage
+  }
 
-  matches: (scope) ->
-    @selector.matches(scope)
+  matches(scope) {
+    return this.selector.matches(scope);
+  }
 
-  compare: (other) ->
-    @selector.compare(other.selector)
+  compare(other) {
+    return this.selector.compare(other.selector);
+  }
 
-  merge: (other) ->
-    new PropertySet(@source, @selector, deepExtend({}, other.properties, @properties))
+  merge(other) {
+    return new PropertySet(this.source, this.selector, deepExtend({}, other.properties, this.properties));
+  }
 
-  has: (keyPath) ->
-    hasKeyPath(@properties, keyPath)
+  has(keyPath) {
+    return hasKeyPath(this.properties, keyPath);
+  }
 
-  get: (keyPath) ->
-    getValueAtKeyPath(@properties, keyPath)
+  get(keyPath) {
+    return getValueAtKeyPath(this.properties, keyPath);
+  }
+});

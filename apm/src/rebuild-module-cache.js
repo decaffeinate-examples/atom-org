@@ -1,66 +1,94 @@
-path = require 'path'
-async = require 'async'
-yargs = require 'yargs'
-Command = require './command'
-config = require './apm'
-fs = require './fs'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let RebuildModuleCache;
+const path = require('path');
+const async = require('async');
+const yargs = require('yargs');
+const Command = require('./command');
+const config = require('./apm');
+const fs = require('./fs');
 
 module.exports =
-class RebuildModuleCache extends Command
-  @commandNames: ['rebuild-module-cache']
+(RebuildModuleCache = (function() {
+  RebuildModuleCache = class RebuildModuleCache extends Command {
+    static initClass() {
+      this.commandNames = ['rebuild-module-cache'];
+    }
 
-  constructor: ->
-    super()
-    @atomPackagesDirectory = path.join(config.getAtomDirectory(), 'packages')
+    constructor() {
+      super();
+      this.atomPackagesDirectory = path.join(config.getAtomDirectory(), 'packages');
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm rebuild-module-cache
+Usage: apm rebuild-module-cache
 
-      Rebuild the module cache for all the packages installed to
-      ~/.atom/packages
+Rebuild the module cache for all the packages installed to
+~/.atom/packages
 
-      You can see the state of the module cache for a package by looking
-      at the _atomModuleCache property in the package's package.json file.
+You can see the state of the module cache for a package by looking
+at the _atomModuleCache property in the package's package.json file.
 
-      This command skips all linked packages.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
+This command skips all linked packages.\
+`
+      );
+      return options.alias('h', 'help').describe('help', 'Print this usage message');
+    }
 
-  getResourcePath: (callback) ->
-    if @resourcePath
-      process.nextTick => callback(@resourcePath)
-    else
-      config.getResourcePath (@resourcePath) => callback(@resourcePath)
+    getResourcePath(callback) {
+      if (this.resourcePath) {
+        return process.nextTick(() => callback(this.resourcePath));
+      } else {
+        return config.getResourcePath(resourcePath => { this.resourcePath = resourcePath; return callback(this.resourcePath); });
+      }
+    }
 
-  rebuild: (packageDirectory, callback) ->
-    @getResourcePath (resourcePath) =>
-      try
-        @moduleCache ?= require(path.join(resourcePath, 'src', 'module-cache'))
-        @moduleCache.create(packageDirectory)
-      catch error
-        return callback(error)
+    rebuild(packageDirectory, callback) {
+      return this.getResourcePath(resourcePath => {
+        try {
+          if (this.moduleCache == null) { this.moduleCache = require(path.join(resourcePath, 'src', 'module-cache')); }
+          this.moduleCache.create(packageDirectory);
+        } catch (error) {
+          return callback(error);
+        }
 
-      callback()
+        return callback();
+      });
+    }
 
-  run: (options) ->
-    {callback} = options
+    run(options) {
+      const {callback} = options;
 
-    commands = []
-    fs.list(@atomPackagesDirectory).forEach (packageName) =>
-      packageDirectory = path.join(@atomPackagesDirectory, packageName)
-      return if fs.isSymbolicLinkSync(packageDirectory)
-      return unless fs.isFileSync(path.join(packageDirectory, 'package.json'))
+      const commands = [];
+      fs.list(this.atomPackagesDirectory).forEach(packageName => {
+        const packageDirectory = path.join(this.atomPackagesDirectory, packageName);
+        if (fs.isSymbolicLinkSync(packageDirectory)) { return; }
+        if (!fs.isFileSync(path.join(packageDirectory, 'package.json'))) { return; }
 
-      commands.push (callback) =>
-        process.stdout.write "Rebuilding #{packageName} module cache "
-        @rebuild packageDirectory, (error) =>
-          if error?
-            @logFailure()
-          else
-            @logSuccess()
-          callback(error)
+        return commands.push(callback => {
+          process.stdout.write(`Rebuilding ${packageName} module cache `);
+          return this.rebuild(packageDirectory, error => {
+            if (error != null) {
+              this.logFailure();
+            } else {
+              this.logSuccess();
+            }
+            return callback(error);
+          });
+        });
+      });
 
-    async.waterfall(commands, callback)
+      return async.waterfall(commands, callback);
+    }
+  };
+  RebuildModuleCache.initClass();
+  return RebuildModuleCache;
+})());

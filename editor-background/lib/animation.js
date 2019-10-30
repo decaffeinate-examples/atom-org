@@ -1,151 +1,196 @@
-fs = require 'fs'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const path = require('path');
 
-class Animation
-
-  ytid:''
-  homeDir:''
-  videoDir:''
-  animPath:''
-  frames:[]
-  currentFrame:0
-  fadeOut:50
-  canvas:undefined
-
-
-  constructor: (ytid) ->
-    @loaded = 0
-    @playing = false
-    @speed = atom.config.get 'editor-background.video.animationSpeed'
-    atom.config.observe 'editor-background.video.animationSpeed',(speed)=>
-      @setSpeed(speed)
-    atom.config.observe 'editor-background.video.opacity',(opacity)=>
-        vOpacity = (opacity/100).toFixed(2)
-        if @canvas?.style?
-            @canvas.style.opacity = vOpacity
-    @homeDir = atom.packages.resolvePackagePath('editor-background')
-    if !@homeDir
-      @homeDir = path.resolve(__dirname)
-    @videoDir = @homeDir + '/youtube-videos'
-    if ytid?
-      @ytid = ytid
-    else
-      url = atom.config.get 'editor-background.video.youTubeUrl'
-      if url? then @ytid = @getYTid(url)
-    if @ytid then @animPath = @videoDir+'/'+@ytid+'_images/'
+class Animation {
+  static initClass() {
+  
+    this.prototype.ytid ='';
+    this.prototype.homeDir ='';
+    this.prototype.videoDir ='';
+    this.prototype.animPath ='';
+    this.prototype.frames =[];
+    this.prototype.currentFrame =0;
+    this.prototype.fadeOut =50;
+    this.prototype.canvas =undefined;
+  }
 
 
-  setSpeed:(speed)->
-    @speed = speed
-
-  getYTId: (url) ->
-    if url!=''
-      ytreg = /// (?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)
-      |youtu\.be\/)([^"&?\/ ]{11}) ///i
-      ytidregres=ytreg.exec(url)
-      if ytidregres?.length>0
-        ytid=ytidregres[1]
-
-  imageLoaded:(file,img,event)->
-    @loaded++
-    if @loaded == @frames.length
-      @createCanvas()
-      @naturalWidth = img.naturalWidth
-      @naturalHeight = img.naturalHeight
-      @playing = true
-      @animate()
-
-
-
-  addFrame:(file)->
-    img = new Image()
-    img.addEventListener 'load',(event)=>
-      @imageLoaded.apply @,[file,img,event]
-    img.src = @animPath+file
-    @frames.push img
-
-  start:(element,before)->
-    @frames = []
-    @element = element
-    @before = before
-    try
-      fs.readdir @animPath,(err,files)=>
-        if err then console.log err
-        else
-          reg=///^[0-9]+\.jpg$///
-          files.sort (a,b)->
-            parseInt(reg.exec(a))-parseInt(reg.exec(b))
-          @addFrame file for file in files
-    catch e
-      console.log e
+  constructor(ytid) {
+    this.loaded = 0;
+    this.playing = false;
+    this.speed = atom.config.get('editor-background.video.animationSpeed');
+    atom.config.observe('editor-background.video.animationSpeed',speed=> {
+      return this.setSpeed(speed);
+    });
+    atom.config.observe('editor-background.video.opacity',opacity=> {
+        const vOpacity = (opacity/100).toFixed(2);
+        if ((this.canvas != null ? this.canvas.style : undefined) != null) {
+            return this.canvas.style.opacity = vOpacity;
+          }
+    });
+    this.homeDir = atom.packages.resolvePackagePath('editor-background');
+    if (!this.homeDir) {
+      this.homeDir = path.resolve(__dirname);
+    }
+    this.videoDir = this.homeDir + '/youtube-videos';
+    if (ytid != null) {
+      this.ytid = ytid;
+    } else {
+      const url = atom.config.get('editor-background.video.youTubeUrl');
+      if (url != null) { this.ytid = this.getYTid(url); }
+    }
+    if (this.ytid) { this.animPath = this.videoDir+'/'+this.ytid+'_images/'; }
+  }
 
 
-  drawFrame:->
-    if @currentFrame+1>=(@frames.length - @fadeOut)
-      @currentFrame = 0
-    if @currentFrame<@fadeOut
-      lastFrame = @frames.length - 1
-      diff = @fadeOut - @currentFrame
-      index = lastFrame - diff
-      alpha = parseFloat( (diff / @fadeOut).toFixed(2) )
-    frame = @frames[@currentFrame]
-    @ctx.globalAlpha = 1
-    @ctx.drawImage frame,0,0
-    if @currentFrame<@fadeOut
-      @ctx.globalAlpha = alpha
-      @ctx.drawImage @frames[index],0,0
-    @currentFrame++
+  setSpeed(speed){
+    return this.speed = speed;
+  }
+
+  getYTId(url) {
+    if (url!=='') {
+      const ytreg = new RegExp(`(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/|.*[?&]v=)\
+|youtu\\.be\\/)([^"&?\\/]{11})`, 'i');
+      const ytidregres=ytreg.exec(url);
+      if ((ytidregres != null ? ytidregres.length : undefined)>0) {
+        let ytid;
+        return ytid=ytidregres[1];
+      }
+    }
+  }
+
+  imageLoaded(file,img,event){
+    this.loaded++;
+    if (this.loaded === this.frames.length) {
+      this.createCanvas();
+      this.naturalWidth = img.naturalWidth;
+      this.naturalHeight = img.naturalHeight;
+      this.playing = true;
+      return this.animate();
+    }
+  }
 
 
-  animate:->
-    if @playing
-      @drawFrame()
-      @player = setTimeout =>
-        @animate()
-      , @speed
+
+  addFrame(file){
+    const img = new Image();
+    img.addEventListener('load',event=> {
+      return this.imageLoaded.apply(this,[file,img,event]);
+  });
+    img.src = this.animPath+file;
+    return this.frames.push(img);
+  }
+
+  start(element,before){
+    this.frames = [];
+    this.element = element;
+    this.before = before;
+    try {
+      return fs.readdir(this.animPath,(err,files)=> {
+        if (err) { return console.log(err);
+        } else {
+          const reg=new RegExp(`^[0-9]+\\.jpg$`);
+          files.sort((a, b) => parseInt(reg.exec(a))-parseInt(reg.exec(b)));
+          return Array.from(files).map((file) => this.addFrame(file));
+        }
+      });
+    } catch (e) {
+      return console.log(e);
+    }
+  }
 
 
-  createCanvas:->
-    if !@canvas?
-        @canvas = document.createElement 'canvas'
-        width = @frames[0].naturalWidth
-        height = @frames[0].naturalHeight
-        #console.log 'frames',@frames.length
-        @canvas.width = width
-        @canvas.height = height
-        width2 = width // 2
-        height2 = height // 2
-        body = document.querySelector 'body'
-        bdW_ = window.getComputedStyle(body).width
-        bdW = /([0-9]+)/gi.exec(bdW_)[1]
-        ratio = (bdW / width).toFixed(2)
-        @canvas.className = 'editor-background-animation'
-        _vOpacity = atom.config.get 'editor-background.video.opacity'
-        vOpacity = (_vOpacity / 100).toFixed(2)
-        @canvas.style.cssText = "
-        position:absolute;
-        left:calc(50% - #{width2}px);
-        top:calc(50% - #{height2}px);
-        width:#{width}px;
-        height:#{height}px;
-        transform:scale(#{ratio}) translate3d(0,0,0);
-        opacity:#{vOpacity};
-        "
-        atom.config.observe 'editor-background.image.blur',(radius)=>
-          @canvas.style.webkitFilter="blur(#{radius}px)"
-        @ctx = @canvas.getContext '2d'
-        if @before?
-          @element.insertBefore @canvas,@before
-        else
-          @element.appendChild @canvas
+  drawFrame() {
+    let alpha, index;
+    if ((this.currentFrame+1)>=(this.frames.length - this.fadeOut)) {
+      this.currentFrame = 0;
+    }
+    if (this.currentFrame<this.fadeOut) {
+      const lastFrame = this.frames.length - 1;
+      const diff = this.fadeOut - this.currentFrame;
+      index = lastFrame - diff;
+      alpha = parseFloat( (diff / this.fadeOut).toFixed(2) );
+    }
+    const frame = this.frames[this.currentFrame];
+    this.ctx.globalAlpha = 1;
+    this.ctx.drawImage(frame,0,0);
+    if (this.currentFrame<this.fadeOut) {
+      this.ctx.globalAlpha = alpha;
+      this.ctx.drawImage(this.frames[index],0,0);
+    }
+    return this.currentFrame++;
+  }
 
-  stop:->
-    if @player?
-        clearTimeout @player
-    if @canvas?
-        @canvas.remove()
-    @frames = []
-    @currentFrame = 0
-    @playing = false
 
-module.exports = Animation
+  animate() {
+    if (this.playing) {
+      this.drawFrame();
+      return this.player = setTimeout(() => {
+        return this.animate();
+      }
+      , this.speed);
+    }
+  }
+
+
+  createCanvas() {
+    if ((this.canvas == null)) {
+        this.canvas = document.createElement('canvas');
+        const width = this.frames[0].naturalWidth;
+        const height = this.frames[0].naturalHeight;
+        //console.log 'frames',@frames.length
+        this.canvas.width = width;
+        this.canvas.height = height;
+        const width2 = Math.floor(width / 2);
+        const height2 = Math.floor(height / 2);
+        const body = document.querySelector('body');
+        const bdW_ = window.getComputedStyle(body).width;
+        const bdW = /([0-9]+)/gi.exec(bdW_)[1];
+        const ratio = (bdW / width).toFixed(2);
+        this.canvas.className = 'editor-background-animation';
+        const _vOpacity = atom.config.get('editor-background.video.opacity');
+        const vOpacity = (_vOpacity / 100).toFixed(2);
+        this.canvas.style.cssText = `\
+position:absolute; \
+left:calc(50% - ${width2}px); \
+top:calc(50% - ${height2}px); \
+width:${width}px; \
+height:${height}px; \
+transform:scale(${ratio}) translate3d(0,0,0); \
+opacity:${vOpacity};\
+`;
+        atom.config.observe('editor-background.image.blur',radius=> {
+          return this.canvas.style.webkitFilter=`blur(${radius}px)`;
+        });
+        this.ctx = this.canvas.getContext('2d');
+        if (this.before != null) {
+          return this.element.insertBefore(this.canvas,this.before);
+        } else {
+          return this.element.appendChild(this.canvas);
+        }
+      }
+  }
+
+  stop() {
+    if (this.player != null) {
+        clearTimeout(this.player);
+      }
+    if (this.canvas != null) {
+        this.canvas.remove();
+      }
+    this.frames = [];
+    this.currentFrame = 0;
+    return this.playing = false;
+  }
+}
+Animation.initClass();
+
+module.exports = Animation;

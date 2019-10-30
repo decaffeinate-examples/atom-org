@@ -1,35 +1,53 @@
-jasmine = require 'jasmine-focused'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS205: Consider reworking code to avoid use of IIFEs
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const jasmine = require('jasmine-focused');
 
-env = jasmine.getEnv()
+const env = jasmine.getEnv();
 
-includeSpecsWithoutTags = true
-env.includeSpecsWithoutTags = (permit) ->
-  includeSpecsWithoutTags = permit
+let includeSpecsWithoutTags = true;
+env.includeSpecsWithoutTags = permit => includeSpecsWithoutTags = permit;
 
-includedTags = []
-env.setIncludedTags = (tags) ->
-  includedTags = tags
+let includedTags = [];
+env.setIncludedTags = tags => includedTags = tags;
 
-findTags = (spec) ->
-  words = spec.description.split(' ')
-  tags = (word.substring(1) for word in words when word.indexOf('#') is 0)
-  tags ?= []
+var findTags = function(spec) {
+  let parent;
+  const words = spec.description.split(' ');
+  let tags = ((() => {
+    const result = [];
+    for (let word of Array.from(words)) {       if (word.indexOf('#') === 0) {
+        result.push(word.substring(1));
+      }
+    }
+    return result;
+  })());
+  if (tags == null) { tags = []; }
 
-  if parent = spec.parentSuite ? spec.suite
-    tags.concat(findTags(parent))
-  else
-    tags
+  if ((parent = spec.parentSuite != null ? spec.parentSuite : spec.suite)) {
+    return tags.concat(findTags(parent));
+  } else {
+    return tags;
+  }
+};
 
-originalFilter = if env.specFilter then env.specFilter else -> true
-env.specFilter = (spec) ->
-  return false unless originalFilter(spec)
+const originalFilter = env.specFilter ? env.specFilter : () => true;
+env.specFilter = function(spec) {
+  if (!originalFilter(spec)) { return false; }
 
-  tags = findTags(spec)
-  return true if includeSpecsWithoutTags and tags.length is 0
+  const tags = findTags(spec);
+  if (includeSpecsWithoutTags && (tags.length === 0)) { return true; }
 
-  if tags.some((t) -> includedTags.some((it) -> it is t))
-    true
-  else
-    false
+  if (tags.some(t => includedTags.some(it => it === t))) {
+    return true;
+  } else {
+    return false;
+  }
+};
 
-module.exports = jasmine
+module.exports = jasmine;

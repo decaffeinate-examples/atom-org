@@ -1,20 +1,28 @@
-setEqual = (a, b) ->
-  return false unless a.size is b.size
-  iterator = a.values()
-  until (next = iterator.next()).done
-    return false unless b.has(next.value)
-  true
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const setEqual = function(a, b) {
+  let next;
+  if (a.size !== b.size) { return false; }
+  const iterator = a.values();
+  while (!(next = iterator.next()).done) {
+    if (!b.has(next.value)) { return false; }
+  }
+  return true;
+};
 
-subtractSet = (set, valuesToRemove) ->
-  if set.size > valuesToRemove.size
-    valuesToRemove.forEach (value) -> set.delete(value)
-  else
-    set.forEach (value) -> set.delete(value) if valuesToRemove.has(value)
+const subtractSet = function(set, valuesToRemove) {
+  if (set.size > valuesToRemove.size) {
+    return valuesToRemove.forEach(value => set.delete(value));
+  } else {
+    return set.forEach(function(value) { if (valuesToRemove.has(value)) { return set.delete(value); } });
+  }
+};
 
-addSet = (set, valuesToAdd) ->
-  valuesToAdd.forEach (value) -> set.add(value)
+const addSet = (set, valuesToAdd) => valuesToAdd.forEach(value => set.add(value));
 
-intersectSet = (set, other) ->
-  set.forEach (value) -> set.delete(value) unless other.has(value)
+const intersectSet = (set, other) => set.forEach(function(value) { if (!other.has(value)) { return set.delete(value); } });
 
-module.exports = {setEqual, subtractSet, addSet, intersectSet}
+module.exports = {setEqual, subtractSet, addSet, intersectSet};

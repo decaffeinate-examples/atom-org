@@ -1,87 +1,118 @@
-_ = require 'underscore-plus'
-yargs = require 'yargs'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Search;
+const _ = require('underscore-plus');
+const yargs = require('yargs');
 
-Command = require './command'
-config = require './apm'
-request = require './request'
-tree = require './tree'
-{isDeprecatedPackage} = require './deprecated-packages'
+const Command = require('./command');
+const config = require('./apm');
+const request = require('./request');
+const tree = require('./tree');
+const {isDeprecatedPackage} = require('./deprecated-packages');
 
 module.exports =
-class Search extends Command
-  @commandNames: ['search']
+(Search = (function() {
+  Search = class Search extends Command {
+    static initClass() {
+      this.commandNames = ['search'];
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm search <package_name>
+Usage: apm search <package_name>
 
-      Search for Atom packages/themes on the atom.io registry.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
-    options.boolean('json').describe('json', 'Output matching packages as JSON array')
-    options.boolean('packages').describe('packages', 'Search only non-theme packages').alias('p', 'packages')
-    options.boolean('themes').describe('themes', 'Search only themes').alias('t', 'themes')
+Search for Atom packages/themes on the atom.io registry.\
+`
+      );
+      options.alias('h', 'help').describe('help', 'Print this usage message');
+      options.boolean('json').describe('json', 'Output matching packages as JSON array');
+      options.boolean('packages').describe('packages', 'Search only non-theme packages').alias('p', 'packages');
+      return options.boolean('themes').describe('themes', 'Search only themes').alias('t', 'themes');
+    }
 
-  searchPackages: (query, opts, callback) ->
-    qs =
-      q: query
+    searchPackages(query, opts, callback) {
+      const qs =
+        {q: query};
 
-    if opts.packages
-      qs.filter = 'package'
-    else if opts.themes
-      qs.filter = 'theme'
+      if (opts.packages) {
+        qs.filter = 'package';
+      } else if (opts.themes) {
+        qs.filter = 'theme';
+      }
 
-    requestSettings =
-      url: "#{config.getAtomPackagesUrl()}/search"
-      qs: qs
-      json: true
+      const requestSettings = {
+        url: `${config.getAtomPackagesUrl()}/search`,
+        qs,
+        json: true
+      };
 
-    request.get requestSettings, (error, response, body={}) ->
-      if error?
-        callback(error)
-      else if response.statusCode is 200
-        packages = body.filter (pack) -> pack.releases?.latest?
-        packages = packages.map ({readme, metadata, downloads, stargazers_count}) -> _.extend({}, metadata, {readme, downloads, stargazers_count})
-        packages = packages.filter ({name, version}) -> not isDeprecatedPackage(name, version)
-        callback(null, packages)
-      else
-        message = request.getErrorMessage(response, body)
-        callback("Searching packages failed: #{message}")
+      return request.get(requestSettings, function(error, response, body) {
+        if (body == null) { body = {}; }
+        if (error != null) {
+          return callback(error);
+        } else if (response.statusCode === 200) {
+          let packages = body.filter(pack => (pack.releases != null ? pack.releases.latest : undefined) != null);
+          packages = packages.map(({readme, metadata, downloads, stargazers_count}) => _.extend({}, metadata, {readme, downloads, stargazers_count}));
+          packages = packages.filter(({name, version}) => !isDeprecatedPackage(name, version));
+          return callback(null, packages);
+        } else {
+          const message = request.getErrorMessage(response, body);
+          return callback(`Searching packages failed: ${message}`);
+        }
+      });
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
-    [query] = options.argv._
+    run(options) {
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
+      const [query] = Array.from(options.argv._);
 
-    unless query
-      callback("Missing required search query")
-      return
+      if (!query) {
+        callback("Missing required search query");
+        return;
+      }
 
-    searchOptions =
-      packages: options.argv.packages
-      themes: options.argv.themes
+      const searchOptions = {
+        packages: options.argv.packages,
+        themes: options.argv.themes
+      };
 
-    @searchPackages query, searchOptions, (error, packages) ->
-      if error?
-        callback(error)
-        return
+      return this.searchPackages(query, searchOptions, function(error, packages) {
+        if (error != null) {
+          callback(error);
+          return;
+        }
 
-      if options.argv.json
-        console.log(JSON.stringify(packages))
-      else
-        heading = "Search Results For '#{query}'".cyan
-        console.log "#{heading} (#{packages.length})"
+        if (options.argv.json) {
+          console.log(JSON.stringify(packages));
+        } else {
+          const heading = `Search Results For '${query}'`.cyan;
+          console.log(`${heading} (${packages.length})`);
 
-        tree packages, ({name, version, description, downloads, stargazers_count}) ->
-          label = name.yellow
-          label += " #{description.replace(/\s+/g, ' ')}" if description
-          label += " (#{_.pluralize(downloads, 'download')}, #{_.pluralize(stargazers_count, 'star')})".grey if downloads >= 0 and stargazers_count >= 0
-          label
+          tree(packages, function({name, version, description, downloads, stargazers_count}) {
+            let label = name.yellow;
+            if (description) { label += ` ${description.replace(/\s+/g, ' ')}`; }
+            if ((downloads >= 0) && (stargazers_count >= 0)) { label += ` (${_.pluralize(downloads, 'download')}, ${_.pluralize(stargazers_count, 'star')})`.grey; }
+            return label;
+          });
 
-        console.log()
-        console.log "Use `apm install` to install them or visit #{'http://atom.io/packages'.underline} to read more about them."
-        console.log()
+          console.log();
+          console.log(`Use \`apm install\` to install them or visit ${'http://atom.io/packages'.underline} to read more about them.`);
+          console.log();
+        }
 
-      callback()
+        return callback();
+      });
+    }
+  };
+  Search.initClass();
+  return Search;
+})());

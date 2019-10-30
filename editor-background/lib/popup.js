@@ -1,187 +1,245 @@
-fs = require 'fs'
-{$} = require 'atom-space-pen-views'
-SimpleSlider = require './simpleSlider'
-colorpicker = require './colorpicker.js'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const {$} = require('atom-space-pen-views');
+const SimpleSlider = require('./simpleSlider');
+const colorpicker = require('./colorpicker.js');
 
-class Popup
+var Popup = (function() {
+  let element = undefined;
+  let content = undefined;
+  let fadeTime = undefined;
+  let visible = undefined;
+  let onHide = undefined;
+  let controls = undefined;
+  let title = undefined;
+  let buttons = undefined;
+  Popup = class Popup {
+    static initClass() {
+  
+      element = null;
+      content = null;
+      fadeTime =250;
+      visible = false;
+      onHide = null;
+      controls = {};
+      title = null;
+      buttons = null;
+    }
 
-  element = null
-  content = null
-  fadeTime =250
-  visible = false
-  onHide = null
-  controls = {}
-  title = null
-  buttons = null
+    constructor(appendElement){
+      if ((appendElement == null)) {
+        appendElement = document.querySelector('body');
+      }
 
-  constructor:(appendElement)->
-    if not appendElement?
-      appendElement = document.querySelector 'body'
+      const html = `<div class="wrapper"> \
+<div class="close">X</div> \
+<div class="title"></div> \
+<form name="contentForm" class="content"> \
+</form> \
+<span class="loading loading-spinner-tiny inline-block" \
+id="working" \
+style="display:none;"></span> \
+<div class="buttons"></div> \
+</div>`;
+      this.element = document.createElement('div');
+      this.element.className = 'eb-modal-window';
+      this.element.innerHTML = html;
+      this.content = this.element.querySelector('.content');
+      this.form = this.content;
+      ({
+        fadeTime
+      } = this);
+      this.element.style.transition = `opacity ${fadeTime}ms`;
+      this.element.style.webkitTransition = `opacity ${fadeTime}ms`;
+      const close = this.element.querySelector('.close');
+      close.addEventListener('click',ev=> {
+        return this.hide();
+      });
+      this.title = this.element.querySelector('.title');
+      this.buttons = this.element.querySelector('.buttons');
+      //title.addEventListener 'mousedown',(ev)=>
+        //@dragWindow(ev)
+      appendElement.appendChild(this.element);
+      this.element.addEventListener('keydown',ev => ev.stopPropagation());
+      this;
+    }
 
-    html = '<div class="wrapper">
-    <div class="close">X</div>
-    <div class="title"></div>
-      <form name="contentForm" class="content">
-      </form>
-      <span class="loading loading-spinner-tiny inline-block"
-      id="working"
-      style="display:none;"></span>
-      <div class="buttons"></div>
-    </div>'
-    @element = document.createElement 'div'
-    @element.className = 'eb-modal-window'
-    @element.innerHTML = html
-    @content = @element.querySelector '.content'
-    @form = @content
-    fadeTime = @fadeTime
-    @element.style.transition = "opacity #{fadeTime}ms"
-    @element.style.webkitTransition = "opacity #{fadeTime}ms"
-    close = @element.querySelector '.close'
-    close.addEventListener 'click',(ev)=>
-      @hide()
-    @title = @element.querySelector('.title')
-    @buttons = @element.querySelector '.buttons'
-    #title.addEventListener 'mousedown',(ev)=>
-      #@dragWindow(ev)
-    appendElement.appendChild @element
-    @element.addEventListener 'keydown',(ev)->
-      ev.stopPropagation()
-    @
+    destroy() {
+      return this.element.remove();
+    }
 
-  destroy:->
-    @element.remove()
+    center() {
+      const w_ = window.getComputedStyle(this.element).width;
+      const h_ = window.getComputedStyle(this.element).height;
+      const ww = /([0-9]+)/gi.exec(w_);
+      const hh = /([0-9]+)/gi.exec(h_);
+      if ((ww != null) && (hh != null)) {
+        const w = ww[1];
+        const h = hh[1];
+        const w2 = Math.floor(w / 2);
+        const h2 = Math.floor(h / 2);
+        this.element.style.left = `calc(50% - ${w2}px)`;
+        return this.element.style.top = `calc(50% - ${h2}px)`;
+      }
+    }
 
-  center:->
-    w_ = window.getComputedStyle(@element).width
-    h_ = window.getComputedStyle(@element).height
-    ww = /([0-9]+)/gi.exec(w_)
-    hh = /([0-9]+)/gi.exec(h_)
-    if ww? and hh?
-      w = ww[1]
-      h = hh[1]
-      w2 = w // 2
-      h2 = h // 2
-      @element.style.left = "calc(50% - #{w2}px)"
-      @element.style.top = "calc(50% - #{h2}px)"
+    getControls() {
+      this.controls = {};
+      this.controls.forms = document.forms;
+      return Array.from(document.forms).map((form) =>
+        (form=> {
+          return Array.from(form.elements).map((el) =>
+            (el=> {
+              return this.controls[el.name]=el;
+            })(el));
+        })(form));
+    }
 
-  getControls:->
-    @controls = {}
-    @controls.forms = document.forms
-    for form in document.forms
-      do (form)=>
-        for el in form.elements
-          do (el)=>
-            @controls[el.name]=el
+    makeSliders() {
+      const ranges = this.element.querySelectorAll('.range');
+      return Array.from(ranges).map((range) =>
+        (function(range){
+          $(range).bind('change',function(ev){
+            const val = range.value;
+            return $(range).simpleSlider('setValue',val);
+          });
 
-  makeSliders:->
-    ranges = @element.querySelectorAll '.range'
-    for range in ranges
-      do (range)->
-        $(range).bind 'change',(ev)->
-          val = range.value
-          $(range).simpleSlider('setValue',val)
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.style.minWidth='40px';
+          range.parentElement.insertBefore(input,range);
+          input.addEventListener('change',() => range.value = input.value);
+          const val = range.value || 0;
+          input.value = val;
+          const dataRange = range.dataset.sliderRange.split(',');
+          $(range).simpleSlider({range:dataRange,value:val});
+          return $(range).bind('sliderchanged',(ev, data) => input.value = data.value);
+        })(range));
+    }
 
-        input = document.createElement 'input'
-        input.type = 'text'
-        input.style.minWidth='40px'
-        range.parentElement.insertBefore input,range
-        input.addEventListener 'change',->
-          range.value = input.value
-        val = range.value || 0
-        input.value = val
-        dataRange = range.dataset.sliderRange.split(',')
-        $(range).simpleSlider({range:dataRange,value:val})
-        $(range).bind 'sliderchanged',(ev,data)->
-          input.value = data.value
+    makeColors() {
+      const colorPickers = this.element.querySelectorAll('.color-picker');
+      return Array.from(colorPickers).map((picker) =>
+        (function(picker) {
+          $(picker).wrap('<div class="picker-wrapper"></div>');
+          const wrapper = $(picker).parent();
+          //console.log 'wrapper',wrapper
+          const cpicker = new colorpicker(picker,{container:wrapper,format:'hex'});
+          return $(cpicker).focus(() => $(cpicker).colorpicker('show'));
+        })(picker));
+    }
 
-  makeColors:->
-    colorPickers = @element.querySelectorAll '.color-picker'
-    for picker in colorPickers
-      do (picker) ->
-        $(picker).wrap('<div class="picker-wrapper"></div>')
-        wrapper = $(picker).parent()
-        #console.log 'wrapper',wrapper
-        cpicker = new colorpicker(picker,{container:wrapper,format:'hex'})
-        $(cpicker).focus ->
-          $(cpicker).colorpicker('show')
+    setVisible() {
+      const otherModals = document.querySelectorAll('.eb-modal-window');
+      let zIndex = 1;
+      for (let modal of Array.from(otherModals)) {
+        const cmpSt = window.getComputedStyle(modal);
+        if (cmpSt.zIndex > zIndex) { ({
+          zIndex
+        } = cmpSt); }
+      }
+      this.element.style.display='block';
+      this.element.style.opacity = 1;
+      this.element.style.zIndex = zIndex+1;
+      this.visible = true;
+      this.center();
+      this.getControls();
+      if (!this.inputParsed) {
+        this.makeSliders();
+        this.makeColors();
+        return this.inputParsed = true;
+      }
+    }
 
-  setVisible:->
-    otherModals = document.querySelectorAll '.eb-modal-window'
-    zIndex = 1
-    for modal in otherModals
-      cmpSt = window.getComputedStyle modal
-      if cmpSt.zIndex > zIndex then zIndex=cmpSt.zIndex
-    @element.style.display='block'
-    @element.style.opacity = 1
-    @element.style.zIndex = zIndex+1
-    @visible = true
-    @center()
-    @getControls()
-    if !@inputParsed
-      @makeSliders()
-      @makeColors()
-      @inputParsed = true
+    show(attrs){
+      if ((attrs == null)) {
+        return this.setVisible();
+      }
 
-  show:(attrs)->
-    if not attrs?
-      return @setVisible()
+      this.inputParsed = false;
+      const titleHTML = attrs.title;
+      const contentHTML = attrs.content;
+      const titleEl = this.element.querySelector('.title');
+      const contentEl = this.element.querySelector('.content');
+      this.content = contentEl;
+      const buttonsEl = this.element.querySelector('.buttons');
+      this.buttons = buttonsEl;
+      buttonsEl.innerHTML="";
+      titleEl.innerHTML = titleHTML;
+      contentEl.innerHTML = contentHTML;
 
-    @inputParsed = false
-    titleHTML = attrs.title
-    contentHTML = attrs.content
-    titleEl = @element.querySelector '.title'
-    contentEl = @element.querySelector '.content'
-    @content = contentEl
-    buttonsEl = @element.querySelector '.buttons'
-    @buttons = buttonsEl
-    buttonsEl.innerHTML=""
-    titleEl.innerHTML = titleHTML
-    contentEl.innerHTML = contentHTML
+      if (attrs.onHide != null) {
+        this.onHide = attrs.onHide;
+      } else {
+        this.onHide = null;
+      }
 
-    if attrs.onHide?
-      @onHide = attrs.onHide
-    else
-      @onHide = null
+      if ((attrs != null ? attrs.buttons : undefined) != null) {
+        for (let name in attrs.buttons) {
+          const action = attrs.buttons[name];
+          ((name,action)=> {
+            let btn = null;
+            btn = document.createElement('button');
+            btn.className = 'btn btn-default';
+            btn.innerText = name;
+            btn.addEventListener('click',ev=> {
+              return action(ev,this);
+            });
+            return buttonsEl.appendChild(btn);
+          })(name, action);
+        }
+      }
 
-    if attrs?.buttons?
-      for name,action of attrs.buttons
-        do (name,action)=>
-          btn = null
-          btn = document.createElement 'button'
-          btn.className = 'btn btn-default'
-          btn.innerText = name
-          btn.addEventListener 'click',(ev)=>
-            action(ev,@)
-          buttonsEl.appendChild btn
+      this.setVisible();
+      if ((attrs != null ? attrs.onShow : undefined) != null) {
+        return attrs.onShow(this);
+      }
+    }
 
-    @setVisible()
-    if attrs?.onShow?
-      attrs.onShow(@)
+    hide(next){
+      this.element.style.opacity = 0;
+      this.visible = false;
+      return setTimeout(() => {
+        this.element.style.display = 'none';
+        if (this.onHide != null) {
+          this.onHide(this);
+        }
+        if (next != null) { return next(); }
+      }
+      , this.fadeTime);
+    }
 
-  hide:(next)->
-    @element.style.opacity = 0
-    @visible = false
-    setTimeout =>
-      @element.style.display = 'none'
-      if @onHide?
-        @onHide(@)
-      if next? then next()
-    , @fadeTime
+    close() {
+      return this.hide(() => {
+        return this.content.innerHTML = '';
+      });
+    }
 
-  close:->
-    @hide =>
-      @content.innerHTML = ''
+    destroy() {
+      return this.hide(() => {
+        this.element.remove();
+        return delete this;
+      });
+    }
 
-  destroy:->
-    @hide =>
-      @element.remove()
-      delete @
+    working(value){
+      const icon = this.element.querySelector('#working');
+      if (value) {
+        return icon.style.display='block';
+      } else {
+        return icon.style.display='none';
+      }
+    }
+  };
+  Popup.initClass();
+  return Popup;
+})();
 
-  working:(value)->
-    icon = @element.querySelector '#working'
-    if value
-      icon.style.display='block'
-    else
-      icon.style.display='none'
-
-module.exports = Popup
+module.exports = Popup;

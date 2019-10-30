@@ -1,76 +1,90 @@
-VimState = require '../lib/vim-state'
-GlobalVimState = require '../lib/global-vim-state'
-VimMode  = require '../lib/vim-mode'
-StatusBarManager = require '../lib/status-bar-manager'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const VimState = require('../lib/vim-state');
+const GlobalVimState = require('../lib/global-vim-state');
+const VimMode  = require('../lib/vim-mode');
+const StatusBarManager = require('../lib/status-bar-manager');
 
-[globalVimState, statusBarManager] = []
+let [globalVimState, statusBarManager] = Array.from([]);
 
-beforeEach ->
-  atom.workspace ||= {}
-  statusBarManager = null
-  globalVimState = null
-  spyOn(atom, 'beep')
+beforeEach(function() {
+  if (!atom.workspace) { atom.workspace = {}; }
+  statusBarManager = null;
+  globalVimState = null;
+  return spyOn(atom, 'beep');
+});
 
-getEditorElement = (callback) ->
-  textEditor = null
+const getEditorElement = function(callback) {
+  let textEditor = null;
 
-  waitsForPromise ->
-    atom.workspace.open().then (e) ->
-      textEditor = e
+  waitsForPromise(() => atom.workspace.open().then(e => textEditor = e));
 
-  runs ->
-    element = atom.views.getView(textEditor)
-    element.setUpdatedSynchronously(true)
-    element.classList.add('vim-mode')
-    statusBarManager ?= new StatusBarManager
-    globalVimState ?= new GlobalVimState
-    element.vimState = new VimState(element, statusBarManager, globalVimState)
+  return runs(function() {
+    const element = atom.views.getView(textEditor);
+    element.setUpdatedSynchronously(true);
+    element.classList.add('vim-mode');
+    if (statusBarManager == null) { statusBarManager = new StatusBarManager; }
+    if (globalVimState == null) { globalVimState = new GlobalVimState; }
+    element.vimState = new VimState(element, statusBarManager, globalVimState);
 
-    element.addEventListener "keydown", (e) ->
-      atom.keymaps.handleKeyboardEvent(e)
+    element.addEventListener("keydown", e => atom.keymaps.handleKeyboardEvent(e));
 
-    # mock parent element for the text editor
-    document.createElement("html").appendChild(element)
+    // mock parent element for the text editor
+    document.createElement("html").appendChild(element);
 
-    callback(element)
+    return callback(element);
+  });
+};
 
-mockPlatform = (editorElement, platform) ->
-  wrapper = document.createElement('div')
-  wrapper.className = platform
-  wrapper.appendChild(editorElement)
+const mockPlatform = function(editorElement, platform) {
+  const wrapper = document.createElement('div');
+  wrapper.className = platform;
+  return wrapper.appendChild(editorElement);
+};
 
-unmockPlatform = (editorElement) ->
-  editorElement.parentNode.removeChild(editorElement)
+const unmockPlatform = editorElement => editorElement.parentNode.removeChild(editorElement);
 
-dispatchKeyboardEvent = (target, eventArgs...) ->
-  e = document.createEvent('KeyboardEvent')
-  e.initKeyboardEvent(eventArgs...)
-  # 0 is the default, and it's valid ASCII, but it's wrong.
-  Object.defineProperty(e, 'keyCode', get: -> undefined) if e.keyCode is 0
-  target.dispatchEvent e
+const dispatchKeyboardEvent = function(target, ...eventArgs) {
+  const e = document.createEvent('KeyboardEvent');
+  e.initKeyboardEvent(...Array.from(eventArgs || []));
+  // 0 is the default, and it's valid ASCII, but it's wrong.
+  if (e.keyCode === 0) { Object.defineProperty(e, 'keyCode', {get() { return undefined; }}); }
+  return target.dispatchEvent(e);
+};
 
-dispatchTextEvent = (target, eventArgs...) ->
-  e = document.createEvent('TextEvent')
-  e.initTextEvent(eventArgs...)
-  target.dispatchEvent e
+const dispatchTextEvent = function(target, ...eventArgs) {
+  const e = document.createEvent('TextEvent');
+  e.initTextEvent(...Array.from(eventArgs || []));
+  return target.dispatchEvent(e);
+};
 
-keydown = (key, {element, ctrl, shift, alt, meta, raw}={}) ->
-  key = "U+#{key.charCodeAt(0).toString(16)}" unless key is 'escape' or raw?
-  element ||= document.activeElement
-  eventArgs = [
-    false, # bubbles
-    true, # cancelable
-    null, # view
-    key,  # key
-    0,    # location
+const keydown = function(key, param) {
+  if (param == null) { param = {}; }
+  let {element, ctrl, shift, alt, meta, raw} = param;
+  if ((key !== 'escape') && (raw == null)) { key = `U+${key.charCodeAt(0).toString(16)}`; }
+  if (!element) { element = document.activeElement; }
+  const eventArgs = [
+    false, // bubbles
+    true, // cancelable
+    null, // view
+    key,  // key
+    0,    // location
     ctrl, alt, shift, meta
-  ]
+  ];
 
-  canceled = not dispatchKeyboardEvent(element, 'keydown', eventArgs...)
-  dispatchKeyboardEvent(element, 'keypress', eventArgs...)
-  if not canceled
-    if dispatchTextEvent(element, 'textInput', eventArgs...)
-      element.value += key
-  dispatchKeyboardEvent(element, 'keyup', eventArgs...)
+  const canceled = !dispatchKeyboardEvent(element, 'keydown', ...Array.from(eventArgs));
+  dispatchKeyboardEvent(element, 'keypress', ...Array.from(eventArgs));
+  if (!canceled) {
+    if (dispatchTextEvent(element, 'textInput', ...Array.from(eventArgs))) {
+      element.value += key;
+    }
+  }
+  return dispatchKeyboardEvent(element, 'keyup', ...Array.from(eventArgs));
+};
 
-module.exports = {keydown, getEditorElement, mockPlatform, unmockPlatform}
+module.exports = {keydown, getEditorElement, mockPlatform, unmockPlatform};

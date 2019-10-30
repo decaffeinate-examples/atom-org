@@ -1,27 +1,43 @@
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
 
-# Public:
+// Public:
+let registerElement;
 module.exports =
-registerElement = (elementName, elementPrototype) ->
-  tagToExtend = null
-  classToExtend = null
+(registerElement = function(elementName, elementPrototype) {
+  let tagToExtend = null;
+  let classToExtend = null;
 
-  if typeof elementPrototype.extends is 'string'
-    tagToExtend = elementPrototype.extends
-  else if elementPrototype.extends?
-    classToExtend = elementPrototype.extends
+  if (typeof elementPrototype.extends === 'string') {
+    tagToExtend = elementPrototype.extends;
+  } else if (elementPrototype.extends != null) {
+    classToExtend = elementPrototype.extends;
+  }
 
-  classToExtend ?= HTMLElement
+  if (classToExtend == null) { classToExtend = HTMLElement; }
 
-  prototype = Object.create(classToExtend.prototype)
-  prototype[key] = value for key, value of elementPrototype
-  registerArgs = {prototype}
-  registerArgs.extends = tagToExtend if tagToExtend?
+  const prototype = Object.create(classToExtend.prototype);
+  for (let key in elementPrototype) { const value = elementPrototype[key]; prototype[key] = value; }
+  const registerArgs = {prototype};
+  if (tagToExtend != null) { registerArgs.extends = tagToExtend; }
 
-  viewClass = document.registerElement(elementName, registerArgs)
+  const viewClass = document.registerElement(elementName, registerArgs);
 
-  if elementPrototype.modelConstructor? and atom?.views?.addViewProvider?
-    atom.views.addViewProvider
-      modelConstructor: elementPrototype.modelConstructor
+  if ((elementPrototype.modelConstructor != null) && (__guard__(typeof atom !== 'undefined' && atom !== null ? atom.views : undefined, x => x.addViewProvider) != null)) {
+    atom.views.addViewProvider({
+      modelConstructor: elementPrototype.modelConstructor,
       viewConstructor: viewClass
+    });
+  }
 
-  viewClass
+  return viewClass;
+});
+
+function __guard__(value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+}

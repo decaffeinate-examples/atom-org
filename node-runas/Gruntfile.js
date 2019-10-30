@@ -1,54 +1,75 @@
-module.exports = (grunt) ->
-  grunt.initConfig
-    pkg: grunt.file.readJSON('package.json')
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = function(grunt) {
+  grunt.initConfig({
+    pkg: grunt.file.readJSON('package.json'),
 
-    coffee:
-      glob_to_multiple:
-        expand: true
-        cwd: 'src'
-        src: ['*.coffee']
-        dest: 'lib'
+    coffee: {
+      glob_to_multiple: {
+        expand: true,
+        cwd: 'src',
+        src: ['*.coffee'],
+        dest: 'lib',
         ext: '.js'
+      }
+    },
 
-    cpplint:
-      files: ['src/**/*.cc']
-      reporter: 'spec'
-      verbosity: 1
-      filters:
-        build:
-          include: false
+    cpplint: {
+      files: ['src/**/*.cc'],
+      reporter: 'spec',
+      verbosity: 1,
+      filters: {
+        build: {
+          include: false,
           namespaces: false
-        legal:
+        },
+        legal: {
           copyright: false
-        readability:
+        },
+        readability: {
           braces: false
+        }
+      }
+    },
 
-    shell:
-      rebuild:
-        command: 'npm build .'
-        options:
-          stdout: true
-          stderr: true
+    shell: {
+      rebuild: {
+        command: 'npm build .',
+        options: {
+          stdout: true,
+          stderr: true,
           failOnError: true
+        }
+      },
 
-      clean:
-        command: 'rm -fr build lib'
-        options:
-          stdout: true
-          stderr: true
+      clean: {
+        command: 'rm -fr build lib',
+        options: {
+          stdout: true,
+          stderr: true,
           failOnError: true
+        }
+      },
 
 
-      test:
-        command: 'npm test'
-        options:
-          stdout: true
-          stderr: true
+      test: {
+        command: 'npm test',
+        options: {
+          stdout: true,
+          stderr: true,
           failOnError: true
+        }
+      }
+    }
+  });
 
-  grunt.loadNpmTasks('grunt-contrib-coffee')
-  grunt.loadNpmTasks('grunt-shell')
-  grunt.loadNpmTasks('node-cpplint')
-  grunt.registerTask('default', ['coffee', 'cpplint', 'shell:rebuild'])
-  grunt.registerTask('test', ['default', 'shell:test'])
-  grunt.registerTask('clean', ['shell:clean'])
+  grunt.loadNpmTasks('grunt-contrib-coffee');
+  grunt.loadNpmTasks('grunt-shell');
+  grunt.loadNpmTasks('node-cpplint');
+  grunt.registerTask('default', ['coffee', 'cpplint', 'shell:rebuild']);
+  grunt.registerTask('test', ['default', 'shell:test']);
+  return grunt.registerTask('clean', ['shell:clean']);
+};

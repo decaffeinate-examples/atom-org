@@ -263,4 +263,4 @@ module.exports = {
     "unmodified": null,
     "withShift": "="
   }
-}
+};

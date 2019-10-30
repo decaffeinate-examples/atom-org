@@ -1,1 +1,1 @@
-foo = require('bar')({})
+const foo = require('bar')({});

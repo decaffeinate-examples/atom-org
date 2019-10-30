@@ -1,59 +1,80 @@
-npm = require 'npm'
-request = require 'request'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const npm = require('npm');
+const request = require('request');
 
-config = require './apm'
+const config = require('./apm');
 
-loadNpm = (callback) ->
-  npmOptions =
-    userconfig: config.getUserConfigPath()
+const loadNpm = function(callback) {
+  const npmOptions = {
+    userconfig: config.getUserConfigPath(),
     globalconfig: config.getGlobalConfigPath()
-  npm.load(npmOptions, callback)
+  };
+  return npm.load(npmOptions, callback);
+};
 
-configureRequest = (requestOptions, callback) ->
-  loadNpm ->
-    requestOptions.proxy ?= npm.config.get('https-proxy') or npm.config.get('proxy') or process.env.HTTPS_PROXY or process.env.HTTP_PROXY
-    requestOptions.strictSSL ?= npm.config.get('strict-ssl')
+const configureRequest = (requestOptions, callback) => loadNpm(function() {
+  let left;
+  if (requestOptions.proxy == null) { requestOptions.proxy = npm.config.get('https-proxy') || npm.config.get('proxy') || process.env.HTTPS_PROXY || process.env.HTTP_PROXY; }
+  if (requestOptions.strictSSL == null) { requestOptions.strictSSL = npm.config.get('strict-ssl'); }
 
-    userAgent = npm.config.get('user-agent') ? "AtomApm/#{require('../package.json').version}"
-    requestOptions.headers ?= {}
-    requestOptions.headers['User-Agent'] ?= userAgent
-    callback()
+  const userAgent = (left = npm.config.get('user-agent')) != null ? left : `AtomApm/${require('../package.json').version}`;
+  if (requestOptions.headers == null) { requestOptions.headers = {}; }
+  if (requestOptions.headers['User-Agent'] == null) { requestOptions.headers['User-Agent'] = userAgent; }
+  return callback();
+});
 
-module.exports =
-  get: (requestOptions, callback) ->
-    configureRequest requestOptions, ->
-      retryCount = requestOptions.retries ? 0
-      requestsMade = 0
-      tryRequest = ->
-        requestsMade++
-        request.get requestOptions, (error, response, body) ->
-          if retryCount > 0 and error?.code in ['ETIMEDOUT', 'ECONNRESET']
-            retryCount--
-            tryRequest()
-          else
-            if error?.message and requestsMade > 1
-              error.message += " (#{requestsMade} attempts)"
+module.exports = {
+  get(requestOptions, callback) {
+    return configureRequest(requestOptions, function() {
+      let retryCount = requestOptions.retries != null ? requestOptions.retries : 0;
+      let requestsMade = 0;
+      var tryRequest = function() {
+        requestsMade++;
+        return request.get(requestOptions, function(error, response, body) {
+          if ((retryCount > 0) && ['ETIMEDOUT', 'ECONNRESET'].includes(error != null ? error.code : undefined)) {
+            retryCount--;
+            return tryRequest();
+          } else {
+            if ((error != null ? error.message : undefined) && (requestsMade > 1)) {
+              error.message += ` (${requestsMade} attempts)`;
+            }
 
-            callback(error, response, body)
-      tryRequest()
+            return callback(error, response, body);
+          }
+        });
+      };
+      return tryRequest();
+    });
+  },
 
-  del: (requestOptions, callback) ->
-    configureRequest requestOptions, ->
-      request.del(requestOptions, callback)
+  del(requestOptions, callback) {
+    return configureRequest(requestOptions, () => request.del(requestOptions, callback));
+  },
 
-  post: (requestOptions, callback) ->
-    configureRequest requestOptions, ->
-      request.post(requestOptions, callback)
+  post(requestOptions, callback) {
+    return configureRequest(requestOptions, () => request.post(requestOptions, callback));
+  },
 
-  createReadStream: (requestOptions, callback) ->
-    configureRequest requestOptions, ->
-      callback(request.get(requestOptions))
+  createReadStream(requestOptions, callback) {
+    return configureRequest(requestOptions, () => callback(request.get(requestOptions)));
+  },
 
-  getErrorMessage: (response, body) ->
-    if response?.statusCode is 503
-      'atom.io is temporarily unavailable, please try again later.'
-    else
-      body?.message ? body?.error ? body
+  getErrorMessage(response, body) {
+    if ((response != null ? response.statusCode : undefined) === 503) {
+      return 'atom.io is temporarily unavailable, please try again later.';
+    } else {
+      let left;
+      return (left = (body != null ? body.message : undefined) != null ? (body != null ? body.message : undefined) : (body != null ? body.error : undefined)) != null ? left : body;
+    }
+  },
 
-  debug: (debug) ->
-    request.debug = debug
+  debug(debug) {
+    return request.debug = debug;
+  }
+};

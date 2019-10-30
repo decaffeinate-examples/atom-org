@@ -1,83 +1,121 @@
-Path     = require 'path'
-Class    = require './class'
-Method   = require './method'
-Variable = require './variable'
-Doc      = require './doc'
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let File;
+const Path     = require('path');
+const Class    = require('./class');
+const Method   = require('./method');
+const Variable = require('./variable');
+const Doc      = require('./doc');
 
-# Public: The file class is a `fake` class that wraps the
-# file body to capture top-level assigned methods.
-#
-module.exports = class File extends Class
+// Public: The file class is a `fake` class that wraps the
+// file body to capture top-level assigned methods.
+//
+module.exports = (File = class File extends Class {
 
-  # Public: Construct a `File` object.
-  #
-  # node - The class node (a {Object})
-  # filename - A {String} representing the current filename
-  # lineMapping - An object mapping the actual position of a member to its Donna one
-  # options - Any additional parser options
-  constructor: (@node, @fileName, @lineMapping, @options) ->
-    try
-      @methods = []
-      @variables = []
+  // Public: Construct a `File` object.
+  //
+  // node - The class node (a {Object})
+  // filename - A {String} representing the current filename
+  // lineMapping - An object mapping the actual position of a member to its Donna one
+  // options - Any additional parser options
+  constructor(node, fileName, lineMapping, options) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.node = node;
+    this.fileName = fileName;
+    this.lineMapping = lineMapping;
+    this.options = options;
+    try {
+      this.methods = [];
+      this.variables = [];
 
-      previousExp = null
+      let previousExp = null;
 
-      for exp in @node.expressions
-        switch exp.constructor.name
+      for (let exp of Array.from(this.node.expressions)) {
+        var doc;
+        switch (exp.constructor.name) {
 
-          when 'Assign'
-            doc = previousExp if previousExp?.constructor.name is 'Comment'
+          case 'Assign':
+            if ((previousExp != null ? previousExp.constructor.name : undefined) === 'Comment') { doc = previousExp; }
 
-            switch exp.value?.constructor.name
-              when 'Code'
-                @methods.push(new Method(@, exp, @lineMapping, @options, doc))
-              when 'Value'
-                if exp.value.base.value
-                  @variables.push new Variable(@, exp, @lineMapping, @options, true, doc)
+            switch ((exp.value != null ? exp.value.constructor.name : undefined)) {
+              case 'Code':
+                this.methods.push(new Method(this, exp, this.lineMapping, this.options, doc));
+                break;
+              case 'Value':
+                if (exp.value.base.value) {
+                  this.variables.push(new Variable(this, exp, this.lineMapping, this.options, true, doc));
+                }
+                break;
+            }
 
-            doc = null
+            doc = null;
+            break;
 
-          when 'Value'
-            previousProp = null
+          case 'Value':
+            var previousProp = null;
 
-            for prop in exp.base.properties
-              doc = previousProp if previousProp?.constructor.name is 'Comment'
+            for (let prop of Array.from(exp.base.properties)) {
+              if ((previousProp != null ? previousProp.constructor.name : undefined) === 'Comment') { doc = previousProp; }
 
-              if prop.value?.constructor.name is 'Code'
-                @methods.push new Method(@, prop, @lineMapping, @options, doc)
+              if ((prop.value != null ? prop.value.constructor.name : undefined) === 'Code') {
+                this.methods.push(new Method(this, prop, this.lineMapping, this.options, doc));
+              }
 
-              doc = null
-              previousProp = prop
-        previousExp = exp
+              doc = null;
+              previousProp = prop;
+            }
+            break;
+        }
+        previousExp = exp;
+      }
 
-    catch error
-      console.warn('File class error:', @node, error) if @options.verbose
+    } catch (error) {
+      if (this.options.verbose) { console.warn('File class error:', this.node, error); }
+    }
+  }
 
 
-  # Public: Get the full file name with path
-  #
-  # Returns the file name with path as a {String}.
-  getFullName: ->
-    fullName = @fileName
+  // Public: Get the full file name with path
+  //
+  // Returns the file name with path as a {String}.
+  getFullName() {
+    let fullName = this.fileName;
 
-    for input in @options.inputs
-      input = input.replace(///^\.[\/]///, '')                        # Clean leading `./`
-      input = input + Path.sep unless ///#{ Path.sep }$///.test input # Append trailing `/`
-      input = input.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1")         # Escape String
-      fullName = fullName.replace(new RegExp(input), '')
+    for (let input of Array.from(this.options.inputs)) {
+      input = input.replace(new RegExp(`^\\.[\\/]`), '');                        // Clean leading `./`
+      if (!new RegExp(`${ Path.sep }$`).test(input)) { input = input + Path.sep; } // Append trailing `/`
+      input = input.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");         // Escape String
+      fullName = fullName.replace(new RegExp(input), '');
+    }
 
-    fullName.replace(Path.sep, '/')
+    return fullName.replace(Path.sep, '/');
+  }
 
-  # Public: Returns the file class name.
-  #
-  # Returns the file name without path as a {String}.
-  getFileName: ->
-    Path.basename @getFullName()
+  // Public: Returns the file class name.
+  //
+  // Returns the file name without path as a {String}.
+  getFileName() {
+    return Path.basename(this.getFullName());
+  }
 
-  # Public: Get the file path
-  #
-  # Returns the file path as a {String}.
-  getPath: ->
-    path = Path.dirname @getFullName()
-    path = '' if path is '.'
-    path
+  // Public: Get the file path
+  //
+  // Returns the file path as a {String}.
+  getPath() {
+    let path = Path.dirname(this.getFullName());
+    if (path === '.') { path = ''; }
+    return path;
+  }
+});

@@ -1,101 +1,126 @@
-crypto = require 'crypto'
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS204: Change includes calls to have a more natural evaluation order
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const crypto = require('crypto');
+const path = require('path');
 
-CoffeeScript = null # defer until used
-fs = require 'fs-plus'
+let CoffeeScript = null; // defer until used
+const fs = require('fs-plus');
 
-stats =
-  hits: 0
+let stats = {
+  hits: 0,
   misses: 0
-cacheDirectory = null
+};
+let cacheDirectory = null;
 
-getCachePath = (coffee) ->
-  digest = crypto.createHash('sha1').update(coffee, 'utf8').digest('hex')
-  path.join(cacheDirectory, "#{digest}.js")
+const getCachePath = function(coffee) {
+  const digest = crypto.createHash('sha1').update(coffee, 'utf8').digest('hex');
+  return path.join(cacheDirectory, `${digest}.js`);
+};
 
-getCachedJavaScript = (cachePath) ->
-  if fs.isFileSync(cachePath)
-    try
-      cachedJavaScript = fs.readFileSync(cachePath, 'utf8')
-      stats.hits++
-      return cachedJavaScript
-  return
+const getCachedJavaScript = function(cachePath) {
+  if (fs.isFileSync(cachePath)) {
+    try {
+      const cachedJavaScript = fs.readFileSync(cachePath, 'utf8');
+      stats.hits++;
+      return cachedJavaScript;
+    } catch (error) {}
+  }
+};
 
-convertFilePath = (filePath) ->
-  if process.platform is 'win32'
-    filePath = "/#{path.resolve(filePath).replace(/\\/g, '/')}"
-  encodeURI(filePath)
+const convertFilePath = function(filePath) {
+  if (process.platform === 'win32') {
+    filePath = `/${path.resolve(filePath).replace(/\\/g, '/')}`;
+  }
+  return encodeURI(filePath);
+};
 
-loadCoffeeScript = ->
-  coffee = require 'coffee-script'
+const loadCoffeeScript = function() {
+  const coffee = require('coffee-script');
 
-  # Work around for https://github.com/jashkenas/coffeescript/issues/3890
-  coffeePrepareStackTrace = Error.prepareStackTrace
-  if coffeePrepareStackTrace?
-    Error.prepareStackTrace = (error, stack) ->
-      try
-        return coffeePrepareStackTrace(error, stack)
-      catch coffeeError
-        return stack
+  // Work around for https://github.com/jashkenas/coffeescript/issues/3890
+  const coffeePrepareStackTrace = Error.prepareStackTrace;
+  if (coffeePrepareStackTrace != null) {
+    Error.prepareStackTrace = function(error, stack) {
+      try {
+        return coffeePrepareStackTrace(error, stack);
+      } catch (coffeeError) {
+        return stack;
+      }
+    };
+  }
 
-  coffee
+  return coffee;
+};
 
-compileCoffeeScript = (coffee, filePath, cachePath) ->
-  CoffeeScript ?= loadCoffeeScript()
-  compileOptions =
-    filename: filePath
-    literate: isLiterate(filePath)
+const compileCoffeeScript = function(coffee, filePath, cachePath) {
+  if (CoffeeScript == null) { CoffeeScript = loadCoffeeScript(); }
+  const compileOptions = {
+    filename: filePath,
+    literate: isLiterate(filePath),
     sourceMap: true
-  {js, v3SourceMap} = CoffeeScript.compile(coffee, compileOptions)
-  stats.misses++
+  };
+  let {js, v3SourceMap} = CoffeeScript.compile(coffee, compileOptions);
+  stats.misses++;
 
-  if btoa? and unescape? and encodeURIComponent?
-    js = """
-      #{js}
-      //# sourceMappingURL=data:application/json;base64,#{btoa unescape encodeURIComponent v3SourceMap}
-      //# sourceURL=#{convertFilePath(filePath)}
-    """
+  if ((typeof btoa !== 'undefined' && btoa !== null) && (typeof unescape !== 'undefined' && unescape !== null) && (typeof encodeURIComponent !== 'undefined' && encodeURIComponent !== null)) {
+    js = `\
+${js}
+//# sourceMappingURL=data:application/json;base64,${btoa(unescape(encodeURIComponent(v3SourceMap)))}
+//# sourceURL=${convertFilePath(filePath)}\
+`;
+  }
 
-  try
-    fs.writeFileSync(cachePath, js)
-  js
+  try {
+    fs.writeFileSync(cachePath, js);
+  } catch (error) {}
+  return js;
+};
 
-isLiterate = (filePath) -> path.extname(filePath) in ['.litcoffee', '.md']
+var isLiterate = function(filePath) { let needle;
+return (needle = path.extname(filePath), ['.litcoffee', '.md'].includes(needle)); };
 
-requireCoffeeScript = (module, filePath) ->
-  coffee = fs.readFileSync(filePath, 'utf8')
-  cachePath = getCachePath(coffee)
-  js = getCachedJavaScript(cachePath) ? compileCoffeeScript(coffee, filePath, cachePath)
-  module._compile(js, filePath)
+const requireCoffeeScript = function(module, filePath) {
+  let left;
+  const coffee = fs.readFileSync(filePath, 'utf8');
+  const cachePath = getCachePath(coffee);
+  const js = (left = getCachedJavaScript(cachePath)) != null ? left : compileCoffeeScript(coffee, filePath, cachePath);
+  return module._compile(js, filePath);
+};
 
-exports.register = ->
-  propertyConfig =
-    enumerable: true
-    value: requireCoffeeScript
+exports.register = function() {
+  const propertyConfig = {
+    enumerable: true,
+    value: requireCoffeeScript,
     writable: false
+  };
 
-  Object.defineProperty(require.extensions, '.coffee', propertyConfig)
-  Object.defineProperty(require.extensions, '.litcoffee', propertyConfig)
-  Object.defineProperty(require.extensions, '.coffee.md', propertyConfig)
+  Object.defineProperty(require.extensions, '.coffee', propertyConfig);
+  Object.defineProperty(require.extensions, '.litcoffee', propertyConfig);
+  Object.defineProperty(require.extensions, '.coffee.md', propertyConfig);
 
-  return
+};
 
-exports.getCacheMisses = -> stats.misses
+exports.getCacheMisses = () => stats.misses;
 
-exports.getCacheHits = -> stats.hits
+exports.getCacheHits = () => stats.hits;
 
-exports.resetCacheStats = ->
-  stats =
-    hits: 0
-    misses: 0
+exports.resetCacheStats = () => stats = {
+  hits: 0,
+  misses: 0
+};
 
-exports.setCacheDirectory = (newCacheDirectory) ->
-  cacheDirectory = newCacheDirectory
+exports.setCacheDirectory = newCacheDirectory => cacheDirectory = newCacheDirectory;
 
-exports.getCacheDirectory = -> cacheDirectory
+exports.getCacheDirectory = () => cacheDirectory;
 
-exports.addPathToCache = (filePath) ->
-  coffee = fs.readFileSync(filePath, 'utf8')
-  cachePath = getCachePath(coffee)
-  compileCoffeeScript(coffee, filePath, cachePath)
-  return
+exports.addPathToCache = function(filePath) {
+  const coffee = fs.readFileSync(filePath, 'utf8');
+  const cachePath = getCachePath(coffee);
+  compileCoffeeScript(coffee, filePath, cachePath);
+};

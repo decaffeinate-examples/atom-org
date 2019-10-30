@@ -1,90 +1,107 @@
-GeneralPanel = require '../lib/general-panel'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const GeneralPanel = require('../lib/general-panel');
 
-describe "GeneralPanel", ->
-  panel = null
+describe("GeneralPanel", function() {
+  let panel = null;
 
-  getValueForId = (id) ->
-    element = panel.element.querySelector("##{id.replace(/\./g, '\\.')}")
-    if element.tagName is "INPUT"
-      element.checked
-    else if element.tagName is "SELECT"
-      element.value
-    else
-      element.getModel().getText()
+  const getValueForId = function(id) {
+    const element = panel.element.querySelector(`#${id.replace(/\./g, '\\.')}`);
+    if (element.tagName === "INPUT") {
+      return element.checked;
+    } else if (element.tagName === "SELECT") {
+      return element.value;
+    } else {
+      return element.getModel().getText();
+    }
+  };
 
-  setValueForId = (id, value) ->
-    element = panel.element.querySelector("##{id.replace(/\./g, '\\.')}")
-    if element.tagName is "INPUT"
-      element.checked = value
-      element.dispatchEvent(new Event('change', {bubbles: true}))
-    else if element.tagName is "SELECT"
-      element.value = value
-      element.dispatchEvent(new Event('change', {bubbles: true}))
-    else
-      element.getModel().setText(value?.toString())
-      window.advanceClock(10000) # wait for contents-modified to be triggered
+  const setValueForId = function(id, value) {
+    const element = panel.element.querySelector(`#${id.replace(/\./g, '\\.')}`);
+    if (element.tagName === "INPUT") {
+      element.checked = value;
+      return element.dispatchEvent(new Event('change', {bubbles: true}));
+    } else if (element.tagName === "SELECT") {
+      element.value = value;
+      return element.dispatchEvent(new Event('change', {bubbles: true}));
+    } else {
+      element.getModel().setText(value != null ? value.toString() : undefined);
+      return window.advanceClock(10000); // wait for contents-modified to be triggered
+    }
+  };
 
-  beforeEach ->
-    atom.config.set('core.enum', 4)
-    atom.config.set('core.int', 22)
-    atom.config.set('core.float', 0.1)
+  beforeEach(function() {
+    atom.config.set('core.enum', 4);
+    atom.config.set('core.int', 22);
+    atom.config.set('core.float', 0.1);
 
-    atom.config.setSchema('', type: 'object')
-    atom.config.setSchema('core.enum',
-      type: 'integer'
-      default: 2
+    atom.config.setSchema('', {type: 'object'});
+    atom.config.setSchema('core.enum', {
+      type: 'integer',
+      default: 2,
       enum: [2, 4, 6, 8]
-    )
+    }
+    );
 
-    panel = new GeneralPanel()
+    return panel = new GeneralPanel();
+  });
 
-  it "automatically binds named fields to their corresponding config keys", ->
-    expect(getValueForId('core.enum')).toBe '4'
-    expect(getValueForId('core.int')).toBe '22'
-    expect(getValueForId('core.float')).toBe '0.1'
+  it("automatically binds named fields to their corresponding config keys", function() {
+    expect(getValueForId('core.enum')).toBe('4');
+    expect(getValueForId('core.int')).toBe('22');
+    expect(getValueForId('core.float')).toBe('0.1');
 
-    atom.config.set('core.enum', 6)
-    atom.config.set('core.int', 222)
-    atom.config.set('core.float', 0.11)
+    atom.config.set('core.enum', 6);
+    atom.config.set('core.int', 222);
+    atom.config.set('core.float', 0.11);
 
-    expect(getValueForId('core.enum')).toBe '6'
-    expect(getValueForId('core.int')).toBe '222'
-    expect(getValueForId('core.float')).toBe '0.11'
+    expect(getValueForId('core.enum')).toBe('6');
+    expect(getValueForId('core.int')).toBe('222');
+    expect(getValueForId('core.float')).toBe('0.11');
 
-    setValueForId('core.enum', '2')
-    setValueForId('core.int', 90)
-    setValueForId('core.float', 89.2)
+    setValueForId('core.enum', '2');
+    setValueForId('core.int', 90);
+    setValueForId('core.float', 89.2);
 
-    expect(atom.config.get('core.enum')).toBe 2
-    expect(atom.config.get('core.int')).toBe 90
-    expect(atom.config.get('core.float')).toBe 89.2
+    expect(atom.config.get('core.enum')).toBe(2);
+    expect(atom.config.get('core.int')).toBe(90);
+    expect(atom.config.get('core.float')).toBe(89.2);
 
-    setValueForId('core.int', '')
-    setValueForId('core.float', '')
+    setValueForId('core.int', '');
+    setValueForId('core.float', '');
 
-    expect(atom.config.get('core.int')).toBeUndefined()
-    expect(atom.config.get('core.float')).toBeUndefined()
+    expect(atom.config.get('core.int')).toBeUndefined();
+    return expect(atom.config.get('core.float')).toBeUndefined();
+  });
 
-  it "does not save the config value until it has been changed to a new value", ->
-    observeHandler = jasmine.createSpy("observeHandler")
-    atom.config.observe "core.int", observeHandler
-    observeHandler.reset()
+  it("does not save the config value until it has been changed to a new value", function() {
+    const observeHandler = jasmine.createSpy("observeHandler");
+    atom.config.observe("core.int", observeHandler);
+    observeHandler.reset();
 
-    window.advanceClock(10000) # wait for contents-modified to be triggered
-    expect(observeHandler).not.toHaveBeenCalled()
+    window.advanceClock(10000); // wait for contents-modified to be triggered
+    expect(observeHandler).not.toHaveBeenCalled();
 
-    setValueForId('core.int', 2)
-    expect(observeHandler).toHaveBeenCalled()
-    observeHandler.reset()
+    setValueForId('core.int', 2);
+    expect(observeHandler).toHaveBeenCalled();
+    observeHandler.reset();
 
-    setValueForId('core.int', 2)
-    expect(observeHandler).not.toHaveBeenCalled()
+    setValueForId('core.int', 2);
+    return expect(observeHandler).not.toHaveBeenCalled();
+  });
 
-  it "does not update the editor text unless the value it parses to changes", ->
-    setValueForId('core.int', "2.")
-    expect(atom.config.get('core.int')).toBe 2
-    expect(getValueForId('core.int')).toBe '2.'
+  it("does not update the editor text unless the value it parses to changes", function() {
+    setValueForId('core.int', "2.");
+    expect(atom.config.get('core.int')).toBe(2);
+    return expect(getValueForId('core.int')).toBe('2.');
+  });
 
-  it "shows the package settings notes for core and editor settings", ->
-    expect(panel.element.querySelector('#core-settings-note')).toExist()
-    expect(panel.element.querySelector('#core-settings-note').textContent).toContain('their package card in')
+  return it("shows the package settings notes for core and editor settings", function() {
+    expect(panel.element.querySelector('#core-settings-note')).toExist();
+    return expect(panel.element.querySelector('#core-settings-note').textContent).toContain('their package card in');
+  });
+});

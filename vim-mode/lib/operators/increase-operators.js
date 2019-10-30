@@ -1,57 +1,81 @@
-{Operator} = require './general-operators'
-{Range} = require 'atom'
-settings = require '../settings'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {Operator} = require('./general-operators');
+const {Range} = require('atom');
+const settings = require('../settings');
 
-#
-# It increases or decreases the next number on the line
-#
-class Increase extends Operator
-  step: 1
+//
+// It increases or decreases the next number on the line
+//
+class Increase extends Operator {
+  static initClass() {
+    this.prototype.step = 1;
+  }
 
-  constructor: ->
-    super
-    @complete = true
-    @numberRegex = new RegExp(settings.numberRegex())
+  constructor() {
+    super(...arguments);
+    this.complete = true;
+    this.numberRegex = new RegExp(settings.numberRegex());
+  }
 
-  execute: (count=1) ->
-    @editor.transact =>
-      increased = false
-      for cursor in @editor.getCursors()
-        if @increaseNumber(count, cursor) then increased = true
-      atom.beep() unless increased
+  execute(count) {
+    if (count == null) { count = 1; }
+    return this.editor.transact(() => {
+      let increased = false;
+      for (let cursor of Array.from(this.editor.getCursors())) {
+        if (this.increaseNumber(count, cursor)) { increased = true; }
+      }
+      if (!increased) { return atom.beep(); }
+    });
+  }
 
-  increaseNumber: (count, cursor) ->
-    # find position of current number, adapted from from SearchCurrentWord
-    cursorPosition = cursor.getBufferPosition()
-    numEnd = cursor.getEndOfCurrentWordBufferPosition(wordRegex: @numberRegex, allowNext: false)
+  increaseNumber(count, cursor) {
+    // find position of current number, adapted from from SearchCurrentWord
+    const cursorPosition = cursor.getBufferPosition();
+    let numEnd = cursor.getEndOfCurrentWordBufferPosition({wordRegex: this.numberRegex, allowNext: false});
 
-    if numEnd.column is cursorPosition.column
-      # either we don't have a current number, or it ends on cursor, i.e. precedes it, so look for the next one
-      numEnd = cursor.getEndOfCurrentWordBufferPosition(wordRegex: @numberRegex, allowNext: true)
-      return if numEnd.row isnt cursorPosition.row # don't look beyond the current line
-      return if numEnd.column is cursorPosition.column # no number after cursor
+    if (numEnd.column === cursorPosition.column) {
+      // either we don't have a current number, or it ends on cursor, i.e. precedes it, so look for the next one
+      numEnd = cursor.getEndOfCurrentWordBufferPosition({wordRegex: this.numberRegex, allowNext: true});
+      if (numEnd.row !== cursorPosition.row) { return; } // don't look beyond the current line
+      if (numEnd.column === cursorPosition.column) { return; } // no number after cursor
+    }
 
-    cursor.setBufferPosition numEnd
-    numStart = cursor.getBeginningOfCurrentWordBufferPosition(wordRegex: @numberRegex, allowPrevious: false)
+    cursor.setBufferPosition(numEnd);
+    const numStart = cursor.getBeginningOfCurrentWordBufferPosition({wordRegex: this.numberRegex, allowPrevious: false});
 
-    range = new Range(numStart, numEnd)
+    const range = new Range(numStart, numEnd);
 
-    # parse number, increase/decrease
-    number = parseInt(@editor.getTextInBufferRange(range), 10)
-    if isNaN(number)
-      cursor.setBufferPosition(cursorPosition)
-      return
+    // parse number, increase/decrease
+    let number = parseInt(this.editor.getTextInBufferRange(range), 10);
+    if (isNaN(number)) {
+      cursor.setBufferPosition(cursorPosition);
+      return;
+    }
 
-    number += @step*count
+    number += this.step*count;
 
-    # replace current number with new
-    newValue = String(number)
-    @editor.setTextInBufferRange(range, newValue, normalizeLineEndings: false)
+    // replace current number with new
+    const newValue = String(number);
+    this.editor.setTextInBufferRange(range, newValue, {normalizeLineEndings: false});
 
-    cursor.setBufferPosition(row: numStart.row, column: numStart.column-1+newValue.length)
-    return true
+    cursor.setBufferPosition({row: numStart.row, column: (numStart.column-1)+newValue.length});
+    return true;
+  }
+}
+Increase.initClass();
 
-class Decrease extends Increase
-  step: -1
+class Decrease extends Increase {
+  static initClass() {
+    this.prototype.step = -1;
+  }
+}
+Decrease.initClass();
 
-module.exports = {Increase, Decrease}
+module.exports = {Increase, Decrease};

@@ -1,68 +1,95 @@
-{CompositeDisposable, Disposable} = require 'atom'
-_ = require 'underscore-plus'
-Grim = require 'grim'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let DeprecationCopStatusBarView;
+const {CompositeDisposable, Disposable} = require('atom');
+const _ = require('underscore-plus');
+const Grim = require('grim');
 
 module.exports =
-class DeprecationCopStatusBarView
-  lastLength: null
-  toolTipDisposable: null
+(DeprecationCopStatusBarView = (function() {
+  DeprecationCopStatusBarView = class DeprecationCopStatusBarView {
+    static initClass() {
+      this.prototype.lastLength = null;
+      this.prototype.toolTipDisposable = null;
+    }
 
-  constructor: ->
-    @subscriptions = new CompositeDisposable
+    constructor() {
+      this.update = this.update.bind(this);
+      this.subscriptions = new CompositeDisposable;
 
-    @element = document.createElement('div')
-    @element.classList.add('deprecation-cop-status', 'inline-block', 'text-warning')
-    @element.setAttribute('tabindex', -1)
+      this.element = document.createElement('div');
+      this.element.classList.add('deprecation-cop-status', 'inline-block', 'text-warning');
+      this.element.setAttribute('tabindex', -1);
 
-    @icon = document.createElement('span')
-    @icon.classList.add('icon', 'icon-alert')
-    @element.appendChild(@icon)
+      this.icon = document.createElement('span');
+      this.icon.classList.add('icon', 'icon-alert');
+      this.element.appendChild(this.icon);
 
-    @deprecationNumber = document.createElement('span')
-    @deprecationNumber.classList.add('deprecation-number')
-    @deprecationNumber.textContent = '0'
-    @element.appendChild(@deprecationNumber)
+      this.deprecationNumber = document.createElement('span');
+      this.deprecationNumber.classList.add('deprecation-number');
+      this.deprecationNumber.textContent = '0';
+      this.element.appendChild(this.deprecationNumber);
 
-    clickHandler = ->
-      workspaceElement = atom.views.getView(atom.workspace)
-      atom.commands.dispatch workspaceElement, 'deprecation-cop:view'
-    @element.addEventListener('click', clickHandler)
-    @subscriptions.add(new Disposable(=> @element.removeEventListener('click', clickHandler)))
+      const clickHandler = function() {
+        const workspaceElement = atom.views.getView(atom.workspace);
+        return atom.commands.dispatch(workspaceElement, 'deprecation-cop:view');
+      };
+      this.element.addEventListener('click', clickHandler);
+      this.subscriptions.add(new Disposable(() => this.element.removeEventListener('click', clickHandler)));
 
-    @update()
+      this.update();
 
-    debouncedUpdateDeprecatedSelectorCount = _.debounce(@update, 1000)
+      const debouncedUpdateDeprecatedSelectorCount = _.debounce(this.update, 1000);
 
-    @subscriptions.add Grim.on 'updated', @update
-    # TODO: Remove conditional when the new StyleManager deprecation APIs reach stable.
-    if atom.styles.onDidUpdateDeprecations?
-      @subscriptions.add(atom.styles.onDidUpdateDeprecations(debouncedUpdateDeprecatedSelectorCount))
+      this.subscriptions.add(Grim.on('updated', this.update));
+      // TODO: Remove conditional when the new StyleManager deprecation APIs reach stable.
+      if (atom.styles.onDidUpdateDeprecations != null) {
+        this.subscriptions.add(atom.styles.onDidUpdateDeprecations(debouncedUpdateDeprecatedSelectorCount));
+      }
+    }
 
-  destroy: ->
-    @subscriptions.dispose()
-    @element.remove()
+    destroy() {
+      this.subscriptions.dispose();
+      return this.element.remove();
+    }
 
-  getDeprecatedCallCount: ->
-    Grim.getDeprecations().map((d) -> d.getStackCount()).reduce(((a, b) -> a + b), 0)
+    getDeprecatedCallCount() {
+      return Grim.getDeprecations().map(d => d.getStackCount()).reduce(((a, b) => a + b), 0);
+    }
 
-  getDeprecatedStyleSheetsCount: ->
-    # TODO: Remove conditional when the new StyleManager deprecation APIs reach stable.
-    if atom.styles.getDeprecations?
-      Object.keys(atom.styles.getDeprecations()).length
-    else
-      0
+    getDeprecatedStyleSheetsCount() {
+      // TODO: Remove conditional when the new StyleManager deprecation APIs reach stable.
+      if (atom.styles.getDeprecations != null) {
+        return Object.keys(atom.styles.getDeprecations()).length;
+      } else {
+        return 0;
+      }
+    }
 
-  update: =>
-    length = @getDeprecatedCallCount() + @getDeprecatedStyleSheetsCount()
+    update() {
+      const length = this.getDeprecatedCallCount() + this.getDeprecatedStyleSheetsCount();
 
-    return if @lastLength is length
+      if (this.lastLength === length) { return; }
 
-    @lastLength = length
-    @deprecationNumber.textContent = "#{_.pluralize(length, 'deprecation')}"
-    @toolTipDisposable?.dispose()
-    @toolTipDisposable = atom.tooltips.add @element, title: "#{_.pluralize(length, 'call')} to deprecated methods"
+      this.lastLength = length;
+      this.deprecationNumber.textContent = `${_.pluralize(length, 'deprecation')}`;
+      if (this.toolTipDisposable != null) {
+        this.toolTipDisposable.dispose();
+      }
+      this.toolTipDisposable = atom.tooltips.add(this.element, {title: `${_.pluralize(length, 'call')} to deprecated methods`});
 
-    if length is 0
-      @element.style.display = 'none'
-    else
-      @element.style.display = ''
+      if (length === 0) {
+        return this.element.style.display = 'none';
+      } else {
+        return this.element.style.display = '';
+      }
+    }
+  };
+  DeprecationCopStatusBarView.initClass();
+  return DeprecationCopStatusBarView;
+})());

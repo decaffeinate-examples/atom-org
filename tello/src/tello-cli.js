@@ -1,38 +1,54 @@
-fs = require 'fs'
-{digest} = require './digester'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const fs = require('fs');
+const {digest} = require('./digester');
 
-getArgs = ->
-  optimist = require('optimist')
-    .usage("""
-    Usage: $0 [options] [source_files]
-    """)
-    .options('o',
-      alias: 'output-file'
-      describe: 'The output directory'
+const getArgs = function() {
+  const optimist = require('optimist')
+    .usage(`\
+Usage: $0 [options] [source_files]\
+`)
+    .options('o', {
+      alias: 'output-file',
+      describe: 'The output directory',
       default: './api.json'
+    }
     )
-    .options('i',
-      alias: 'input-file'
-      describe: 'The output directory'
+    .options('i', {
+      alias: 'input-file',
+      describe: 'The output directory',
       default: './metadata.json'
+    }
     )
-    .options('h',
-      alias: 'help'
+    .options('h', {
+      alias: 'help',
       describe: 'Show the help'
-    )
-  argv = optimist.argv
+    }
+    );
+  const {
+    argv
+  } = optimist;
 
-  if argv.h
-    console.log(optimist.help())
-  else
-    input: argv.i
-    output: argv.o
+  if (argv.h) {
+    return console.log(optimist.help());
+  } else {
+    return {
+      input: argv.i,
+      output: argv.o
+    };
+  }
+};
 
-main = ->
-  return unless args = getArgs()
+const main = function() {
+  let args;
+  if (!(args = getArgs())) { return; }
 
-  metadata = JSON.parse(fs.readFileSync(args.input, 'utf8'))
-  json = digest(metadata)
-  fs.writeFileSync(args.output, JSON.stringify(json, null, '  '))
+  const metadata = JSON.parse(fs.readFileSync(args.input, 'utf8'));
+  const json = digest(metadata);
+  return fs.writeFileSync(args.output, JSON.stringify(json, null, '  '));
+};
 
-module.exports = {main}
+module.exports = {main};

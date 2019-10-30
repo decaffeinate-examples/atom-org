@@ -1,201 +1,261 @@
-url = require 'url'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let RootDragAndDropHandler;
+const url = require('url');
 
-{ipcRenderer, remote} = require 'electron'
+const {ipcRenderer, remote} = require('electron');
 
-# TODO: Support dragging external folders and using the drag-and-drop indicators for them
-# Currently they're handled in TreeView's drag listeners
+// TODO: Support dragging external folders and using the drag-and-drop indicators for them
+// Currently they're handled in TreeView's drag listeners
 
 module.exports =
-class RootDragAndDropHandler
-  constructor: (@treeView) ->
-    ipcRenderer.on('tree-view:project-folder-dropped', @onDropOnOtherWindow)
-    @handleEvents()
+(RootDragAndDropHandler = class RootDragAndDropHandler {
+  constructor(treeView) {
+    this.onDragStart = this.onDragStart.bind(this);
+    this.onDragLeave = this.onDragLeave.bind(this);
+    this.onDragEnd = this.onDragEnd.bind(this);
+    this.onDragOver = this.onDragOver.bind(this);
+    this.onDropOnOtherWindow = this.onDropOnOtherWindow.bind(this);
+    this.onDrop = this.onDrop.bind(this);
+    this.treeView = treeView;
+    ipcRenderer.on('tree-view:project-folder-dropped', this.onDropOnOtherWindow);
+    this.handleEvents();
+  }
 
-  dispose: ->
-    ipcRenderer.removeListener('tree-view:project-folder-dropped', @onDropOnOtherWindow)
+  dispose() {
+    return ipcRenderer.removeListener('tree-view:project-folder-dropped', this.onDropOnOtherWindow);
+  }
 
-  handleEvents: ->
-    # onDragStart is called directly by TreeView's onDragStart
-    # will be cleaned up by tree view, since they are tree-view's handlers
-    @treeView.element.addEventListener 'dragenter', @onDragEnter.bind(this)
-    @treeView.element.addEventListener 'dragend', @onDragEnd.bind(this)
-    @treeView.element.addEventListener 'dragleave', @onDragLeave.bind(this)
-    @treeView.element.addEventListener 'dragover', @onDragOver.bind(this)
-    @treeView.element.addEventListener 'drop', @onDrop.bind(this)
+  handleEvents() {
+    // onDragStart is called directly by TreeView's onDragStart
+    // will be cleaned up by tree view, since they are tree-view's handlers
+    this.treeView.element.addEventListener('dragenter', this.onDragEnter.bind(this));
+    this.treeView.element.addEventListener('dragend', this.onDragEnd.bind(this));
+    this.treeView.element.addEventListener('dragleave', this.onDragLeave.bind(this));
+    this.treeView.element.addEventListener('dragover', this.onDragOver.bind(this));
+    return this.treeView.element.addEventListener('drop', this.onDrop.bind(this));
+  }
 
-  onDragStart: (e) =>
-    return unless @treeView.list.contains(e.target)
+  onDragStart(e) {
+    if (!this.treeView.list.contains(e.target)) { return; }
 
-    @prevDropTargetIndex = null
-    e.dataTransfer.setData 'atom-tree-view-root-event', 'true'
-    projectRoot = e.target.closest('.project-root')
-    directory = projectRoot.directory
+    this.prevDropTargetIndex = null;
+    e.dataTransfer.setData('atom-tree-view-root-event', 'true');
+    const projectRoot = e.target.closest('.project-root');
+    const {
+      directory
+    } = projectRoot;
 
-    e.dataTransfer.setData 'project-root-index', Array.from(projectRoot.parentElement.children).indexOf(projectRoot)
+    e.dataTransfer.setData('project-root-index', Array.from(projectRoot.parentElement.children).indexOf(projectRoot));
 
-    rootIndex = -1
-    (rootIndex = index; break) for root, index in @treeView.roots when root.directory is directory
+    let rootIndex = -1;
+    for (let index = 0; index < this.treeView.roots.length; index++) { const root = this.treeView.roots[index]; if (root.directory === directory) { rootIndex = index; break; } }
 
-    e.dataTransfer.setData 'from-root-index', rootIndex
-    e.dataTransfer.setData 'from-root-path', directory.path
-    e.dataTransfer.setData 'from-window-id', @getWindowId()
+    e.dataTransfer.setData('from-root-index', rootIndex);
+    e.dataTransfer.setData('from-root-path', directory.path);
+    e.dataTransfer.setData('from-window-id', this.getWindowId());
 
-    e.dataTransfer.setData 'text/plain', directory.path
+    e.dataTransfer.setData('text/plain', directory.path);
 
-    if process.platform in ['darwin', 'linux']
-      pathUri = "file://#{directory.path}" unless @uriHasProtocol(directory.path)
-      e.dataTransfer.setData 'text/uri-list', pathUri
+    if (['darwin', 'linux'].includes(process.platform)) {
+      let pathUri;
+      if (!this.uriHasProtocol(directory.path)) { pathUri = `file://${directory.path}`; }
+      return e.dataTransfer.setData('text/uri-list', pathUri);
+    }
+  }
 
-  uriHasProtocol: (uri) ->
-    try
-      url.parse(uri).protocol?
-    catch error
-      false
+  uriHasProtocol(uri) {
+    try {
+      return (url.parse(uri).protocol != null);
+    } catch (error) {
+      return false;
+    }
+  }
 
-  onDragEnter: (e) ->
-    return unless @treeView.list.contains(e.target)
-    return unless @isAtomTreeViewEvent(e)
+  onDragEnter(e) {
+    if (!this.treeView.list.contains(e.target)) { return; }
+    if (!this.isAtomTreeViewEvent(e)) { return; }
 
-    e.stopPropagation()
+    return e.stopPropagation();
+  }
 
-  onDragLeave: (e) =>
-    return unless @treeView.list.contains(e.target)
-    return unless @isAtomTreeViewEvent(e)
+  onDragLeave(e) {
+    if (!this.treeView.list.contains(e.target)) { return; }
+    if (!this.isAtomTreeViewEvent(e)) { return; }
 
-    e.stopPropagation()
-    @removePlaceholder() if e.target is e.currentTarget
+    e.stopPropagation();
+    if (e.target === e.currentTarget) { return this.removePlaceholder(); }
+  }
 
-  onDragEnd: (e) =>
-    return unless e.target.matches('.project-root-header')
-    return unless @isAtomTreeViewEvent(e)
+  onDragEnd(e) {
+    if (!e.target.matches('.project-root-header')) { return; }
+    if (!this.isAtomTreeViewEvent(e)) { return; }
 
-    e.stopPropagation()
-    @clearDropTarget()
+    e.stopPropagation();
+    return this.clearDropTarget();
+  }
 
-  onDragOver: (e) =>
-    return unless @treeView.list.contains(e.target)
-    return unless @isAtomTreeViewEvent(e)
+  onDragOver(e) {
+    let element;
+    if (!this.treeView.list.contains(e.target)) { return; }
+    if (!this.isAtomTreeViewEvent(e)) { return; }
 
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-    entry = e.currentTarget
+    const entry = e.currentTarget;
 
-    if @treeView.roots.length is 0
-      @treeView.list.appendChild(@getPlaceholder())
-      return
+    if (this.treeView.roots.length === 0) {
+      this.treeView.list.appendChild(this.getPlaceholder());
+      return;
+    }
 
-    newDropTargetIndex = @getDropTargetIndex(e)
-    return unless newDropTargetIndex?
-    return if @prevDropTargetIndex is newDropTargetIndex
-    @prevDropTargetIndex = newDropTargetIndex
+    const newDropTargetIndex = this.getDropTargetIndex(e);
+    if (newDropTargetIndex == null) { return; }
+    if (this.prevDropTargetIndex === newDropTargetIndex) { return; }
+    this.prevDropTargetIndex = newDropTargetIndex;
 
-    projectRoots = @treeView.roots
+    const projectRoots = this.treeView.roots;
 
-    if newDropTargetIndex < projectRoots.length
-      element = projectRoots[newDropTargetIndex]
-      element.classList.add('is-drop-target')
-      element.parentElement.insertBefore(@getPlaceholder(), element)
-    else
-      element = projectRoots[newDropTargetIndex - 1]
-      element.classList.add('drop-target-is-after')
-      element.parentElement.insertBefore(@getPlaceholder(), element.nextSibling)
+    if (newDropTargetIndex < projectRoots.length) {
+      element = projectRoots[newDropTargetIndex];
+      element.classList.add('is-drop-target');
+      return element.parentElement.insertBefore(this.getPlaceholder(), element);
+    } else {
+      element = projectRoots[newDropTargetIndex - 1];
+      element.classList.add('drop-target-is-after');
+      return element.parentElement.insertBefore(this.getPlaceholder(), element.nextSibling);
+    }
+  }
 
-  onDropOnOtherWindow: (e, fromItemIndex) =>
-    paths = atom.project.getPaths()
-    paths.splice(fromItemIndex, 1)
-    atom.project.setPaths(paths)
+  onDropOnOtherWindow(e, fromItemIndex) {
+    const paths = atom.project.getPaths();
+    paths.splice(fromItemIndex, 1);
+    atom.project.setPaths(paths);
 
-    @clearDropTarget()
+    return this.clearDropTarget();
+  }
 
-  clearDropTarget: ->
-    element = @treeView.element.querySelector(".is-dragging")
-    element?.classList.remove('is-dragging')
-    element?.updateTooltip()
-    @removePlaceholder()
+  clearDropTarget() {
+    const element = this.treeView.element.querySelector(".is-dragging");
+    if (element != null) {
+      element.classList.remove('is-dragging');
+    }
+    if (element != null) {
+      element.updateTooltip();
+    }
+    return this.removePlaceholder();
+  }
 
-  onDrop: (e) =>
-    return unless @treeView.list.contains(e.target)
-    return unless @isAtomTreeViewEvent(e)
+  onDrop(e) {
+    let projectPaths;
+    if (!this.treeView.list.contains(e.target)) { return; }
+    if (!this.isAtomTreeViewEvent(e)) { return; }
 
-    e.preventDefault()
-    e.stopPropagation()
+    e.preventDefault();
+    e.stopPropagation();
 
-    {dataTransfer} = e
+    const {dataTransfer} = e;
 
-    fromWindowId = parseInt(dataTransfer.getData('from-window-id'))
-    fromRootPath  = dataTransfer.getData('from-root-path')
-    fromIndex     = parseInt(dataTransfer.getData('project-root-index'))
-    fromRootIndex = parseInt(dataTransfer.getData('from-root-index'))
+    const fromWindowId = parseInt(dataTransfer.getData('from-window-id'));
+    const fromRootPath  = dataTransfer.getData('from-root-path');
+    const fromIndex     = parseInt(dataTransfer.getData('project-root-index'));
+    const fromRootIndex = parseInt(dataTransfer.getData('from-root-index'));
 
-    toIndex = @getDropTargetIndex(e)
+    let toIndex = this.getDropTargetIndex(e);
 
-    @clearDropTarget()
+    this.clearDropTarget();
 
-    if fromWindowId is @getWindowId()
-      unless fromIndex is toIndex
-        projectPaths = atom.project.getPaths()
-        projectPaths.splice(fromIndex, 1)
-        if toIndex > fromIndex then toIndex -= 1
-        projectPaths.splice(toIndex, 0, fromRootPath)
-        atom.project.setPaths(projectPaths)
-    else
-      projectPaths = atom.project.getPaths()
-      projectPaths.splice(toIndex, 0, fromRootPath)
-      atom.project.setPaths(projectPaths)
+    if (fromWindowId === this.getWindowId()) {
+      if (fromIndex !== toIndex) {
+        projectPaths = atom.project.getPaths();
+        projectPaths.splice(fromIndex, 1);
+        if (toIndex > fromIndex) { toIndex -= 1; }
+        projectPaths.splice(toIndex, 0, fromRootPath);
+        return atom.project.setPaths(projectPaths);
+      }
+    } else {
+      projectPaths = atom.project.getPaths();
+      projectPaths.splice(toIndex, 0, fromRootPath);
+      atom.project.setPaths(projectPaths);
 
-      if not isNaN(fromWindowId)
-        # Let the window where the drag started know that the tab was dropped
-        browserWindow = remote.BrowserWindow.fromId(fromWindowId)
-        browserWindow?.webContents.send('tree-view:project-folder-dropped', fromIndex)
+      if (!isNaN(fromWindowId)) {
+        // Let the window where the drag started know that the tab was dropped
+        const browserWindow = remote.BrowserWindow.fromId(fromWindowId);
+        return (browserWindow != null ? browserWindow.webContents.send('tree-view:project-folder-dropped', fromIndex) : undefined);
+      }
+    }
+  }
 
-  getDropTargetIndex: (e) ->
-    return if @isPlaceholder(e.target)
+  getDropTargetIndex(e) {
+    if (this.isPlaceholder(e.target)) { return; }
 
-    projectRoots = @treeView.roots
-    projectRoot = e.target.closest('.project-root')
-    projectRoot = projectRoots[projectRoots.length - 1] unless projectRoot
+    const projectRoots = this.treeView.roots;
+    let projectRoot = e.target.closest('.project-root');
+    if (!projectRoot) { projectRoot = projectRoots[projectRoots.length - 1]; }
 
-    return 0 unless projectRoot
+    if (!projectRoot) { return 0; }
 
-    projectRootIndex = @treeView.roots.indexOf(projectRoot)
+    const projectRootIndex = this.treeView.roots.indexOf(projectRoot);
 
-    center = projectRoot.getBoundingClientRect().top + projectRoot.offsetHeight / 2
+    const center = projectRoot.getBoundingClientRect().top + (projectRoot.offsetHeight / 2);
 
-    if e.pageY < center
-      projectRootIndex
-    else
-      projectRootIndex + 1
+    if (e.pageY < center) {
+      return projectRootIndex;
+    } else {
+      return projectRootIndex + 1;
+    }
+  }
 
-  canDragStart: (e) ->
-    e.target.closest('.project-root-header')
+  canDragStart(e) {
+    return e.target.closest('.project-root-header');
+  }
 
-  isDragging: (e) ->
-    for item in e.dataTransfer.items
-      if item.type is 'from-root-path'
-        return true
+  isDragging(e) {
+    for (let item of Array.from(e.dataTransfer.items)) {
+      if (item.type === 'from-root-path') {
+        return true;
+      }
+    }
 
-    return false
+    return false;
+  }
 
-  isAtomTreeViewEvent: (e) ->
-    for item in e.dataTransfer.items
-      if item.type is 'atom-tree-view-root-event'
-        return true
+  isAtomTreeViewEvent(e) {
+    for (let item of Array.from(e.dataTransfer.items)) {
+      if (item.type === 'atom-tree-view-root-event') {
+        return true;
+      }
+    }
 
-    return false
+    return false;
+  }
 
-  getPlaceholder: ->
-    unless @placeholderEl
-      @placeholderEl = document.createElement('li')
-      @placeholderEl.classList.add('placeholder')
-    @placeholderEl
+  getPlaceholder() {
+    if (!this.placeholderEl) {
+      this.placeholderEl = document.createElement('li');
+      this.placeholderEl.classList.add('placeholder');
+    }
+    return this.placeholderEl;
+  }
 
-  removePlaceholder: ->
-    @placeholderEl?.remove()
-    @placeholderEl = null
+  removePlaceholder() {
+    if (this.placeholderEl != null) {
+      this.placeholderEl.remove();
+    }
+    return this.placeholderEl = null;
+  }
 
-  isPlaceholder: (element) ->
-    element.classList.contains('.placeholder')
+  isPlaceholder(element) {
+    return element.classList.contains('.placeholder');
+  }
 
-  getWindowId: ->
-    @processId ?= atom.getCurrentWindow().id
+  getWindowId() {
+    return this.processId != null ? this.processId : (this.processId = atom.getCurrentWindow().id);
+  }
+});

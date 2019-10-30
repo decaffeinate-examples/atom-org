@@ -1,123 +1,138 @@
-path = require 'path'
-fs = require 'fs-plus'
-temp = require 'temp'
-express = require 'express'
-http = require 'http'
-apm = require '../lib/apm-cli'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const fs = require('fs-plus');
+const temp = require('temp');
+const express = require('express');
+const http = require('http');
+const apm = require('../lib/apm-cli');
 
-describe 'apm publish', ->
-  [server] = []
+describe('apm publish', function() {
+  let [server] = Array.from([]);
 
-  beforeEach ->
-    spyOnToken()
-    silenceOutput()
+  beforeEach(function() {
+    spyOnToken();
+    silenceOutput();
 
-    app = express()
-    server =  http.createServer(app)
+    const app = express();
+    server =  http.createServer(app);
 
-    live = false
-    server.listen 3000, '127.0.0.1', ->
-      atomHome = temp.mkdirSync('apm-home-dir-')
-      process.env.ATOM_HOME = atomHome
-      process.env.ATOM_API_URL = "http://localhost:3000/api"
-      process.env.ATOM_RESOURCE_PATH = temp.mkdirSync('atom-resource-path-')
-      live = true
-    waitsFor -> live
+    let live = false;
+    server.listen(3000, '127.0.0.1', function() {
+      const atomHome = temp.mkdirSync('apm-home-dir-');
+      process.env.ATOM_HOME = atomHome;
+      process.env.ATOM_API_URL = "http://localhost:3000/api";
+      process.env.ATOM_RESOURCE_PATH = temp.mkdirSync('atom-resource-path-');
+      return live = true;
+    });
+    return waitsFor(() => live);
+  });
 
-  afterEach ->
-    done = false
-    server.close -> done = true
-    waitsFor -> done
+  afterEach(function() {
+    let done = false;
+    server.close(() => done = true);
+    return waitsFor(() => done);
+  });
 
-  it "validates the package's package.json file", ->
-    packageToPublish = temp.mkdirSync('apm-test-package-')
-    fs.writeFileSync(path.join(packageToPublish, 'package.json'), '}{')
-    process.chdir(packageToPublish)
-    callback = jasmine.createSpy('callback')
-    apm.run(['publish'], callback)
+  it("validates the package's package.json file", function() {
+    const packageToPublish = temp.mkdirSync('apm-test-package-');
+    fs.writeFileSync(path.join(packageToPublish, 'package.json'), '}{');
+    process.chdir(packageToPublish);
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish'], callback);
 
-    waitsFor 'waiting for publish to complete', 600000, ->
-      callback.callCount is 1
+    waitsFor('waiting for publish to complete', 600000, () => callback.callCount === 1);
 
-    runs ->
-      expect(callback.mostRecentCall.args[0].message).toBe 'Error parsing package.json file: Unexpected token } in JSON at position 0'
+    return runs(() => expect(callback.mostRecentCall.args[0].message).toBe('Error parsing package.json file: Unexpected token } in JSON at position 0'));
+  });
 
-  it "validates the package is in a Git repository", ->
-    packageToPublish = temp.mkdirSync('apm-test-package-')
-    metadata =
-      name: 'test'
+  it("validates the package is in a Git repository", function() {
+    const packageToPublish = temp.mkdirSync('apm-test-package-');
+    const metadata = {
+      name: 'test',
       version: '1.0.0'
-    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata))
-    process.chdir(packageToPublish)
-    callback = jasmine.createSpy('callback')
-    apm.run(['publish'], callback)
+    };
+    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata));
+    process.chdir(packageToPublish);
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish'], callback);
 
-    waitsFor 'waiting for publish to complete', 600000, ->
-      callback.callCount is 1
+    waitsFor('waiting for publish to complete', 600000, () => callback.callCount === 1);
 
-    runs ->
-      expect(callback.mostRecentCall.args[0].message).toBe 'Package must be in a Git repository before publishing: https://help.github.com/articles/create-a-repo'
+    return runs(() => expect(callback.mostRecentCall.args[0].message).toBe('Package must be in a Git repository before publishing: https://help.github.com/articles/create-a-repo'));
+  });
 
-  it "validates the engines.atom range in the package.json file", ->
-    packageToPublish = temp.mkdirSync('apm-test-package-')
-    metadata =
-      name: 'test'
-      version: '1.0.0'
-      engines:
+  it("validates the engines.atom range in the package.json file", function() {
+    const packageToPublish = temp.mkdirSync('apm-test-package-');
+    const metadata = {
+      name: 'test',
+      version: '1.0.0',
+      engines: {
         atom: '><>'
-    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata))
-    process.chdir(packageToPublish)
-    callback = jasmine.createSpy('callback')
-    apm.run(['publish'], callback)
+      }
+    };
+    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata));
+    process.chdir(packageToPublish);
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish'], callback);
 
-    waitsFor 'waiting for publish to complete', 600000, ->
-      callback.callCount is 1
+    waitsFor('waiting for publish to complete', 600000, () => callback.callCount === 1);
 
-    runs ->
-      expect(callback.mostRecentCall.args[0].message).toBe 'The Atom engine range in the package.json file is invalid: ><>'
+    return runs(() => expect(callback.mostRecentCall.args[0].message).toBe('The Atom engine range in the package.json file is invalid: ><>'));
+  });
 
-  it "validates the dependency semver ranges in the package.json file", ->
-    packageToPublish = temp.mkdirSync('apm-test-package-')
-    metadata =
-      name: 'test'
-      version: '1.0.0'
-      engines:
+  it("validates the dependency semver ranges in the package.json file", function() {
+    const packageToPublish = temp.mkdirSync('apm-test-package-');
+    const metadata = {
+      name: 'test',
+      version: '1.0.0',
+      engines: {
         atom: '1'
-      dependencies:
-        abc: 'git://github.com/user/project.git'
-        abcd: 'latest'
+      },
+      dependencies: {
+        abc: 'git://github.com/user/project.git',
+        abcd: 'latest',
         foo: '^^'
-    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata))
-    process.chdir(packageToPublish)
-    callback = jasmine.createSpy('callback')
-    apm.run(['publish'], callback)
+      }
+    };
+    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata));
+    process.chdir(packageToPublish);
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish'], callback);
 
-    waitsFor 'waiting for publish to complete', 600000, ->
-      callback.callCount is 1
+    waitsFor('waiting for publish to complete', 600000, () => callback.callCount === 1);
 
-    runs ->
-      expect(callback.mostRecentCall.args[0].message).toBe 'The foo dependency range in the package.json file is invalid: ^^'
+    return runs(() => expect(callback.mostRecentCall.args[0].message).toBe('The foo dependency range in the package.json file is invalid: ^^'));
+  });
 
-  it "validates the dev dependency semver ranges in the package.json file", ->
-    packageToPublish = temp.mkdirSync('apm-test-package-')
-    metadata =
-      name: 'test'
-      version: '1.0.0'
-      engines:
+  return it("validates the dev dependency semver ranges in the package.json file", function() {
+    const packageToPublish = temp.mkdirSync('apm-test-package-');
+    const metadata = {
+      name: 'test',
+      version: '1.0.0',
+      engines: {
         atom: '1'
-      dependencies:
+      },
+      dependencies: {
         foo: '^5'
-      devDependencies:
-        abc: 'git://github.com/user/project.git'
-        abcd: 'latest'
+      },
+      devDependencies: {
+        abc: 'git://github.com/user/project.git',
+        abcd: 'latest',
         bar: '1,3'
-    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata))
-    process.chdir(packageToPublish)
-    callback = jasmine.createSpy('callback')
-    apm.run(['publish'], callback)
+      }
+    };
+    fs.writeFileSync(path.join(packageToPublish, 'package.json'), JSON.stringify(metadata));
+    process.chdir(packageToPublish);
+    const callback = jasmine.createSpy('callback');
+    apm.run(['publish'], callback);
 
-    waitsFor 'waiting for publish to complete', 600000, ->
-      callback.callCount is 1
+    waitsFor('waiting for publish to complete', 600000, () => callback.callCount === 1);
 
-    runs ->
-      expect(callback.mostRecentCall.args[0].message).toBe 'The bar dev dependency range in the package.json file is invalid: 1,3'
+    return runs(() => expect(callback.mostRecentCall.args[0].message).toBe('The bar dev dependency range in the package.json file is invalid: 1,3'));
+  });
+});

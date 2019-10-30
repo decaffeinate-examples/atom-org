@@ -1,25 +1,39 @@
-{CompositeDisposable} = require 'event-kit'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let ScrollSearch;
+const {CompositeDisposable} = require('event-kit');
 module.exports =
-class ScrollSearch
+(ScrollSearch = class ScrollSearch {
 
-  constructor: (@main) ->
-    # This class defines HTML container for scrollbar markers
-    @domNode = document.createElement('div')
-    @domNode.classList.add "scroll-searcher"
-    @subscriptions = new CompositeDisposable
-    # Event subscriptions
-    @subscriptions.add @main.onDidDeactivate(@destroy.bind(this))
-    @subscriptions.add @main.onDidHide(@hide.bind(this))
-    @subscriptions.add @main.onDidShow(@show.bind(this))
-  destroy: =>
-    @domNode.remove()
-    @subscriptions.dispose()
+  constructor(main) {
+    // This class defines HTML container for scrollbar markers
+    this.destroy = this.destroy.bind(this);
+    this.main = main;
+    this.domNode = document.createElement('div');
+    this.domNode.classList.add("scroll-searcher");
+    this.subscriptions = new CompositeDisposable;
+    // Event subscriptions
+    this.subscriptions.add(this.main.onDidDeactivate(this.destroy.bind(this)));
+    this.subscriptions.add(this.main.onDidHide(this.hide.bind(this)));
+    this.subscriptions.add(this.main.onDidShow(this.show.bind(this)));
+  }
+  destroy() {
+    this.domNode.remove();
+    return this.subscriptions.dispose();
+  }
 
-  getElement: ->
-    @domNode
+  getElement() {
+    return this.domNode;
+  }
 
-  hide: ->
-    @domNode.style.visibility = "hidden"
+  hide() {
+    return this.domNode.style.visibility = "hidden";
+  }
 
-  show: ->
-    @domNode.style.visibility = "visible"
+  show() {
+    return this.domNode.style.visibility = "visible";
+  }
+});

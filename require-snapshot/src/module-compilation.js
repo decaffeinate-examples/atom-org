@@ -1,39 +1,54 @@
-path = require 'path'
-vm = require 'vm'
-Module = require 'module'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS104: Avoid inline assignments
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const path = require('path');
+const vm = require('vm');
+const Module = require('module');
 
-getExtension = (module) ->
-  extension = path.extname(module.filename) ? '.js'
-  extension = '.js' unless Module._extensions[extension]?
-  extension
+const getExtension = function(module) {
+  let left;
+  let extension = (left = path.extname(module.filename)) != null ? left : '.js';
+  if (Module._extensions[extension] == null) { extension = '.js'; }
+  return extension;
+};
 
-compileJSModule = (module, content) ->
-  require = (path) ->
-    Module._load path, module
-  require.resolve = (request) ->
-    Module._resolveFilename request, module
-  require.main = process.mainModule
-  require.extensions = Module._extensions
-  require.cache = Module._cache
+const compileJSModule = function(module, content) {
+  const require = path => Module._load(path, module);
+  require.resolve = request => Module._resolveFilename(request, module);
+  require.main = process.mainModule;
+  require.extensions = Module._extensions;
+  require.cache = Module._cache;
 
-  exports = module.exports
-  filename = module.filename
-  dirname = path.dirname filename
+  const {
+    exports
+  } = module;
+  const {
+    filename
+  } = module;
+  const dirname = path.dirname(filename);
 
-  compiled = vm.runInThisContext content, {filename}
-  compiled.apply exports, [exports, require, module, filename, dirname]
+  const compiled = vm.runInThisContext(content, {filename});
+  return compiled.apply(exports, [exports, require, module, filename, dirname]);
+};
 
-compileOtherModule = (module) ->
-  module.require = (path) -> Module._load path, module
-  module._compile = Module::_compile.bind module
+const compileOtherModule = function(module) {
+  module.require = path => Module._load(path, module);
+  module._compile = Module.prototype._compile.bind(module);
 
-  Module._extensions[getExtension(module)](module, module.filename)
+  return Module._extensions[getExtension(module)](module, module.filename);
+};
 
-compileModule = (module, content) ->
-  if content?
-    compileJSModule module, content
-  else
-    compileOtherModule module
+const compileModule = function(module, content) {
+  if (content != null) {
+    return compileJSModule(module, content);
+  } else {
+    return compileOtherModule(module);
+  }
+};
 
-exports.getExtension = getExtension
-exports.compileModule = compileModule
+exports.getExtension = getExtension;
+exports.compileModule = compileModule;

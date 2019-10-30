@@ -1,15 +1,15 @@
-#!/usr/bin/env coffee
+#!/usr/bin/env node
 
-handler = require '../lib/spell-check-handler'
-fs = require 'fs'
+const handler = require('../lib/spell-check-handler');
+const fs = require('fs');
 
-pathToCheck = process.argv[2]
-console.log("Spellchecking %s...", pathToCheck)
+const pathToCheck = process.argv[2];
+console.log("Spellchecking %s...", pathToCheck);
 
-text = fs.readFileSync(pathToCheck, 'utf8')
+const text = fs.readFileSync(pathToCheck, 'utf8');
 
-t0 = Date.now()
-result = handler({id: 1, text})
-t1 = Date.now()
+const t0 = Date.now();
+const result = handler({id: 1, text});
+const t1 = Date.now();
 
-console.log("Found %d misspellings in %d milliseconds", result.misspellings.length, t1 - t0)
+console.log("Found %d misspellings in %d milliseconds", result.misspellings.length, t1 - t0);

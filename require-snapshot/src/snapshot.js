@@ -1,46 +1,60 @@
-moduleCompilation = require './module-compilation'
-serialization = require './serialization'
-fs = require 'fs'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const moduleCompilation = require('./module-compilation');
+const serialization = require('./serialization');
+const fs = require('fs');
 
-readModuleContent = (module) ->
-  content = fs.readFileSync module.filename
-  header = new Buffer('(function (exports, require, module, __filename, __dirname) {')
-  footer = new Buffer('\n});')
-  Buffer.concat [header, content, footer]
+const readModuleContent = function(module) {
+  const content = fs.readFileSync(module.filename);
+  const header = new Buffer('(function (exports, require, module, __filename, __dirname) {');
+  const footer = new Buffer('\n});');
+  return Buffer.concat([header, content, footer]);
+};
 
-serializeModule = (module) ->
-  # Prevent duplicate cache.
-  if module.serialized
-    return null
-  else
-    module.serialized = true
+const serializeModule = function(module) {
+  // Prevent duplicate cache.
+  if (module.serialized) {
+    return null;
+  } else {
+    module.serialized = true;
+  }
 
-  id: module.id
-  filename: module.filename
-  paths: module.paths
-  children: []
+  return {
+    id: module.id,
+    filename: module.filename,
+    paths: module.paths,
+    children: []
+  };
+};
 
-dumpModuleTree = (parent, predicate) ->
-  # The user wants to skip this tree.
-  return null unless predicate parent.filename
+var dumpModuleTree = function(parent, predicate) {
+  // The user wants to skip this tree.
+  if (!predicate(parent.filename)) { return null; }
 
-  root = serializeModule parent
-  return null unless root?
+  const root = serializeModule(parent);
+  if (root == null) { return null; }
 
-  for module in parent.children
-    serialized = dumpModuleTree module, predicate
+  for (let module of Array.from(parent.children)) {
+    const serialized = dumpModuleTree(module, predicate);
 
-    # Skip this module.
-    continue unless serialized?
+    // Skip this module.
+    if (serialized == null) { continue; }
 
-    # Only cache content of .js file.
-    if moduleCompilation.getExtension(module) is '.js'
-      serialized.content = readModuleContent module
+    // Only cache content of .js file.
+    if (moduleCompilation.getExtension(module) === '.js') {
+      serialized.content = readModuleContent(module);
+    }
 
-    root.children.push serialized
-  root
+    root.children.push(serialized);
+  }
+  return root;
+};
 
-snapshot = (parent, predicate) ->
-  serialization.serialize dumpModuleTree(parent, predicate)
+const snapshot = (parent, predicate) => serialization.serialize(dumpModuleTree(parent, predicate));
 
-exports.snapshot = snapshot
+exports.snapshot = snapshot;

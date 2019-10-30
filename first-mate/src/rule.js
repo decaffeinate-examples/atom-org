@@ -1,116 +1,165 @@
-_ = require 'underscore-plus'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Rule;
+const _ = require('underscore-plus');
 
-Scanner = require './scanner'
+const Scanner = require('./scanner');
 
 module.exports =
-class Rule
-  constructor: (@grammar, @registry, {@scopeName, @contentScopeName, patterns, @endPattern, @applyEndPatternLast}={}) ->
-    @patterns = []
-    for pattern in patterns ? []
-      @patterns.push(@grammar.createPattern(pattern)) unless pattern.disabled
+(Rule = class Rule {
+  constructor(grammar, registry, param) {
+    this.grammar = grammar;
+    this.registry = registry;
+    if (param == null) { param = {}; }
+    const {scopeName, contentScopeName, patterns, endPattern, applyEndPatternLast} = param;
+    this.scopeName = scopeName;
+    this.contentScopeName = contentScopeName;
+    this.endPattern = endPattern;
+    this.applyEndPatternLast = applyEndPatternLast;
+    this.patterns = [];
+    for (let pattern of Array.from(patterns != null ? patterns : [])) {
+      if (!pattern.disabled) { this.patterns.push(this.grammar.createPattern(pattern)); }
+    }
 
-    if @endPattern and not @endPattern.hasBackReferences
-      if @applyEndPatternLast
-        @patterns.push(@endPattern)
-      else
-        @patterns.unshift(@endPattern)
+    if (this.endPattern && !this.endPattern.hasBackReferences) {
+      if (this.applyEndPatternLast) {
+        this.patterns.push(this.endPattern);
+      } else {
+        this.patterns.unshift(this.endPattern);
+      }
+    }
 
-    @scannersByBaseGrammarName = {}
-    @createEndPattern = null
-    @anchorPosition = -1
+    this.scannersByBaseGrammarName = {};
+    this.createEndPattern = null;
+    this.anchorPosition = -1;
+  }
 
-  getIncludedPatterns: (baseGrammar, included=[]) ->
-    return [] if _.include(included, this)
+  getIncludedPatterns(baseGrammar, included) {
+    if (included == null) { included = []; }
+    if (_.include(included, this)) { return []; }
 
-    included = included.concat([this])
-    allPatterns = []
-    for pattern in @patterns
-      allPatterns.push(pattern.getIncludedPatterns(baseGrammar, included)...)
-    allPatterns
+    included = included.concat([this]);
+    const allPatterns = [];
+    for (let pattern of Array.from(this.patterns)) {
+      allPatterns.push(...Array.from(pattern.getIncludedPatterns(baseGrammar, included) || []));
+    }
+    return allPatterns;
+  }
 
-  clearAnchorPosition: -> @anchorPosition = -1
+  clearAnchorPosition() { return this.anchorPosition = -1; }
 
-  getScanner: (baseGrammar) ->
-    return scanner if scanner = @scannersByBaseGrammarName[baseGrammar.name]
+  getScanner(baseGrammar) {
+    let scanner;
+    if (scanner = this.scannersByBaseGrammarName[baseGrammar.name]) { return scanner; }
 
-    patterns = @getIncludedPatterns(baseGrammar)
-    scanner = new Scanner(patterns)
-    @scannersByBaseGrammarName[baseGrammar.name] = scanner
-    scanner
+    const patterns = this.getIncludedPatterns(baseGrammar);
+    scanner = new Scanner(patterns);
+    this.scannersByBaseGrammarName[baseGrammar.name] = scanner;
+    return scanner;
+  }
 
-  scanInjections: (ruleStack, line, position, firstLine) ->
-    baseGrammar = ruleStack[0].rule.grammar
-    if injections = baseGrammar.injections
-      for scanner in injections.getScanners(ruleStack)
-        result = scanner.findNextMatch(line, firstLine, position, @anchorPosition)
-        return result if result?
+  scanInjections(ruleStack, line, position, firstLine) {
+    let injections;
+    const baseGrammar = ruleStack[0].rule.grammar;
+    if (injections = baseGrammar.injections) {
+      for (let scanner of Array.from(injections.getScanners(ruleStack))) {
+        const result = scanner.findNextMatch(line, firstLine, position, this.anchorPosition);
+        if (result != null) { return result; }
+      }
+    }
+  }
 
-  normalizeCaptureIndices: (line, captureIndices) ->
-    lineLength = line.length
-    for capture in captureIndices
-      capture.end = Math.min(capture.end, lineLength)
-      capture.start = Math.min(capture.start, lineLength)
-    return
+  normalizeCaptureIndices(line, captureIndices) {
+    const lineLength = line.length;
+    for (let capture of Array.from(captureIndices)) {
+      capture.end = Math.min(capture.end, lineLength);
+      capture.start = Math.min(capture.start, lineLength);
+    }
+  }
 
-  findNextMatch: (ruleStack, lineWithNewline, position, firstLine) ->
-    baseGrammar = ruleStack[0].rule.grammar
-    results = []
+  findNextMatch(ruleStack, lineWithNewline, position, firstLine) {
+    let result;
+    const baseGrammar = ruleStack[0].rule.grammar;
+    const results = [];
 
-    scanner = @getScanner(baseGrammar)
-    if result = scanner.findNextMatch(lineWithNewline, firstLine, position, @anchorPosition)
-      results.push(result)
+    let scanner = this.getScanner(baseGrammar);
+    if (result = scanner.findNextMatch(lineWithNewline, firstLine, position, this.anchorPosition)) {
+      results.push(result);
+    }
 
-    if result = @scanInjections(ruleStack, lineWithNewline, position, firstLine)
-      for injection in baseGrammar.injections.injections
-        if injection.scanner is result.scanner
-          if injection.selector.getPrefix(@grammar.scopesFromStack(ruleStack)) is 'L'
-            results.unshift(result)
-          else
-            # TODO: Prefixes can either be L, B, or R.
-            # R is assumed to mean "right", which is the default (add to end of stack).
-            # There's no documentation on B, however.
-            results.push(result)
+    if (result = this.scanInjections(ruleStack, lineWithNewline, position, firstLine)) {
+      for (let injection of Array.from(baseGrammar.injections.injections)) {
+        if (injection.scanner === result.scanner) {
+          if (injection.selector.getPrefix(this.grammar.scopesFromStack(ruleStack)) === 'L') {
+            results.unshift(result);
+          } else {
+            // TODO: Prefixes can either be L, B, or R.
+            // R is assumed to mean "right", which is the default (add to end of stack).
+            // There's no documentation on B, however.
+            results.push(result);
+          }
+        }
+      }
+    }
 
-    scopes = null
-    for injectionGrammar in @registry.injectionGrammars
-      continue if injectionGrammar is @grammar
-      continue if injectionGrammar is baseGrammar
-      scopes ?= @grammar.scopesFromStack(ruleStack)
-      if injectionGrammar.injectionSelector.matches(scopes)
-        scanner = injectionGrammar.getInitialRule().getScanner(injectionGrammar, position, firstLine)
-        if result = scanner.findNextMatch(lineWithNewline, firstLine, position, @anchorPosition)
-          if injectionGrammar.injectionSelector.getPrefix(scopes) is 'L'
-            results.unshift(result)
-          else
-            # TODO: Prefixes can either be L, B, or R.
-            # R is assumed to mean "right", which is the default (add to end of stack).
-            # There's no documentation on B, however.
-            results.push(result)
+    let scopes = null;
+    for (let injectionGrammar of Array.from(this.registry.injectionGrammars)) {
+      if (injectionGrammar === this.grammar) { continue; }
+      if (injectionGrammar === baseGrammar) { continue; }
+      if (scopes == null) { scopes = this.grammar.scopesFromStack(ruleStack); }
+      if (injectionGrammar.injectionSelector.matches(scopes)) {
+        scanner = injectionGrammar.getInitialRule().getScanner(injectionGrammar, position, firstLine);
+        if (result = scanner.findNextMatch(lineWithNewline, firstLine, position, this.anchorPosition)) {
+          if (injectionGrammar.injectionSelector.getPrefix(scopes) === 'L') {
+            results.unshift(result);
+          } else {
+            // TODO: Prefixes can either be L, B, or R.
+            // R is assumed to mean "right", which is the default (add to end of stack).
+            // There's no documentation on B, however.
+            results.push(result);
+          }
+        }
+      }
+    }
 
-    if results.length > 1
-      _.min results, (result) =>
-        @normalizeCaptureIndices(lineWithNewline, result.captureIndices)
-        result.captureIndices[0].start
-    else if results.length is 1
-      [result] = results
-      @normalizeCaptureIndices(lineWithNewline, result.captureIndices)
-      result
+    if (results.length > 1) {
+      return _.min(results, result => {
+        this.normalizeCaptureIndices(lineWithNewline, result.captureIndices);
+        return result.captureIndices[0].start;
+      });
+    } else if (results.length === 1) {
+      [result] = Array.from(results);
+      this.normalizeCaptureIndices(lineWithNewline, result.captureIndices);
+      return result;
+    }
+  }
 
-  getNextTags: (ruleStack, line, lineWithNewline, position, firstLine) ->
-    result = @findNextMatch(ruleStack, lineWithNewline, position, firstLine)
-    return null unless result?
+  getNextTags(ruleStack, line, lineWithNewline, position, firstLine) {
+    let nextTags;
+    const result = this.findNextMatch(ruleStack, lineWithNewline, position, firstLine);
+    if (result == null) { return null; }
 
-    {index, captureIndices, scanner} = result
-    [firstCapture] = captureIndices
-    endPatternMatch = @endPattern is scanner.patterns[index]
-    if nextTags = scanner.handleMatch(result, ruleStack, line, this, endPatternMatch)
-      {nextTags, tagsStart: firstCapture.start, tagsEnd: firstCapture.end}
+    const {index, captureIndices, scanner} = result;
+    const [firstCapture] = Array.from(captureIndices);
+    const endPatternMatch = this.endPattern === scanner.patterns[index];
+    if (nextTags = scanner.handleMatch(result, ruleStack, line, this, endPatternMatch)) {
+      return {nextTags, tagsStart: firstCapture.start, tagsEnd: firstCapture.end};
+    }
+  }
 
-  getRuleToPush: (line, beginPatternCaptureIndices) ->
-    if @endPattern.hasBackReferences
-      rule = @grammar.createRule({@scopeName, @contentScopeName})
-      rule.endPattern = @endPattern.resolveBackReferences(line, beginPatternCaptureIndices)
-      rule.patterns = [rule.endPattern, @patterns...]
-      rule
-    else
-      this
+  getRuleToPush(line, beginPatternCaptureIndices) {
+    if (this.endPattern.hasBackReferences) {
+      const rule = this.grammar.createRule({scopeName: this.scopeName, contentScopeName: this.contentScopeName});
+      rule.endPattern = this.endPattern.resolveBackReferences(line, beginPatternCaptureIndices);
+      rule.patterns = [rule.endPattern, ...Array.from(this.patterns)];
+      return rule;
+    } else {
+      return this;
+    }
+  }
+});

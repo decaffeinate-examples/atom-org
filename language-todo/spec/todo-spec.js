@@ -1,13 +1,19 @@
-describe "TODO grammar", ->
-  grammar = null
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+describe("TODO grammar", function() {
+  let grammar = null;
 
-  beforeEach ->
-    waitsForPromise ->
-      atom.packages.activatePackage("language-todo")
+  beforeEach(function() {
+    waitsForPromise(() => atom.packages.activatePackage("language-todo"));
 
-    runs ->
-      grammar = atom.grammars.grammarForScopeName("text.todo")
+    return runs(() => grammar = atom.grammars.grammarForScopeName("text.todo"));
+  });
 
-  it "parses the grammar", ->
-    expect(grammar).toBeTruthy()
-    expect(grammar.scopeName).toBe "text.todo"
+  return it("parses the grammar", function() {
+    expect(grammar).toBeTruthy();
+    return expect(grammar.scopeName).toBe("text.todo");
+  });
+});

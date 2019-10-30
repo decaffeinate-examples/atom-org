@@ -1,62 +1,100 @@
-path = require 'path'
-fs = require 'fs-plus'
-Dialog = require './dialog'
-{repoForPath} = require "./helpers"
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let CopyDialog;
+const path = require('path');
+const fs = require('fs-plus');
+const Dialog = require('./dialog');
+const {repoForPath} = require("./helpers");
 
 module.exports =
-class CopyDialog extends Dialog
-  constructor: (@initialPath, {@onCopy}) ->
-    super
-      prompt: 'Enter the new path for the duplicate.'
-      initialPath: atom.project.relativize(@initialPath)
-      select: true
+(CopyDialog = class CopyDialog extends Dialog {
+  constructor(initialPath, {onCopy}) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.initialPath = initialPath;
+    this.onCopy = onCopy;
+    super({
+      prompt: 'Enter the new path for the duplicate.',
+      initialPath: atom.project.relativize(this.initialPath),
+      select: true,
       iconClass: 'icon-arrow-right'
+    });
+  }
 
-  onConfirm: (newPath) ->
-    newPath = newPath.replace(/\s+$/, '') # Remove trailing whitespace
-    unless path.isAbsolute(newPath)
-      [rootPath] = atom.project.relativizePath(@initialPath)
-      newPath = path.join(rootPath, newPath)
-      return unless newPath
+  onConfirm(newPath) {
+    newPath = newPath.replace(/\s+$/, ''); // Remove trailing whitespace
+    if (!path.isAbsolute(newPath)) {
+      const [rootPath] = Array.from(atom.project.relativizePath(this.initialPath));
+      newPath = path.join(rootPath, newPath);
+      if (!newPath) { return; }
+    }
 
-    if @initialPath is newPath
-      @close()
-      return
+    if (this.initialPath === newPath) {
+      this.close();
+      return;
+    }
 
-    unless @isNewPathValid(newPath)
-      @showError("'#{newPath}' already exists.")
-      return
+    if (!this.isNewPathValid(newPath)) {
+      this.showError(`'${newPath}' already exists.`);
+      return;
+    }
 
-    activeEditor = atom.workspace.getActiveTextEditor()
-    activeEditor = null unless activeEditor?.getPath() is @initialPath
-    try
-      if fs.isDirectorySync(@initialPath)
-        fs.copySync(@initialPath, newPath)
-        @onCopy?({initialPath: @initialPath, newPath: newPath})
-      else
-        fs.copy @initialPath, newPath, =>
-          @onCopy?({initialPath: @initialPath, newPath: newPath})
-          atom.workspace.open newPath,
-            activatePane: true
-            initialLine: activeEditor?.getLastCursor().getBufferRow()
-            initialColumn: activeEditor?.getLastCursor().getBufferColumn()
-      if repo = repoForPath(newPath)
-        repo.getPathStatus(@initialPath)
-        repo.getPathStatus(newPath)
-      @close()
-    catch error
-      @showError("#{error.message}.")
+    let activeEditor = atom.workspace.getActiveTextEditor();
+    if ((activeEditor != null ? activeEditor.getPath() : undefined) !== this.initialPath) { activeEditor = null; }
+    try {
+      let repo;
+      if (fs.isDirectorySync(this.initialPath)) {
+        fs.copySync(this.initialPath, newPath);
+        if (typeof this.onCopy === 'function') {
+          this.onCopy({initialPath: this.initialPath, newPath});
+        }
+      } else {
+        fs.copy(this.initialPath, newPath, () => {
+          if (typeof this.onCopy === 'function') {
+            this.onCopy({initialPath: this.initialPath, newPath});
+          }
+          return atom.workspace.open(newPath, {
+            activatePane: true,
+            initialLine: (activeEditor != null ? activeEditor.getLastCursor().getBufferRow() : undefined),
+            initialColumn: (activeEditor != null ? activeEditor.getLastCursor().getBufferColumn() : undefined)
+          }
+          );
+        });
+      }
+      if (repo = repoForPath(newPath)) {
+        repo.getPathStatus(this.initialPath);
+        repo.getPathStatus(newPath);
+      }
+      return this.close();
+    } catch (error) {
+      return this.showError(`${error.message}.`);
+    }
+  }
 
-  isNewPathValid: (newPath) ->
-    try
-      oldStat = fs.statSync(@initialPath)
-      newStat = fs.statSync(newPath)
+  isNewPathValid(newPath) {
+    try {
+      const oldStat = fs.statSync(this.initialPath);
+      const newStat = fs.statSync(newPath);
 
-      # New path exists so check if it points to the same file as the initial
-      # path to see if the case of the file name is being changed on a on a
-      # case insensitive filesystem.
-      @initialPath.toLowerCase() is newPath.toLowerCase() and
-        oldStat.dev is newStat.dev and
-        oldStat.ino is newStat.ino
-    catch
-      true # new path does not exist so it is valid
+      // New path exists so check if it points to the same file as the initial
+      // path to see if the case of the file name is being changed on a on a
+      // case insensitive filesystem.
+      return (this.initialPath.toLowerCase() === newPath.toLowerCase()) &&
+        (oldStat.dev === newStat.dev) &&
+        (oldStat.ino === newStat.ino);
+    } catch (error) {
+      return true; // new path does not exist so it is valid
+    }
+  }
+});

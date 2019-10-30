@@ -1,4 +1,10 @@
-###
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+/*
 Copyright (c) 2014, Groupon, Inc.
 All rights reserved.
 
@@ -28,140 +34,168 @@ PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
 LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-###
+*/
 
-{nodes} = require 'coffee-script'
+const {nodes} = require('coffee-script');
 
-defaultReviver = (key, value) -> value
+const defaultReviver = (key, value) => value;
 
-nodeTypeString = (csNode) ->
-  csNode.constructor.name
+const nodeTypeString = csNode => csNode.constructor.name;
 
-syntaxErrorMessage = (csNode, msg) ->
-  {
-    first_line: lineIdx
+const syntaxErrorMessage = function(csNode, msg) {
+  let column, line;
+  const {
+    first_line: lineIdx,
     first_column: columnIdx
-  } = csNode.locationData
-  line = lineIdx + 1 if lineIdx?
-  column = columnIdx + 1 if columnIdx?
-  "Syntax error on line #{line}, column #{column}: #{msg}"
+  } = csNode.locationData;
+  if (lineIdx != null) { line = lineIdx + 1; }
+  if (columnIdx != null) { column = columnIdx + 1; }
+  return `Syntax error on line ${line}, column ${column}: ${msg}`;
+};
 
-# See:
-# http://www.ecma-international.org/ecma-262/5.1/#sec-15.12.2
-parse = (source, reviver = defaultReviver) ->
-  nodeTransforms =
-    Block: (node) ->
-      {expressions} = node
-      if !expressions || expressions.length != 1
-        throw new SyntaxError syntaxErrorMessage(node, 'One top level value expected')
+// See:
+// http://www.ecma-international.org/ecma-262/5.1/#sec-15.12.2
+const parse = function(source, reviver) {
+  if (reviver == null) { reviver = defaultReviver; }
+  const nodeTransforms = {
+    Block(node) {
+      const {expressions} = node;
+      if (!expressions || (expressions.length !== 1)) {
+        throw new SyntaxError(syntaxErrorMessage(node, 'One top level value expected'));
+      }
 
-      transformNode expressions[0]
+      return transformNode(expressions[0]);
+    },
 
-    Value: (node) ->
-      transformNode node.base
+    Value(node) {
+      return transformNode(node.base);
+    },
 
-    Bool: (node) ->
-      node.val == 'true'
+    Bool(node) {
+      return node.val === 'true';
+    },
 
-    Null: -> null
+    Null() { return null; },
 
-    Literal: (node) ->
-      {value} = node
-      try
-        if value[0] == "'"
-          eval value # we trust the lexer here
-        else
-          JSON.parse value
-      catch err
-        throw new SyntaxError syntaxErrorMessage(node, err.message)
+    Literal(node) {
+      const {value} = node;
+      try {
+        if (value[0] === "'") {
+          return eval(value); // we trust the lexer here
+        } else {
+          return JSON.parse(value);
+        }
+      } catch (err) {
+        throw new SyntaxError(syntaxErrorMessage(node, err.message));
+      }
+    },
 
-    Arr: (node) ->
-      node.objects.map transformNode
+    Arr(node) {
+      return node.objects.map(transformNode);
+    },
 
-    Obj: (node) ->
-      node.properties.reduce(
-        (outObject, property) ->
-          {variable, value} = property
-          return outObject unless variable
-          keyName = transformKey variable
-          value = transformNode value
+    Obj(node) {
+      return node.properties.reduce(
+        function(outObject, property) {
+          let {variable, value} = property;
+          if (!variable) { return outObject; }
+          const keyName = transformKey(variable);
+          value = transformNode(value);
           outObject[keyName] =
-            reviver.call outObject, keyName, value
-          outObject
+            reviver.call(outObject, keyName, value);
+          return outObject;
+        },
         {}
-      )
+      );
+    },
 
-    Op: (node) ->
-      if node.second?
-        left = transformNode node.first
-        right = transformNode node.second
-        switch node.operator
-          when '-' then left - right
-          when '+' then left + right
-          when '*' then left * right
-          when '/' then left / right
-          when '%' then left % right
-          when '&' then left & right
-          when '|' then left | right
-          when '^' then left ^ right
-          when '<<' then left << right
-          when '>>>' then left >>> right
-          when '>>' then left >> right
-          else
-            throw new SyntaxError syntaxErrorMessage(
-              node, "Unknown binary operator #{node.operator}"
+    Op(node) {
+      if (node.second != null) {
+        const left = transformNode(node.first);
+        const right = transformNode(node.second);
+        switch (node.operator) {
+          case '-': return left - right;
+          case '+': return left + right;
+          case '*': return left * right;
+          case '/': return left / right;
+          case '%': return left % right;
+          case '&': return left & right;
+          case '|': return left | right;
+          case '^': return left ^ right;
+          case '<<': return left << right;
+          case '>>>': return left >>> right;
+          case '>>': return left >> right;
+          default:
+            throw new SyntaxError(syntaxErrorMessage(
+              node, `Unknown binary operator ${node.operator}`
             )
-      else
-        switch node.operator
-          when '-' then -transformNode(node.first)
-          when '~' then ~transformNode(node.first)
-          else
-            throw new SyntaxError syntaxErrorMessage(
-              node, "Unknown unary operator #{node.operator}"
+            );
+        }
+      } else {
+        switch (node.operator) {
+          case '-': return -transformNode(node.first);
+          case '~': return ~transformNode(node.first);
+          default:
+            throw new SyntaxError(syntaxErrorMessage(
+              node, `Unknown unary operator ${node.operator}`
             )
+            );
+        }
+      }
+    },
 
-    Parens: (node) ->
-      {expressions} = node.body
-      if !expressions || expressions.length != 1
-        throw new SyntaxError syntaxErrorMessage(
+    Parens(node) {
+      const {expressions} = node.body;
+      if (!expressions || (expressions.length !== 1)) {
+        throw new SyntaxError(syntaxErrorMessage(
           node, 'Parenthesis may only contain one expression'
         )
+        );
+      }
 
-      transformNode expressions[0]
+      return transformNode(expressions[0]);
+    }
+  };
 
-  isLiteral = (csNode) ->
-    LiteralTypes.some (LiteralType) -> csNode instanceof LiteralType
+  const isLiteral = csNode => LiteralTypes.some(LiteralType => csNode instanceof LiteralType);
 
-  transformKey = (csNode) ->
-    type = nodeTypeString csNode
-    switch type
-      when 'Value'
-        {value} = csNode.base
-        switch value[0]
-          when '\'' then eval value # we trust the lexer here
-          when '"' then JSON.parse value
-          else value
+  var transformKey = function(csNode) {
+    const type = nodeTypeString(csNode);
+    switch (type) {
+      case 'Value':
+        var {value} = csNode.base;
+        switch (value[0]) {
+          case '\'': return eval(value); // we trust the lexer here
+          case '"': return JSON.parse(value);
+          default: return value;
+        }
 
-      else
-        throw new SyntaxError syntaxErrorMessage(csNode, "#{type} used as key")
+      default:
+        throw new SyntaxError(syntaxErrorMessage(csNode, `${type} used as key`));
+    }
+  };
 
-  transformNode = (csNode) ->
-    type = nodeTypeString csNode
-    transform = nodeTransforms[type]
+  var transformNode = function(csNode) {
+    const type = nodeTypeString(csNode);
+    const transform = nodeTransforms[type];
 
-    unless transform
-      throw new SyntaxError syntaxErrorMessage(csNode, "Unexpected #{type}")
+    if (!transform) {
+      throw new SyntaxError(syntaxErrorMessage(csNode, `Unexpected ${type}`));
+    }
 
-    transform csNode
+    return transform(csNode);
+  };
 
-  if typeof reviver != 'function'
-    throw new TypeError "reviver has to be a function"
+  if (typeof reviver !== 'function') {
+    throw new TypeError("reviver has to be a function");
+  }
 
-  coffeeAst = nodes source.toString 'utf8'
-  parsed = transformNode(coffeeAst)
-  return parsed if reviver == defaultReviver
-  contextObj = {}
-  contextObj[''] = parsed
-  reviver.call contextObj, '', parsed
+  const coffeeAst = nodes(source.toString('utf8'));
+  const parsed = transformNode(coffeeAst);
+  if (reviver === defaultReviver) { return parsed; }
+  const contextObj = {};
+  contextObj[''] = parsed;
+  return reviver.call(contextObj, '', parsed);
+};
 
-module.exports = parse
+module.exports = parse;

@@ -1,63 +1,92 @@
-path = require 'path'
+/*
+ * decaffeinate suggestions:
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS206: Consider reworking classes to avoid initClass
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let Rebuild;
+const path = require('path');
 
-_ = require 'underscore-plus'
-yargs = require 'yargs'
+const _ = require('underscore-plus');
+const yargs = require('yargs');
 
-config = require './apm'
-Command = require './command'
-fs = require './fs'
-Install = require './install'
+const config = require('./apm');
+const Command = require('./command');
+const fs = require('./fs');
+const Install = require('./install');
 
 module.exports =
-class Rebuild extends Command
-  @commandNames: ['rebuild']
+(Rebuild = (function() {
+  Rebuild = class Rebuild extends Command {
+    static initClass() {
+      this.commandNames = ['rebuild'];
+    }
 
-  constructor: ->
-    super()
-    @atomDirectory = config.getAtomDirectory()
-    @atomNodeDirectory = path.join(@atomDirectory, '.node-gyp')
-    @atomNpmPath = require.resolve('npm/bin/npm-cli')
+    constructor() {
+      super();
+      this.atomDirectory = config.getAtomDirectory();
+      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp');
+      this.atomNpmPath = require.resolve('npm/bin/npm-cli');
+    }
 
-  parseOptions: (argv) ->
-    options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
-    options.usage """
+    parseOptions(argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+      options.usage(`\
 
-      Usage: apm rebuild [<name> [<name> ...]]
+Usage: apm rebuild [<name> [<name> ...]]
 
-      Rebuild the given modules currently installed in the node_modules folder
-      in the current working directory.
+Rebuild the given modules currently installed in the node_modules folder
+in the current working directory.
 
-      All the modules will be rebuilt if no module names are specified.
-    """
-    options.alias('h', 'help').describe('help', 'Print this usage message')
+All the modules will be rebuilt if no module names are specified.\
+`
+      );
+      return options.alias('h', 'help').describe('help', 'Print this usage message');
+    }
 
-  forkNpmRebuild: (options, callback) ->
-    process.stdout.write 'Rebuilding modules '
+    forkNpmRebuild(options, callback) {
+      let vsArgs;
+      process.stdout.write('Rebuilding modules ');
 
-    rebuildArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'rebuild']
-    rebuildArgs.push(@getNpmBuildFlags()...)
-    rebuildArgs.push(options.argv._...)
+      const rebuildArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'rebuild'];
+      rebuildArgs.push(...Array.from(this.getNpmBuildFlags() || []));
+      rebuildArgs.push(...Array.from(options.argv._ || []));
 
-    if vsArgs = @getVisualStudioFlags()
-      rebuildArgs.push(vsArgs)
+      if (vsArgs = this.getVisualStudioFlags()) {
+        rebuildArgs.push(vsArgs);
+      }
 
-    fs.makeTreeSync(@atomDirectory)
+      fs.makeTreeSync(this.atomDirectory);
 
-    env = _.extend({}, process.env, {HOME: @atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()})
-    @addBuildEnvVars(env)
+      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
+      this.addBuildEnvVars(env);
 
-    @fork(@atomNpmPath, rebuildArgs, {env}, callback)
+      return this.fork(this.atomNpmPath, rebuildArgs, {env}, callback);
+    }
 
-  run: (options) ->
-    {callback} = options
-    options = @parseOptions(options.commandArgs)
+    run(options) {
+      const {callback} = options;
+      options = this.parseOptions(options.commandArgs);
 
-    config.loadNpm (error, @npm) =>
-      @loadInstalledAtomMetadata =>
-        @forkNpmRebuild options, (code, stderr='') =>
-          if code is 0
-            @logSuccess()
-            callback()
-          else
-            @logFailure()
-            callback(stderr)
+      return config.loadNpm((error, npm) => {
+        this.npm = npm;
+        return this.loadInstalledAtomMetadata(() => {
+          return this.forkNpmRebuild(options, (code, stderr) => {
+            if (stderr == null) { stderr = ''; }
+            if (code === 0) {
+              this.logSuccess();
+              return callback();
+            } else {
+              this.logFailure();
+              return callback(stderr);
+            }
+          });
+        });
+      });
+    }
+  };
+  Rebuild.initClass();
+  return Rebuild;
+})());

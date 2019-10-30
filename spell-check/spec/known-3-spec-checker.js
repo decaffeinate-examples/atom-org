@@ -1,8 +1,10 @@
-SpecChecker = require './spec-checker'
+const SpecChecker = require('./spec-checker');
 
-class Known3SpecChecker extends SpecChecker
-  constructor: ->
-    super("known-3", false, ["k3a", "k0b", "k0a"])
+class Known3SpecChecker extends SpecChecker {
+  constructor() {
+    super("known-3", false, ["k3a", "k0b", "k0a"]);
+  }
+}
 
-checker = new Known3SpecChecker
-module.exports = checker
+const checker = new Known3SpecChecker;
+module.exports = checker;

@@ -1,60 +1,84 @@
-{Disposable, CompositeDisposable} = require 'event-kit'
-StatusBarManager = require './status-bar-manager'
-GlobalVimState = require './global-vim-state'
-VimState = require './vim-state'
-settings = require './settings'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const {Disposable, CompositeDisposable} = require('event-kit');
+const StatusBarManager = require('./status-bar-manager');
+const GlobalVimState = require('./global-vim-state');
+const VimState = require('./vim-state');
+const settings = require('./settings');
 
-module.exports =
-  config: settings.config
+module.exports = {
+  config: settings.config,
 
-  activate: (state) ->
-    @disposables = new CompositeDisposable
-    @globalVimState = new GlobalVimState
-    @statusBarManager = new StatusBarManager
+  activate(state) {
+    this.disposables = new CompositeDisposable;
+    this.globalVimState = new GlobalVimState;
+    this.statusBarManager = new StatusBarManager;
 
-    @vimStates = new Set
-    @vimStatesByEditor = new WeakMap
+    this.vimStates = new Set;
+    this.vimStatesByEditor = new WeakMap;
 
-    @disposables.add atom.workspace.observeTextEditors (editor) =>
-      return if editor.isMini() or @getEditorState(editor)
+    this.disposables.add(atom.workspace.observeTextEditors(editor => {
+      if (editor.isMini() || this.getEditorState(editor)) { return; }
 
-      vimState = new VimState(
+      const vimState = new VimState(
         atom.views.getView(editor),
-        @statusBarManager,
-        @globalVimState
-      )
+        this.statusBarManager,
+        this.globalVimState
+      );
 
-      @vimStates.add(vimState)
-      @vimStatesByEditor.set(editor, vimState)
-      vimState.onDidDestroy => @vimStates.delete(vimState)
+      this.vimStates.add(vimState);
+      this.vimStatesByEditor.set(editor, vimState);
+      return vimState.onDidDestroy(() => this.vimStates.delete(vimState));
+    })
+    );
 
-    @disposables.add atom.workspace.onDidChangeActivePaneItem @updateToPaneItem.bind(this)
+    this.disposables.add(atom.workspace.onDidChangeActivePaneItem(this.updateToPaneItem.bind(this)));
 
-    @disposables.add new Disposable =>
-      @vimStates.forEach (vimState) -> vimState.destroy()
+    return this.disposables.add(new Disposable(() => {
+      return this.vimStates.forEach(vimState => vimState.destroy());
+    })
+    );
+  },
 
-  deactivate: ->
-    @disposables.dispose()
+  deactivate() {
+    return this.disposables.dispose();
+  },
 
-  getGlobalState: ->
-    @globalVimState
+  getGlobalState() {
+    return this.globalVimState;
+  },
 
-  getEditorState: (editor) ->
-    @vimStatesByEditor.get(editor)
+  getEditorState(editor) {
+    return this.vimStatesByEditor.get(editor);
+  },
 
-  consumeStatusBar: (statusBar) ->
-    @statusBarManager.initialize(statusBar)
-    @statusBarManager.attach()
-    @disposables.add new Disposable =>
-      @statusBarManager.detach()
+  consumeStatusBar(statusBar) {
+    this.statusBarManager.initialize(statusBar);
+    this.statusBarManager.attach();
+    return this.disposables.add(new Disposable(() => {
+      return this.statusBarManager.detach();
+    })
+    );
+  },
 
-  updateToPaneItem: (item) ->
-    vimState = @getEditorState(item) if item?
-    if vimState?
-      vimState.updateStatusBar()
-    else
-      @statusBarManager.hide()
+  updateToPaneItem(item) {
+    let vimState;
+    if (item != null) { vimState = this.getEditorState(item); }
+    if (vimState != null) {
+      return vimState.updateStatusBar();
+    } else {
+      return this.statusBarManager.hide();
+    }
+  },
 
-  provideVimMode: ->
-    getGlobalState: @getGlobalState.bind(this)
-    getEditorState: @getEditorState.bind(this)
+  provideVimMode() {
+    return {
+      getGlobalState: this.getGlobalState.bind(this),
+      getEditorState: this.getEditorState.bind(this)
+    };
+  }
+};

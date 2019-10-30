@@ -1,14 +1,23 @@
-DecorationExampleView = require './decoration-example-view'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const DecorationExampleView = require('./decoration-example-view');
 
-module.exports =
-  decorationExampleView: null
+module.exports = {
+  decorationExampleView: null,
 
-  activate: (state) ->
-    @decorationExampleView = new DecorationExampleView(state.decorationExampleViewState)
-    @decorationExampleView.attach()
+  activate(state) {
+    this.decorationExampleView = new DecorationExampleView(state.decorationExampleViewState);
+    return this.decorationExampleView.attach();
+  },
 
-  deactivate: ->
-    @decorationExampleView.destroy()
+  deactivate() {
+    return this.decorationExampleView.destroy();
+  },
 
-  serialize: ->
-    decorationExampleViewState: @decorationExampleView.serialize()
+  serialize() {
+    return {decorationExampleViewState: this.decorationExampleView.serialize()};
+  }
+};

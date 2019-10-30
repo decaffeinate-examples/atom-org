@@ -1,118 +1,185 @@
-{Disposable} = require 'atom'
-url = require 'url'
-fs = require 'fs-plus'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS103: Rewrite code to no longer use __guard__
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let FileInfoView;
+const {Disposable} = require('atom');
+const url = require('url');
+const fs = require('fs-plus');
 
 module.exports =
-class FileInfoView
-  constructor: ->
-    @element = document.createElement('status-bar-file')
-    @element.classList.add('file-info', 'inline-block')
+(FileInfoView = class FileInfoView {
+  constructor() {
+    this.element = document.createElement('status-bar-file');
+    this.element.classList.add('file-info', 'inline-block');
 
-    @currentPath = document.createElement('a')
-    @currentPath.classList.add('current-path')
-    @element.appendChild(@currentPath)
-    @element.currentPath = @currentPath
+    this.currentPath = document.createElement('a');
+    this.currentPath.classList.add('current-path');
+    this.element.appendChild(this.currentPath);
+    this.element.currentPath = this.currentPath;
 
-    @element.getActiveItem = @getActiveItem.bind(this)
+    this.element.getActiveItem = this.getActiveItem.bind(this);
 
-    @activeItemSubscription = atom.workspace.getCenter().onDidChangeActivePaneItem =>
-      @subscribeToActiveItem()
-    @subscribeToActiveItem()
+    this.activeItemSubscription = atom.workspace.getCenter().onDidChangeActivePaneItem(() => {
+      return this.subscribeToActiveItem();
+    });
+    this.subscribeToActiveItem();
 
-    @registerTooltip()
-    clickHandler = (event) =>
-      isShiftClick = event.shiftKey
-      @showCopiedTooltip(isShiftClick)
-      text = @getActiveItemCopyText(isShiftClick)
-      atom.clipboard.write(text)
-      setTimeout =>
-        @clearCopiedTooltip()
-      , 2000
+    this.registerTooltip();
+    const clickHandler = event => {
+      const isShiftClick = event.shiftKey;
+      this.showCopiedTooltip(isShiftClick);
+      const text = this.getActiveItemCopyText(isShiftClick);
+      atom.clipboard.write(text);
+      return setTimeout(() => {
+        return this.clearCopiedTooltip();
+      }
+      , 2000);
+    };
 
-    @element.addEventListener('click', clickHandler)
-    @clickSubscription = new Disposable => @element.removeEventListener('click', clickHandler)
+    this.element.addEventListener('click', clickHandler);
+    this.clickSubscription = new Disposable(() => this.element.removeEventListener('click', clickHandler));
+  }
 
-  registerTooltip: ->
-    @tooltip = atom.tooltips.add(@element, title: ->
-      "Click to copy absolute file path (Shift + Click to copy relative path)")
+  registerTooltip() {
+    return this.tooltip = atom.tooltips.add(this.element, { title() {
+      return "Click to copy absolute file path (Shift + Click to copy relative path)";
+    }
+  });
+  }
 
-  clearCopiedTooltip: ->
-    @copiedTooltip?.dispose()
-    @registerTooltip()
+  clearCopiedTooltip() {
+    if (this.copiedTooltip != null) {
+      this.copiedTooltip.dispose();
+    }
+    return this.registerTooltip();
+  }
 
-  showCopiedTooltip: (copyRelativePath) ->
-    @tooltip?.dispose()
-    @copiedTooltip?.dispose()
-    text = @getActiveItemCopyText(copyRelativePath)
-    @copiedTooltip = atom.tooltips.add @element,
-      title: "Copied: #{text}"
-      trigger: 'manual'
-      delay:
+  showCopiedTooltip(copyRelativePath) {
+    if (this.tooltip != null) {
+      this.tooltip.dispose();
+    }
+    if (this.copiedTooltip != null) {
+      this.copiedTooltip.dispose();
+    }
+    const text = this.getActiveItemCopyText(copyRelativePath);
+    return this.copiedTooltip = atom.tooltips.add(this.element, {
+      title: `Copied: ${text}`,
+      trigger: 'manual',
+      delay: {
         show: 0
+      }
+    }
+    );
+  }
 
-  getActiveItemCopyText: (copyRelativePath) ->
-    activeItem = @getActiveItem()
-    path = activeItem?.getPath?()
-    return activeItem?.getTitle?() or '' if not path?
+  getActiveItemCopyText(copyRelativePath) {
+    const activeItem = this.getActiveItem();
+    let path = __guardMethod__(activeItem, 'getPath', o => o.getPath());
+    if ((path == null)) { return __guardMethod__(activeItem, 'getTitle', o1 => o1.getTitle()) || ''; }
 
-    # Make sure we try to relativize before parsing URLs.
-    if copyRelativePath
-      relativized = atom.project.relativize(path)
-      if relativized isnt path
-        return relativized
+    // Make sure we try to relativize before parsing URLs.
+    if (copyRelativePath) {
+      const relativized = atom.project.relativize(path);
+      if (relativized !== path) {
+        return relativized;
+      }
+    }
 
-    # An item path could be a url, we only want to copy the `path` part
-    if path?.indexOf('://') > 0
-      path = url.parse(path).path
-    path
+    // An item path could be a url, we only want to copy the `path` part
+    if ((path != null ? path.indexOf('://') : undefined) > 0) {
+      ({
+        path
+      } = url.parse(path));
+    }
+    return path;
+  }
 
-  subscribeToActiveItem: ->
-    @modifiedSubscription?.dispose()
-    @titleSubscription?.dispose()
+  subscribeToActiveItem() {
+    let activeItem;
+    if (this.modifiedSubscription != null) {
+      this.modifiedSubscription.dispose();
+    }
+    if (this.titleSubscription != null) {
+      this.titleSubscription.dispose();
+    }
 
-    if activeItem = @getActiveItem()
-      @updateCallback ?= => @update()
+    if (activeItem = this.getActiveItem()) {
+      if (this.updateCallback == null) { this.updateCallback = () => this.update(); }
 
-      if typeof activeItem.onDidChangeTitle is 'function'
-        @titleSubscription = activeItem.onDidChangeTitle(@updateCallback)
-      else if typeof activeItem.on is 'function'
-        #TODO Remove once title-changed event support is removed
-        activeItem.on('title-changed', @updateCallback)
-        @titleSubscription = dispose: =>
-          activeItem.off?('title-changed', @updateCallback)
+      if (typeof activeItem.onDidChangeTitle === 'function') {
+        this.titleSubscription = activeItem.onDidChangeTitle(this.updateCallback);
+      } else if (typeof activeItem.on === 'function') {
+        //TODO Remove once title-changed event support is removed
+        activeItem.on('title-changed', this.updateCallback);
+        this.titleSubscription = { dispose: () => {
+          return (typeof activeItem.off === 'function' ? activeItem.off('title-changed', this.updateCallback) : undefined);
+        }
+      };
+      }
 
-      @modifiedSubscription = activeItem.onDidChangeModified?(@updateCallback)
+      this.modifiedSubscription = typeof activeItem.onDidChangeModified === 'function' ? activeItem.onDidChangeModified(this.updateCallback) : undefined;
+    }
 
-    @update()
+    return this.update();
+  }
 
-  destroy: ->
-    @activeItemSubscription.dispose()
-    @titleSubscription?.dispose()
-    @modifiedSubscription?.dispose()
-    @clickSubscription?.dispose()
-    @copiedTooltip?.dispose()
-    @tooltip?.dispose()
+  destroy() {
+    this.activeItemSubscription.dispose();
+    if (this.titleSubscription != null) {
+      this.titleSubscription.dispose();
+    }
+    if (this.modifiedSubscription != null) {
+      this.modifiedSubscription.dispose();
+    }
+    if (this.clickSubscription != null) {
+      this.clickSubscription.dispose();
+    }
+    if (this.copiedTooltip != null) {
+      this.copiedTooltip.dispose();
+    }
+    return (this.tooltip != null ? this.tooltip.dispose() : undefined);
+  }
 
-  getActiveItem: ->
-    atom.workspace.getCenter().getActivePaneItem()
+  getActiveItem() {
+    return atom.workspace.getCenter().getActivePaneItem();
+  }
 
-  update: ->
-    @updatePathText()
-    @updateBufferHasModifiedText(@getActiveItem()?.isModified?())
+  update() {
+    this.updatePathText();
+    return this.updateBufferHasModifiedText(__guardMethod__(this.getActiveItem(), 'isModified', o => o.isModified()));
+  }
 
-  updateBufferHasModifiedText: (isModified) ->
-    if isModified
-      @element.classList.add('buffer-modified')
-      @isModified = true
-    else
-      @element.classList.remove('buffer-modified')
-      @isModified = false
+  updateBufferHasModifiedText(isModified) {
+    if (isModified) {
+      this.element.classList.add('buffer-modified');
+      return this.isModified = true;
+    } else {
+      this.element.classList.remove('buffer-modified');
+      return this.isModified = false;
+    }
+  }
 
-  updatePathText: ->
-    if path = @getActiveItem()?.getPath?()
-      relativized = atom.project.relativize(path)
-      @currentPath.textContent = if relativized? then fs.tildify(relativized) else path
-    else if title = @getActiveItem()?.getTitle?()
-      @currentPath.textContent = title
-    else
-      @currentPath.textContent = ''
+  updatePathText() {
+    let path, title;
+    if (path = __guardMethod__(this.getActiveItem(), 'getPath', o => o.getPath())) {
+      const relativized = atom.project.relativize(path);
+      return this.currentPath.textContent = (relativized != null) ? fs.tildify(relativized) : path;
+    } else if ((title = __guardMethod__(this.getActiveItem(), 'getTitle', o1 => o1.getTitle()))) {
+      return this.currentPath.textContent = title;
+    } else {
+      return this.currentPath.textContent = '';
+    }
+  }
+});
+
+function __guardMethod__(obj, methodName, transform) {
+  if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
+    return transform(obj, methodName);
+  } else {
+    return undefined;
+  }
+}

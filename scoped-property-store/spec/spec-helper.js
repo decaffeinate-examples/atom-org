@@ -1,2 +1,2 @@
-require 'coffee-cache'
-require('grim').includeDeprecatedAPIs = false
+require('coffee-cache');
+require('grim').includeDeprecatedAPIs = false;

@@ -1,115 +1,167 @@
-class Scroll
-  isComplete: -> true
-  isRecordable: -> false
-  constructor: (@editorElement) ->
-    @scrolloff = 2 # atom default
-    @editor = @editorElement.getModel()
-    @rows =
-      first: @editorElement.getFirstVisibleScreenRow()
-      last: @editorElement.getLastVisibleScreenRow()
-      final: @editor.getLastScreenRow()
+/*
+ * decaffeinate suggestions:
+ * DS001: Remove Babel/TypeScript constructor workaround
+ * DS101: Remove unnecessary use of Array.from
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+class Scroll {
+  isComplete() { return true; }
+  isRecordable() { return false; }
+  constructor(editorElement) {
+    this.editorElement = editorElement;
+    this.scrolloff = 2; // atom default
+    this.editor = this.editorElement.getModel();
+    this.rows = {
+      first: this.editorElement.getFirstVisibleScreenRow(),
+      last: this.editorElement.getLastVisibleScreenRow(),
+      final: this.editor.getLastScreenRow()
+    };
+  }
+}
 
-class ScrollDown extends Scroll
-  execute: (count=1) ->
-    oldFirstRow = @editor.getFirstVisibleScreenRow()
-    @editor.setFirstVisibleScreenRow(oldFirstRow + count)
-    newFirstRow = @editor.getFirstVisibleScreenRow()
+class ScrollDown extends Scroll {
+  execute(count) {
+    if (count == null) { count = 1; }
+    const oldFirstRow = this.editor.getFirstVisibleScreenRow();
+    this.editor.setFirstVisibleScreenRow(oldFirstRow + count);
+    const newFirstRow = this.editor.getFirstVisibleScreenRow();
 
-    for cursor in @editor.getCursors()
-      position = cursor.getScreenPosition()
-      if position.row <= newFirstRow + @scrolloff
-        cursor.setScreenPosition([position.row + newFirstRow - oldFirstRow, position.column], autoscroll: false)
+    for (let cursor of Array.from(this.editor.getCursors())) {
+      const position = cursor.getScreenPosition();
+      if (position.row <= (newFirstRow + this.scrolloff)) {
+        cursor.setScreenPosition([(position.row + newFirstRow) - oldFirstRow, position.column], {autoscroll: false});
+      }
+    }
 
-    # TODO: remove
-    # This is a workaround for a bug fixed in atom/atom#10062
-    @editorElement.component.updateSync()
+    // TODO: remove
+    // This is a workaround for a bug fixed in atom/atom#10062
+    this.editorElement.component.updateSync();
 
-    return
+  }
+}
 
-class ScrollUp extends Scroll
-  execute: (count=1) ->
-    oldFirstRow = @editor.getFirstVisibleScreenRow()
-    oldLastRow = @editor.getLastVisibleScreenRow()
-    @editor.setFirstVisibleScreenRow(oldFirstRow - count)
-    newLastRow = @editor.getLastVisibleScreenRow()
+class ScrollUp extends Scroll {
+  execute(count) {
+    if (count == null) { count = 1; }
+    const oldFirstRow = this.editor.getFirstVisibleScreenRow();
+    const oldLastRow = this.editor.getLastVisibleScreenRow();
+    this.editor.setFirstVisibleScreenRow(oldFirstRow - count);
+    const newLastRow = this.editor.getLastVisibleScreenRow();
 
-    for cursor in @editor.getCursors()
-      position = cursor.getScreenPosition()
-      if position.row >= newLastRow - @scrolloff
-        cursor.setScreenPosition([position.row - (oldLastRow - newLastRow), position.column], autoscroll: false)
+    for (let cursor of Array.from(this.editor.getCursors())) {
+      const position = cursor.getScreenPosition();
+      if (position.row >= (newLastRow - this.scrolloff)) {
+        cursor.setScreenPosition([position.row - (oldLastRow - newLastRow), position.column], {autoscroll: false});
+      }
+    }
 
-    # TODO: remove
-    # This is a workaround for a bug fixed in atom/atom#10062
-    @editorElement.component.updateSync()
+    // TODO: remove
+    // This is a workaround for a bug fixed in atom/atom#10062
+    this.editorElement.component.updateSync();
 
-    return
+  }
+}
 
-class ScrollCursor extends Scroll
-  constructor: (@editorElement, @opts={}) ->
-    super
-    cursor = @editor.getCursorScreenPosition()
-    @pixel = @editorElement.pixelPositionForScreenPosition(cursor).top
+class ScrollCursor extends Scroll {
+  constructor(editorElement, opts) {
+    {
+      // Hack: trick Babel/TypeScript into allowing this before super.
+      if (false) { super(); }
+      let thisFn = (() => { return this; }).toString();
+      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
+      eval(`${thisName} = this;`);
+    }
+    this.editorElement = editorElement;
+    if (opts == null) { opts = {}; }
+    this.opts = opts;
+    super(...arguments);
+    const cursor = this.editor.getCursorScreenPosition();
+    this.pixel = this.editorElement.pixelPositionForScreenPosition(cursor).top;
+  }
+}
 
-class ScrollCursorToTop extends ScrollCursor
-  execute: ->
-    @moveToFirstNonBlank() unless @opts.leaveCursor
-    @scrollUp()
+class ScrollCursorToTop extends ScrollCursor {
+  execute() {
+    if (!this.opts.leaveCursor) { this.moveToFirstNonBlank(); }
+    return this.scrollUp();
+  }
 
-  scrollUp: ->
-    return if @rows.last is @rows.final
-    @pixel -= (@editor.getLineHeightInPixels() * @scrolloff)
-    @editorElement.setScrollTop(@pixel)
+  scrollUp() {
+    if (this.rows.last === this.rows.final) { return; }
+    this.pixel -= (this.editor.getLineHeightInPixels() * this.scrolloff);
+    return this.editorElement.setScrollTop(this.pixel);
+  }
 
-  moveToFirstNonBlank: ->
-    @editor.moveToFirstCharacterOfLine()
+  moveToFirstNonBlank() {
+    return this.editor.moveToFirstCharacterOfLine();
+  }
+}
 
-class ScrollCursorToMiddle extends ScrollCursor
-  execute: ->
-    @moveToFirstNonBlank() unless @opts.leaveCursor
-    @scrollMiddle()
+class ScrollCursorToMiddle extends ScrollCursor {
+  execute() {
+    if (!this.opts.leaveCursor) { this.moveToFirstNonBlank(); }
+    return this.scrollMiddle();
+  }
 
-  scrollMiddle: ->
-    @pixel -= (@editorElement.getHeight() / 2)
-    @editorElement.setScrollTop(@pixel)
+  scrollMiddle() {
+    this.pixel -= (this.editorElement.getHeight() / 2);
+    return this.editorElement.setScrollTop(this.pixel);
+  }
 
-  moveToFirstNonBlank: ->
-    @editor.moveToFirstCharacterOfLine()
+  moveToFirstNonBlank() {
+    return this.editor.moveToFirstCharacterOfLine();
+  }
+}
 
-class ScrollCursorToBottom extends ScrollCursor
-  execute: ->
-    @moveToFirstNonBlank() unless @opts.leaveCursor
-    @scrollDown()
+class ScrollCursorToBottom extends ScrollCursor {
+  execute() {
+    if (!this.opts.leaveCursor) { this.moveToFirstNonBlank(); }
+    return this.scrollDown();
+  }
 
-  scrollDown: ->
-    return if @rows.first is 0
-    offset = (@editor.getLineHeightInPixels() * (@scrolloff + 1))
-    @pixel -= (@editorElement.getHeight() - offset)
-    @editorElement.setScrollTop(@pixel)
+  scrollDown() {
+    if (this.rows.first === 0) { return; }
+    const offset = (this.editor.getLineHeightInPixels() * (this.scrolloff + 1));
+    this.pixel -= (this.editorElement.getHeight() - offset);
+    return this.editorElement.setScrollTop(this.pixel);
+  }
 
-  moveToFirstNonBlank: ->
-    @editor.moveToFirstCharacterOfLine()
+  moveToFirstNonBlank() {
+    return this.editor.moveToFirstCharacterOfLine();
+  }
+}
 
-class ScrollHorizontal
-  isComplete: -> true
-  isRecordable: -> false
-  constructor: (@editorElement) ->
-    @editor = @editorElement.getModel()
-    cursorPos = @editor.getCursorScreenPosition()
-    @pixel = @editorElement.pixelPositionForScreenPosition(cursorPos).left
-    @cursor = @editor.getLastCursor()
+class ScrollHorizontal {
+  isComplete() { return true; }
+  isRecordable() { return false; }
+  constructor(editorElement) {
+    this.editorElement = editorElement;
+    this.editor = this.editorElement.getModel();
+    const cursorPos = this.editor.getCursorScreenPosition();
+    this.pixel = this.editorElement.pixelPositionForScreenPosition(cursorPos).left;
+    this.cursor = this.editor.getLastCursor();
+  }
 
-  putCursorOnScreen: ->
-    @editor.scrollToCursorPosition({center: false})
+  putCursorOnScreen() {
+    return this.editor.scrollToCursorPosition({center: false});
+  }
+}
 
-class ScrollCursorToLeft extends ScrollHorizontal
-  execute: ->
-    @editorElement.setScrollLeft(@pixel)
-    @putCursorOnScreen()
+class ScrollCursorToLeft extends ScrollHorizontal {
+  execute() {
+    this.editorElement.setScrollLeft(this.pixel);
+    return this.putCursorOnScreen();
+  }
+}
 
-class ScrollCursorToRight extends ScrollHorizontal
-  execute: ->
-    @editorElement.setScrollRight(@pixel)
-    @putCursorOnScreen()
+class ScrollCursorToRight extends ScrollHorizontal {
+  execute() {
+    this.editorElement.setScrollRight(this.pixel);
+    return this.putCursorOnScreen();
+  }
+}
 
 module.exports = {ScrollDown, ScrollUp, ScrollCursorToTop, ScrollCursorToMiddle,
-  ScrollCursorToBottom, ScrollCursorToLeft, ScrollCursorToRight}
+  ScrollCursorToBottom, ScrollCursorToLeft, ScrollCursorToRight};

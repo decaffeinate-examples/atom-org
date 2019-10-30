@@ -1,17 +1,28 @@
-StatsTracker = require './stats-tracker'
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+const StatsTracker = require('./stats-tracker');
 
-module.exports =
-  activate: ->
-    @stats = new StatsTracker()
-    atom.commands.add 'atom-workspace', 'editor-stats:toggle', =>
-      @createView().toggle(@stats)
+module.exports = {
+  activate() {
+    this.stats = new StatsTracker();
+    return atom.commands.add('atom-workspace', 'editor-stats:toggle', () => {
+      return this.createView().toggle(this.stats);
+    });
+  },
 
-  deactivate: ->
-    @editorStatsView = null
-    @stats = null
+  deactivate() {
+    this.editorStatsView = null;
+    return this.stats = null;
+  },
 
-  createView: ->
-    unless @editorStatsView
-      EditorStatsView  = require './editor-stats-view'
-      @editorStatsView = new EditorStatsView()
-    @editorStatsView
+  createView() {
+    if (!this.editorStatsView) {
+      const EditorStatsView  = require('./editor-stats-view');
+      this.editorStatsView = new EditorStatsView();
+    }
+    return this.editorStatsView;
+  }
+};

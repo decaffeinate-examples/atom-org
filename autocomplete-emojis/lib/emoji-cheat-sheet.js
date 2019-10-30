@@ -1,9 +1,18 @@
-Shell = require('shell')
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+let EmojiCheatSheet;
+const Shell = require('shell');
 
 module.exports =
-class EmojiCheatSheet
-  @show: ->
-    @openUrlInBrowser('http://www.emoji-cheat-sheet.com/')
+(EmojiCheatSheet = class EmojiCheatSheet {
+  static show() {
+    return this.openUrlInBrowser('http://www.emoji-cheat-sheet.com/');
+  }
 
-  @openUrlInBrowser: (url) ->
-    Shell.openExternal(url)
+  static openUrlInBrowser(url) {
+    return Shell.openExternal(url);
+  }
+});

@@ -1,16 +1,30 @@
-module.exports =
-  activate: ->
-    atom.commands.add 'atom-text-editor', 'revert-buffer:revert', ->
-      editor = atom.workspace.getActiveTextEditor()
-      return unless editor?.getPath()
+/*
+ * decaffeinate suggestions:
+ * DS102: Remove unnecessary code created because of implicit returns
+ * DS207: Consider shorter variations of null checks
+ * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
+ */
+module.exports = {
+  activate() {
+    atom.commands.add('atom-text-editor', 'revert-buffer:revert', function() {
+      const editor = atom.workspace.getActiveTextEditor();
+      if (!(editor != null ? editor.getPath() : undefined)) { return; }
 
-      fs = require 'fs'
-      fs.readFile editor.getPath(), (error, contents) ->
-        editor.setText(contents.toString()) unless error
+      const fs = require('fs');
+      return fs.readFile(editor.getPath(), function(error, contents) {
+        if (!error) { return editor.setText(contents.toString()); }
+      });
+    });
 
-    atom.commands.add 'atom-text-editor', 'revert-buffer:revert-all', ->
-      fs = require 'fs'
-      atom.workspace.getTextEditors().forEach (editor) ->
-        if editor?.getPath()
-          fs.readFile editor.getPath(), (error, contents) ->
-            editor.setText(contents.toString()) unless error
+    return atom.commands.add('atom-text-editor', 'revert-buffer:revert-all', function() {
+      const fs = require('fs');
+      return atom.workspace.getTextEditors().forEach(function(editor) {
+        if (editor != null ? editor.getPath() : undefined) {
+          return fs.readFile(editor.getPath(), function(error, contents) {
+            if (!error) { return editor.setText(contents.toString()); }
+          });
+        }
+      });
+    });
+  }
+};
