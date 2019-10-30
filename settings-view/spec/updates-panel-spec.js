@@ -1,3 +1,12 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-sequences,
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,245 +14,253 @@
  * DS104: Avoid inline assignments
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const UpdatesPanel = require('../lib/updates-panel');
-const PackageManager = require('../lib/package-manager');
-const SettingsView = require('../lib/settings-view');
+const UpdatesPanel = require('../lib/updates-panel')
+const PackageManager = require('../lib/package-manager')
+const SettingsView = require('../lib/settings-view')
 
-describe('UpdatesPanel', function() {
-  let panel = null;
-  let settingsView = null;
-  let packageManager = null;
-  let [resolveOutdated, rejectOutdated] = Array.from([]);
+describe('UpdatesPanel', function () {
+  let panel = null
+  let settingsView = null
+  let packageManager = null
+  let [resolveOutdated, rejectOutdated] = Array.from([])
 
-  beforeEach(function() {
-    settingsView = new SettingsView;
-    packageManager = new PackageManager;
+  beforeEach(function () {
+    settingsView = new SettingsView()
+    packageManager = new PackageManager()
     // This spy is only needed for the Check for Updates specs,
     // but we have to instantiate it here because we need to pass the spy to the UpdatesPanel
-    spyOn(packageManager, 'getOutdated').andReturn(new Promise(function(resolve, reject) { let ref;
-    return [resolveOutdated, rejectOutdated] = Array.from(ref = [resolve, reject]), ref; }));
-    panel = new UpdatesPanel(settingsView, packageManager);
-    return jasmine.attachToDOM(panel.element);
-  });
+    spyOn(packageManager, 'getOutdated').andReturn(new Promise(function (resolve, reject) {
+      let ref
+      return [resolveOutdated, rejectOutdated] = Array.from(ref = [resolve, reject]), ref
+    }))
+    panel = new UpdatesPanel(settingsView, packageManager)
+    return jasmine.attachToDOM(panel.element)
+  })
 
-  it("shows updates when updates are available", function() {
+  it('shows updates when updates are available', function () {
     const pack = {
       name: 'test-package',
       description: 'some description',
       latestVersion: '99.0.0',
       version: '1.0.0'
-    };
+    }
 
     // skip packman stubbing
-    panel.beforeShow({updates: [pack]});
-    return expect(panel.refs.updatesContainer.children.length).toBe(1);
-  });
+    panel.beforeShow({ updates: [pack] })
+    return expect(panel.refs.updatesContainer.children.length).toBe(1)
+  })
 
-  it("shows a message when updates are not available", function() {
-    panel.beforeShow({updates: []});
-    expect(panel.refs.updatesContainer.children.length).toBe(0);
-    return expect(panel.refs.noUpdatesMessage.style.display).not.toBe('none');
-  });
+  it('shows a message when updates are not available', function () {
+    panel.beforeShow({ updates: [] })
+    expect(panel.refs.updatesContainer.children.length).toBe(0)
+    return expect(panel.refs.noUpdatesMessage.style.display).not.toBe('none')
+  })
 
-  describe("version pinned packages message", function() {
-    it('shows a message when there are pinned version packages', function() {
-      spyOn(packageManager, 'getVersionPinnedPackages').andReturn(['foo', 'bar', 'baz']);
-      panel.beforeShow({updates: []});
-      return expect(panel.refs.versionPinnedPackagesMessage.style.display).not.toBe('none');
-    });
+  describe('version pinned packages message', function () {
+    it('shows a message when there are pinned version packages', function () {
+      spyOn(packageManager, 'getVersionPinnedPackages').andReturn(['foo', 'bar', 'baz'])
+      panel.beforeShow({ updates: [] })
+      return expect(panel.refs.versionPinnedPackagesMessage.style.display).not.toBe('none')
+    })
 
-    return it('does not show a message when there are no version pinned packages', function() {
-      spyOn(packageManager, 'getVersionPinnedPackages').andReturn([]);
-      panel.beforeShow({updates: []});
-      return expect(panel.refs.versionPinnedPackagesMessage.style.display).toBe('none');
-    });
-  });
+    return it('does not show a message when there are no version pinned packages', function () {
+      spyOn(packageManager, 'getVersionPinnedPackages').andReturn([])
+      panel.beforeShow({ updates: [] })
+      return expect(panel.refs.versionPinnedPackagesMessage.style.display).toBe('none')
+    })
+  })
 
-  describe("the Update All button", function() {
+  describe('the Update All button', function () {
     const packA = {
       name: 'test-package-a',
       description: 'some description',
       latestVersion: '99.0.0',
       version: '1.0.0'
-    };
+    }
     const packB = {
       name: 'test-package-b',
       description: 'some description',
       latestVersion: '99.0.0',
       version: '1.0.0'
-    };
+    }
     const packC = {
       name: 'test-package-c',
       description: 'some description',
       latestVersion: '99.0.0',
       version: '1.0.0'
-    };
+    }
 
-    let [cardA, cardB, cardC] = Array.from([]);
-    let [resolveA, resolveB, resolveC, rejectA, rejectB, rejectC] = Array.from([]);
+    let [cardA, cardB, cardC] = Array.from([])
+    let [resolveA, resolveB, resolveC, rejectA, rejectB, rejectC] = Array.from([])
 
-    beforeEach(function() {
+    beforeEach(function () {
       // skip packman stubbing
-      panel.beforeShow({updates: [packA, packB, packC]});
+      panel.beforeShow({ updates: [packA, packB, packC] });
 
-      [cardA, cardB, cardC] = Array.from(panel.packageCards);
+      [cardA, cardB, cardC] = Array.from(panel.packageCards)
 
       // fake a git url package
-      cardC.pack.apmInstallSource = {type: 'git', sha: 'cf23df2207d99a74fbe169e3eba035e633b65d94'};
-      cardC.pack.latestSha = 'a296114f3d0deec519a41f4c62e7fc56075b7f01';
+      cardC.pack.apmInstallSource = { type: 'git', sha: 'cf23df2207d99a74fbe169e3eba035e633b65d94' }
+      cardC.pack.latestSha = 'a296114f3d0deec519a41f4c62e7fc56075b7f01'
 
-      spyOn(cardA, 'update').andReturn(new Promise(function(resolve, reject) { let ref;
-      return [resolveA, rejectA] = Array.from(ref = [resolve, reject]), ref; }));
-      spyOn(cardB, 'update').andReturn(new Promise(function(resolve, reject) { let ref;
-      return [resolveB, rejectB] = Array.from(ref = [resolve, reject]), ref; }));
-      spyOn(cardC, 'update').andReturn(new Promise(function(resolve, reject) { let ref;
-      return [resolveC, rejectC] = Array.from(ref = [resolve, reject]), ref; }));
+      spyOn(cardA, 'update').andReturn(new Promise(function (resolve, reject) {
+        let ref
+        return [resolveA, rejectA] = Array.from(ref = [resolve, reject]), ref
+      }))
+      spyOn(cardB, 'update').andReturn(new Promise(function (resolve, reject) {
+        let ref
+        return [resolveB, rejectB] = Array.from(ref = [resolve, reject]), ref
+      }))
+      spyOn(cardC, 'update').andReturn(new Promise(function (resolve, reject) {
+        let ref
+        return [resolveC, rejectC] = Array.from(ref = [resolve, reject]), ref
+      }))
 
-      return atom.config.set("settings-view.packageUpdateConcurrency", -1);
-    });
+      return atom.config.set('settings-view.packageUpdateConcurrency', -1)
+    })
 
-    it('attempts to update all packages and prompts to restart if at least one package updates successfully', function() {
-      expect(atom.notifications.getNotifications().length).toBe(0);
-      expect(panel.refs.updateAllButton).toBeVisible();
+    it('attempts to update all packages and prompts to restart if at least one package updates successfully', function () {
+      expect(atom.notifications.getNotifications().length).toBe(0)
+      expect(panel.refs.updateAllButton).toBeVisible()
 
-      panel.updateAll();
+      panel.updateAll()
 
-      resolveA();
-      rejectB('Error updating package');
+      resolveA()
+      rejectB('Error updating package')
 
-      waits(0);
-      runs(function() {
-        expect(atom.notifications.getNotifications().length).toBe(0);
+      waits(0)
+      runs(function () {
+        expect(atom.notifications.getNotifications().length).toBe(0)
 
-        return resolveC();
-      });
+        return resolveC()
+      })
 
-      waitsFor(() => atom.notifications.getNotifications().length === 1);
+      waitsFor(() => atom.notifications.getNotifications().length === 1)
 
-      return runs(function() {
-        const notifications = atom.notifications.getNotifications();
-        expect(notifications.length).toBe(1);
-        expect(notifications[0].options.detail).toBe('test-package-a@1.0.0 -> 99.0.0\ntest-package-b@1.0.0 -> 99.0.0\ntest-package-c@cf23df22 -> a296114f');
+      return runs(function () {
+        const notifications = atom.notifications.getNotifications()
+        expect(notifications.length).toBe(1)
+        expect(notifications[0].options.detail).toBe('test-package-a@1.0.0 -> 99.0.0\ntest-package-b@1.0.0 -> 99.0.0\ntest-package-c@cf23df22 -> a296114f')
 
-        spyOn(atom, 'restartApplication');
-        notifications[0].options.buttons[0].onDidClick();
-        return expect(atom.restartApplication).toHaveBeenCalled();
-      });
-    });
+        spyOn(atom, 'restartApplication')
+        notifications[0].options.buttons[0].onDidClick()
+        return expect(atom.restartApplication).toHaveBeenCalled()
+      })
+    })
 
-    it('works with queue enabled', function() {
-      expect(panel.refs.updateAllButton).not.toBeDisabled();
-      atom.config.set("settings-view.packageUpdateConcurrency", 2);
+    it('works with queue enabled', function () {
+      expect(panel.refs.updateAllButton).not.toBeDisabled()
+      atom.config.set('settings-view.packageUpdateConcurrency', 2)
 
-      panel.updateAll();
+      panel.updateAll()
 
-      resolveA();
-      resolveB();
-      resolveC();
+      resolveA()
+      resolveB()
+      resolveC()
 
-      return waitsFor(() => panel.refs.updateAllButton.style.display === 'none');
-    });
+      return waitsFor(() => panel.refs.updateAllButton.style.display === 'none')
+    })
 
-    it('becomes hidden if all updates succeed', function() {
-      expect(panel.refs.updateAllButton).not.toBeDisabled();
+    it('becomes hidden if all updates succeed', function () {
+      expect(panel.refs.updateAllButton).not.toBeDisabled()
 
-      panel.updateAll();
+      panel.updateAll()
 
-      expect(panel.refs.updateAllButton).toBeDisabled();
+      expect(panel.refs.updateAllButton).toBeDisabled()
 
-      resolveA();
-      resolveB();
-      resolveC();
+      resolveA()
+      resolveB()
+      resolveC()
 
-      return waitsFor(() => panel.refs.updateAllButton.style.display === 'none');
-    });
+      return waitsFor(() => panel.refs.updateAllButton.style.display === 'none')
+    })
 
-    it('remains enabled and visible if not all updates succeed', function() {
-      expect(panel.refs.updateAllButton).not.toBeDisabled();
+    it('remains enabled and visible if not all updates succeed', function () {
+      expect(panel.refs.updateAllButton).not.toBeDisabled()
 
-      panel.updateAll();
+      panel.updateAll()
 
-      expect(panel.refs.updateAllButton).toBeDisabled();
+      expect(panel.refs.updateAllButton).toBeDisabled()
 
-      resolveA();
-      rejectB('Error updating package');
-      resolveC();
+      resolveA()
+      rejectB('Error updating package')
+      resolveC()
 
-      waitsFor(() => panel.refs.updateAllButton.disabled === false);
+      waitsFor(() => panel.refs.updateAllButton.disabled === false)
 
-      return runs(() => expect(panel.refs.updateAllButton).toBeVisible());
-    });
+      return runs(() => expect(panel.refs.updateAllButton).toBeVisible())
+    })
 
-    return it('does not attempt to update packages that are already updating', function() {
-      cardA.update();
-      packageManager.emitPackageEvent('updating', packA);
-      panel.updateAll();
+    return it('does not attempt to update packages that are already updating', function () {
+      cardA.update()
+      packageManager.emitPackageEvent('updating', packA)
+      panel.updateAll()
 
-      return expect(cardA.update.calls.length).toBe(1);
-    });
-  });
+      return expect(cardA.update.calls.length).toBe(1)
+    })
+  })
 
-  return describe('the Check for Updates button', function() {
+  return describe('the Check for Updates button', function () {
     const pack = {
       name: 'test-package',
       description: 'some description',
       latestVersion: '99.0.0',
       version: '1.0.0'
-    };
+    }
 
     beforeEach(() => // skip packman stubbing - without this, getOutdated() is called another time
     // this is not an issue in actual usage as getOutdated() isn't blocked on a spy
-    panel.beforeShow({updates: [pack]}));
+      panel.beforeShow({ updates: [pack] }))
 
-    it('disables itself when clicked until the list of outdated packages is returned', function() {
+    it('disables itself when clicked until the list of outdated packages is returned', function () {
       // Updates panel checks for updates on initialization so resolve the promise
-      resolveOutdated();
+      resolveOutdated()
 
-      waits(0);
-      runs(function() {
-        expect(panel.refs.checkButton.disabled).toBe(false);
+      waits(0)
+      runs(function () {
+        expect(panel.refs.checkButton.disabled).toBe(false)
 
-        panel.checkForUpdates();
-        expect(panel.refs.checkButton.disabled).toBe(true);
+        panel.checkForUpdates()
+        expect(panel.refs.checkButton.disabled).toBe(true)
 
-        return resolveOutdated();
-      });
+        return resolveOutdated()
+      })
 
-      waits(0);
-      return runs(() => expect(panel.refs.checkButton.disabled).toBe(false));
-    });
+      waits(0)
+      return runs(() => expect(panel.refs.checkButton.disabled).toBe(false))
+    })
 
-    it('clears the outdated cache when checking for updates', function() {
+    it('clears the outdated cache when checking for updates', function () {
       // This spec just tests that we're passing the clearCache bool through, not the actual implementation
       // For that, look at the PackageManager specs
-      resolveOutdated();
-      waits(0);
-      return runs(function() {
-        panel.refs.checkButton.click();
-        return expect(packageManager.getOutdated).toHaveBeenCalledWith(true);
-      });
-    });
+      resolveOutdated()
+      waits(0)
+      return runs(function () {
+        panel.refs.checkButton.click()
+        return expect(packageManager.getOutdated).toHaveBeenCalledWith(true)
+      })
+    })
 
-    return it('is disabled when packages are updating', function() {
+    return it('is disabled when packages are updating', function () {
       // Updates panel checks for updates on initialization so resolve the promise
-      resolveOutdated();
+      resolveOutdated()
 
-      waits(0);
-      return runs(function() {
-        expect(panel.refs.checkButton.disabled).toBe(false);
+      waits(0)
+      return runs(function () {
+        expect(panel.refs.checkButton.disabled).toBe(false)
 
-        packageManager.emitPackageEvent('updating', {name: 'packA'});
-        expect(panel.refs.checkButton.disabled).toBe(true);
+        packageManager.emitPackageEvent('updating', { name: 'packA' })
+        expect(panel.refs.checkButton.disabled).toBe(true)
 
-        packageManager.emitPackageEvent('updating', {name: 'packB'});
-        expect(panel.refs.checkButton.disabled).toBe(true);
+        packageManager.emitPackageEvent('updating', { name: 'packB' })
+        expect(panel.refs.checkButton.disabled).toBe(true)
 
-        packageManager.emitPackageEvent('updated', {name: 'packB'});
-        expect(panel.refs.checkButton.disabled).toBe(true);
+        packageManager.emitPackageEvent('updated', { name: 'packB' })
+        expect(panel.refs.checkButton.disabled).toBe(true)
 
-        packageManager.emitPackageEvent('update-failed', {name: 'packA'});
-        return expect(panel.refs.checkButton.disabled).toBe(false);
-      });
-    });
-  });
-});
+        packageManager.emitPackageEvent('update-failed', { name: 'packA' })
+        return expect(panel.refs.checkButton.disabled).toBe(false)
+      })
+    })
+  })
+})

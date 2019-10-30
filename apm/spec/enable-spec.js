@@ -1,121 +1,136 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const fs = require('fs');
-const path = require('path');
-const temp = require('temp');
-const CSON = require('season');
+const fs = require('fs')
+const path = require('path')
+const temp = require('temp')
+const CSON = require('season')
 
-const apm = require('../lib/apm-cli');
+const apm = require('../lib/apm-cli')
 
-describe('apm enable', function() {
-  beforeEach(function() {
-    silenceOutput();
-    return spyOnToken();
-  });
+describe('apm enable', function () {
+  beforeEach(function () {
+    silenceOutput()
+    return spyOnToken()
+  })
 
-  it('enables a disabled package', function() {
-    const atomHome = temp.mkdirSync('apm-home-dir-');
-    process.env.ATOM_HOME = atomHome;
-    const callback = jasmine.createSpy('callback');
-    const configFilePath = path.join(atomHome, 'config.cson');
+  it('enables a disabled package', function () {
+    const atomHome = temp.mkdirSync('apm-home-dir-')
+    process.env.ATOM_HOME = atomHome
+    const callback = jasmine.createSpy('callback')
+    const configFilePath = path.join(atomHome, 'config.cson')
 
-    CSON.writeFileSync(configFilePath, { '*': {
-      core: {
-        disabledPackages: [
-          "metrics",
-          "vim-mode",
-          "exception-reporting",
-          "file-icons"
-        ]
-      }
-    }
-  });
-
-    runs(() => apm.run(['enable', 'vim-mode', 'not-installed', 'file-icons'], callback));
-
-    waitsFor('waiting for enable to complete', () => callback.callCount > 0);
-
-    return runs(function() {
-      expect(console.log).toHaveBeenCalled();
-      expect(console.log.argsForCall[0][0]).toMatch(/Not Disabled:\s*not-installed/);
-      expect(console.log.argsForCall[1][0]).toMatch(/Enabled:\s*vim-mode/);
-
-      const config = CSON.readFileSync(configFilePath);
-      return expect(config).toEqual({'*': {
+    CSON.writeFileSync(configFilePath, {
+      '*': {
         core: {
           disabledPackages: [
-            "metrics",
-            "exception-reporting"
+            'metrics',
+            'vim-mode',
+            'exception-reporting',
+            'file-icons'
           ]
         }
-      }});});
-});
-
-  it('does nothing if a package is already enabled', function() {
-    const atomHome = temp.mkdirSync('apm-home-dir-');
-    process.env.ATOM_HOME = atomHome;
-    const callback = jasmine.createSpy('callback');
-    const configFilePath = path.join(atomHome, 'config.cson');
-
-    CSON.writeFileSync(configFilePath, { '*': {
-      core: {
-        disabledPackages: [
-          "metrics",
-          "exception-reporting"
-        ]
       }
-    }
-  });
+    })
 
-    runs(() => apm.run(['enable', 'vim-mode'], callback));
+    runs(() => apm.run(['enable', 'vim-mode', 'not-installed', 'file-icons'], callback))
 
-    waitsFor('waiting for enable to complete', () => callback.callCount > 0);
+    waitsFor('waiting for enable to complete', () => callback.callCount > 0)
 
-    return runs(function() {
-      expect(console.log).toHaveBeenCalled();
-      expect(console.log.argsForCall[0][0]).toMatch(/Not Disabled:\s*vim-mode/);
+    return runs(function () {
+      expect(console.log).toHaveBeenCalled()
+      expect(console.log.argsForCall[0][0]).toMatch(/Not Disabled:\s*not-installed/)
+      expect(console.log.argsForCall[1][0]).toMatch(/Enabled:\s*vim-mode/)
 
-      const config = CSON.readFileSync(configFilePath);
-      return expect(config).toEqual({'*': {
+      const config = CSON.readFileSync(configFilePath)
+      return expect(config).toEqual({
+        '*': {
+          core: {
+            disabledPackages: [
+              'metrics',
+              'exception-reporting'
+            ]
+          }
+        }
+      })
+    })
+  })
+
+  it('does nothing if a package is already enabled', function () {
+    const atomHome = temp.mkdirSync('apm-home-dir-')
+    process.env.ATOM_HOME = atomHome
+    const callback = jasmine.createSpy('callback')
+    const configFilePath = path.join(atomHome, 'config.cson')
+
+    CSON.writeFileSync(configFilePath, {
+      '*': {
         core: {
           disabledPackages: [
-            "metrics",
-            "exception-reporting"
+            'metrics',
+            'exception-reporting'
           ]
         }
-      }});});
-});
+      }
+    })
 
-  it('produces an error if config.cson doesn\'t exist', function() {
-    const atomHome = temp.mkdirSync('apm-home-dir-');
-    process.env.ATOM_HOME = atomHome;
-    const callback = jasmine.createSpy('callback');
+    runs(() => apm.run(['enable', 'vim-mode'], callback))
 
-    runs(() => apm.run(['enable', 'vim-mode'], callback));
+    waitsFor('waiting for enable to complete', () => callback.callCount > 0)
 
-    waitsFor('waiting for enable to complete', () => callback.callCount > 0);
+    return runs(function () {
+      expect(console.log).toHaveBeenCalled()
+      expect(console.log.argsForCall[0][0]).toMatch(/Not Disabled:\s*vim-mode/)
 
-    return runs(function() {
-      expect(console.error).toHaveBeenCalled();
-      return expect(console.error.argsForCall[0][0].length).toBeGreaterThan(0);
-    });
-  });
+      const config = CSON.readFileSync(configFilePath)
+      return expect(config).toEqual({
+        '*': {
+          core: {
+            disabledPackages: [
+              'metrics',
+              'exception-reporting'
+            ]
+          }
+        }
+      })
+    })
+  })
 
-  return it('complains if user supplies no packages', function() {
-    const atomHome = temp.mkdirSync('apm-home-dir-');
-    process.env.ATOM_HOME = atomHome;
-    const callback = jasmine.createSpy('callback');
+  it('produces an error if config.cson doesn\'t exist', function () {
+    const atomHome = temp.mkdirSync('apm-home-dir-')
+    process.env.ATOM_HOME = atomHome
+    const callback = jasmine.createSpy('callback')
 
-    runs(() => apm.run(['enable'], callback));
+    runs(() => apm.run(['enable', 'vim-mode'], callback))
 
-    waitsFor('waiting for enable to complete', () => callback.callCount > 0);
+    waitsFor('waiting for enable to complete', () => callback.callCount > 0)
 
-    return runs(function() {
-      expect(console.error).toHaveBeenCalled();
-      return expect(console.error.argsForCall[0][0].length).toBeGreaterThan(0);
-    });
-  });
-});
+    return runs(function () {
+      expect(console.error).toHaveBeenCalled()
+      return expect(console.error.argsForCall[0][0].length).toBeGreaterThan(0)
+    })
+  })
+
+  return it('complains if user supplies no packages', function () {
+    const atomHome = temp.mkdirSync('apm-home-dir-')
+    process.env.ATOM_HOME = atomHome
+    const callback = jasmine.createSpy('callback')
+
+    runs(() => apm.run(['enable'], callback))
+
+    waitsFor('waiting for enable to complete', () => callback.callCount > 0)
+
+    return runs(function () {
+      expect(console.error).toHaveBeenCalled()
+      return expect(console.error.argsForCall[0][0].length).toBeGreaterThan(0)
+    })
+  })
+})

@@ -1,9 +1,12 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-module.exports = function(grunt) {
+module.exports = function (grunt) {
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
 
@@ -62,21 +65,21 @@ module.exports = function(grunt) {
         }
       }
     }
-  });
+  })
 
-  grunt.loadNpmTasks('grunt-contrib-coffee');
-  grunt.loadNpmTasks('grunt-shell');
-  grunt.loadNpmTasks('grunt-coffeelint');
-  grunt.loadNpmTasks('grunt-peg');
-  grunt.loadNpmTasks('grunt-atomdoc');
+  grunt.loadNpmTasks('grunt-contrib-coffee')
+  grunt.loadNpmTasks('grunt-shell')
+  grunt.loadNpmTasks('grunt-coffeelint')
+  grunt.loadNpmTasks('grunt-peg')
+  grunt.loadNpmTasks('grunt-atomdoc')
 
-  grunt.registerTask('clean', function() {
-    require('rimraf').sync('lib');
-    return require('rimraf').sync('api.json');
-  });
+  grunt.registerTask('clean', function () {
+    require('rimraf').sync('lib')
+    return require('rimraf').sync('api.json')
+  })
 
-  grunt.registerTask('lint', ['coffeelint']);
-  grunt.registerTask('default', ['coffee', 'peg', 'lint']);
-  grunt.registerTask('prepublish', ['clean', 'coffee', 'peg', 'lint', 'shell:update-atomdoc', 'atomdoc']);
-  return grunt.registerTask('test', ['default', 'shell:test']);
-};
+  grunt.registerTask('lint', ['coffeelint'])
+  grunt.registerTask('default', ['coffee', 'peg', 'lint'])
+  grunt.registerTask('prepublish', ['clean', 'coffee', 'peg', 'lint', 'shell:update-atomdoc', 'atomdoc'])
+  return grunt.registerTask('test', ['default', 'shell:test'])
+}

@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    no-prototype-builtins,
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,16 +13,16 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const {CompositeDisposable} = require('atom');
+const { CompositeDisposable } = require('atom')
 
-let SpellCheckView = null;
-let spellCheckViews = {};
+let SpellCheckView = null
+let spellCheckViews = {}
 
-const LARGE_FILE_SIZE = 2 * 1024 * 1024;
+const LARGE_FILE_SIZE = 2 * 1024 * 1024
 
 module.exports = {
-  activate() {
-    this.subs = new CompositeDisposable;
+  activate () {
+    this.subs = new CompositeDisposable()
 
     // Since the spell-checking is done on another process, we gather up all the
     // arguments and pass them into the task. Whenever these change, we'll update
@@ -33,60 +40,60 @@ module.exports = {
       // because we can't pass the actual objects from the main Atom process to
       // the background safely.
       checkerPaths: []
-    };
+    }
 
-    const manager = this.getInstance(this.globalArgs);
+    const manager = this.getInstance(this.globalArgs)
 
     // Hook up changes to the configuration settings.
-    this.excludedScopeRegexLists = [];
+    this.excludedScopeRegexLists = []
     this.subs.add(atom.config.observe('spell-check.excludedScopes', excludedScopes => {
       this.excludedScopeRegexLists = excludedScopes.map(excludedScope => Array.from(excludedScope.split(/\s+/)[0].split('.')).filter((className) => className).map((className) =>
-        new RegExp(`\\b${className}\\b`)));
-      return this.updateViews();
+        new RegExp(`\\b${className}\\b`)))
+      return this.updateViews()
     })
-    );
+    )
 
-    this.subs.add(atom.config.onDidChange('spell-check.locales', ({newValue, oldValue}) => {
-      this.globalArgs.locales = newValue;
-      return manager.setGlobalArgs(this.globalArgs);
+    this.subs.add(atom.config.onDidChange('spell-check.locales', ({ newValue, oldValue }) => {
+      this.globalArgs.locales = newValue
+      return manager.setGlobalArgs(this.globalArgs)
     })
-    );
-    this.subs.add(atom.config.onDidChange('spell-check.localePaths', ({newValue, oldValue}) => {
-      this.globalArgs.localePaths = newValue;
-      return manager.setGlobalArgs(this.globalArgs);
+    )
+    this.subs.add(atom.config.onDidChange('spell-check.localePaths', ({ newValue, oldValue }) => {
+      this.globalArgs.localePaths = newValue
+      return manager.setGlobalArgs(this.globalArgs)
     })
-    );
-    this.subs.add(atom.config.onDidChange('spell-check.useLocales', ({newValue, oldValue}) => {
-      this.globalArgs.useLocales = newValue;
-      return manager.setGlobalArgs(this.globalArgs);
+    )
+    this.subs.add(atom.config.onDidChange('spell-check.useLocales', ({ newValue, oldValue }) => {
+      this.globalArgs.useLocales = newValue
+      return manager.setGlobalArgs(this.globalArgs)
     })
-    );
-    this.subs.add(atom.config.onDidChange('spell-check.knownWords', ({newValue, oldValue}) => {
-      this.globalArgs.knownWords = newValue;
-      return manager.setGlobalArgs(this.globalArgs);
+    )
+    this.subs.add(atom.config.onDidChange('spell-check.knownWords', ({ newValue, oldValue }) => {
+      this.globalArgs.knownWords = newValue
+      return manager.setGlobalArgs(this.globalArgs)
     })
-    );
-    this.subs.add(atom.config.onDidChange('spell-check.addKnownWords', ({newValue, oldValue}) => {
-      this.globalArgs.addKnownWords = newValue;
-      return manager.setGlobalArgs(this.globalArgs);
+    )
+    this.subs.add(atom.config.onDidChange('spell-check.addKnownWords', ({ newValue, oldValue }) => {
+      this.globalArgs.addKnownWords = newValue
+      return manager.setGlobalArgs(this.globalArgs)
     })
-    );
+    )
 
     // Hook up the UI and processing.
     this.subs.add(atom.commands.add('atom-workspace',
-        {'spell-check:toggle': () => this.toggle()})
-    );
-    this.viewsByEditor = new WeakMap;
-    this.contextMenuEntries = [];
+      { 'spell-check:toggle': () => this.toggle() })
+    )
+    this.viewsByEditor = new WeakMap()
+    this.contextMenuEntries = []
     return this.subs.add(atom.workspace.observeTextEditors(editor => {
-      if (this.viewsByEditor.has(editor)) { return; }
+      if (this.viewsByEditor.has(editor)) { return }
 
       // For now, just don't spell check large files.
-      if (editor.getBuffer().getLength() > LARGE_FILE_SIZE) { return; }
+      if (editor.getBuffer().getLength() > LARGE_FILE_SIZE) { return }
 
       // Defer loading the spell check view if we actually need it. This also
       // avoids slowing down Atom's startup by getting it loaded on demand.
-      if (SpellCheckView == null) { SpellCheckView = require('./spell-check-view'); }
+      if (SpellCheckView == null) { SpellCheckView = require('./spell-check-view') }
 
       // The SpellCheckView needs both a handle for the task to handle the
       // background checking and a cached view of the in-process manager for
@@ -97,128 +104,128 @@ module.exports = {
       // active editor. A reference to this entire module is passed right now
       // because a direct reference to @contextMenuEntries wasn't updating
       // properly between different SpellCheckView's.
-      const spellCheckView = new SpellCheckView(editor, this, manager);
+      const spellCheckView = new SpellCheckView(editor, this, manager)
 
       // save the {editor} into a map
-      const editorId = editor.id;
+      const editorId = editor.id
       spellCheckViews[editorId] = {
         view: spellCheckView,
         active: true,
         editor
-      };
+      }
 
       // Make sure that the view is cleaned up on editor destruction.
       var destroySub = editor.onDidDestroy(() => {
-        spellCheckView.destroy();
-        delete spellCheckViews[editorId];
-        return this.subs.remove(destroySub);
-      });
-      this.subs.add(destroySub);
+        spellCheckView.destroy()
+        delete spellCheckViews[editorId]
+        return this.subs.remove(destroySub)
+      })
+      this.subs.add(destroySub)
 
-      return this.viewsByEditor.set(editor, spellCheckView);
+      return this.viewsByEditor.set(editor, spellCheckView)
     })
-    );
+    )
   },
 
-  deactivate() {
+  deactivate () {
     if (this.instance != null) {
-      this.instance.deactivate();
+      this.instance.deactivate()
     }
-    this.instance = null;
+    this.instance = null
 
     // Clear out the known views.
-    for (let editorId in spellCheckViews) {
-      const {view} = spellCheckViews[editorId];
-      view.destroy();
+    for (const editorId in spellCheckViews) {
+      const { view } = spellCheckViews[editorId]
+      view.destroy()
     }
-    spellCheckViews = {};
+    spellCheckViews = {}
 
     // While we have WeakMap.clear, it isn't a function available in ES6. So, we
     // just replace the WeakMap entirely and let the system release the objects.
-    this.viewsByEditor = new WeakMap;
+    this.viewsByEditor = new WeakMap()
 
     // Finish up by disposing everything else associated with the plugin.
-    return this.subs.dispose();
+    return this.subs.dispose()
   },
 
   // Registers any Atom packages that provide our service.
-  consumeSpellCheckers(checkerPaths) {
+  consumeSpellCheckers (checkerPaths) {
     // Normalize it so we always have an array.
     if (!(checkerPaths instanceof Array)) {
-      checkerPaths = [ checkerPaths ];
+      checkerPaths = [checkerPaths]
     }
 
     // Go through and add any new plugins to the list.
     return (() => {
-      const result = [];
-      for (let checkerPath of Array.from(checkerPaths)) {
+      const result = []
+      for (const checkerPath of Array.from(checkerPaths)) {
         if (!Array.from(this.globalArgs.checkerPaths).includes(checkerPath)) {
           if (this.instance != null) {
-            this.instance.addCheckerPath(checkerPath);
+            this.instance.addCheckerPath(checkerPath)
           }
-          result.push(this.globalArgs.checkerPaths.push(checkerPath));
+          result.push(this.globalArgs.checkerPaths.push(checkerPath))
         } else {
-          result.push(undefined);
+          result.push(undefined)
         }
       }
-      return result;
-    })();
+      return result
+    })()
   },
 
-  misspellingMarkersForEditor(editor) {
-    return this.viewsByEditor.get(editor).markerLayer.getMarkers();
+  misspellingMarkersForEditor (editor) {
+    return this.viewsByEditor.get(editor).markerLayer.getMarkers()
   },
 
-  updateViews() {
+  updateViews () {
     return (() => {
-      const result = [];
-      for (let editorId in spellCheckViews) {
-        const view = spellCheckViews[editorId];
-        if (view['active']) {
-          result.push(view['view'].updateMisspellings());
+      const result = []
+      for (const editorId in spellCheckViews) {
+        const view = spellCheckViews[editorId]
+        if (view.active) {
+          result.push(view.view.updateMisspellings())
         } else {
-          result.push(undefined);
+          result.push(undefined)
         }
       }
-      return result;
-    })();
+      return result
+    })()
   },
 
   // Retrieves, creating if required, the single SpellingManager instance.
-  getInstance(globalArgs) {
+  getInstance (globalArgs) {
     if (!this.instance) {
-      const SpellCheckerManager = require('./spell-check-manager');
-      this.instance = SpellCheckerManager;
-      this.instance.setGlobalArgs(globalArgs);
+      const SpellCheckerManager = require('./spell-check-manager')
+      this.instance = SpellCheckerManager
+      this.instance.setGlobalArgs(globalArgs)
 
-      for (let checkerPath of Array.from(globalArgs.checkerPaths)) {
-        this.instance.addCheckerPath(checkerPath);
+      for (const checkerPath of Array.from(globalArgs.checkerPaths)) {
+        this.instance.addCheckerPath(checkerPath)
       }
     }
 
-    return this.instance;
+    return this.instance
   },
 
   // Internal: Toggles the spell-check activation state.
-  toggle() {
+  toggle () {
     if (!atom.workspace.getActiveTextEditor()) {
-      return;
+      return
     }
-    const editorId = atom.workspace.getActiveTextEditor().id;
+    const editorId = atom.workspace.getActiveTextEditor().id
 
     if (!spellCheckViews.hasOwnProperty(editorId)) {
       // The editor was never registered with a view, ignore it
-      return;
+      return
     }
 
-    if (spellCheckViews[editorId]['active']) {
+    if (spellCheckViews[editorId].active) {
       // deactivate spell check for this {editor}
-      spellCheckViews[editorId]['active'] = false;
-      return spellCheckViews[editorId]['view'].unsubscribeFromBuffer();
+      spellCheckViews[editorId].active = false
+      return spellCheckViews[editorId].view.unsubscribeFromBuffer()
     } else {
       // activate spell check for this {editor}
-      spellCheckViews[editorId]['active'] = true;
-      return spellCheckViews[editorId]['view'].subscribeToBuffer();
+      spellCheckViews[editorId].active = true
+      return spellCheckViews[editorId].view.subscribeToBuffer()
     }
   }
-};
+}

@@ -1,3 +1,17 @@
+/** @babel */
+/* eslint-disable
+    constructor-super,
+    handle-callback-err,
+    no-cond-assign,
+    no-constant-condition,
+    no-eval,
+    no-prototype-builtins,
+    no-this-before-super,
+    node/no-deprecated-api,
+    standard/no-callback-literal,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS001: Remove Babel/TypeScript constructor workaround
@@ -9,53 +23,53 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Install;
-const assert = require('assert');
-const path = require('path');
+let Install
+const assert = require('assert')
+const path = require('path')
 
-const _ = require('underscore-plus');
-const async = require('async');
-const CSON = require('season');
-const yargs = require('yargs');
-const Git = require('git-utils');
-const semver = require('semver');
-const temp = require('temp');
-const hostedGitInfo = require('hosted-git-info');
+const _ = require('underscore-plus')
+const async = require('async')
+const CSON = require('season')
+const yargs = require('yargs')
+const Git = require('git-utils')
+const semver = require('semver')
+const temp = require('temp')
+const hostedGitInfo = require('hosted-git-info')
 
-const config = require('./apm');
-const Command = require('./command');
-const fs = require('./fs');
-const RebuildModuleCache = require('./rebuild-module-cache');
-const request = require('./request');
-const {isDeprecatedPackage} = require('./deprecated-packages');
+const config = require('./apm')
+const Command = require('./command')
+const fs = require('./fs')
+const RebuildModuleCache = require('./rebuild-module-cache')
+const request = require('./request')
+const { isDeprecatedPackage } = require('./deprecated-packages')
 
 module.exports =
-(Install = (function() {
+(Install = (function () {
   Install = class Install extends Command {
-    static initClass() {
-      this.commandNames = ['install', 'i'];
+    static initClass () {
+      this.commandNames = ['install', 'i']
     }
 
-    constructor() {
+    constructor () {
       {
         // Hack: trick Babel/TypeScript into allowing this before super.
-        if (false) { super(); }
-        let thisFn = (() => { return this; }).toString();
-        let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
-        eval(`${thisName} = this;`);
+        if (false) { super() }
+        const thisFn = (() => { return this }).toString()
+        const thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1]
+        eval(`${thisName} = this;`)
       }
-      this.installModules = this.installModules.bind(this);
-      this.installGitPackageDependencies = this.installGitPackageDependencies.bind(this);
-      super();
-      this.atomDirectory = config.getAtomDirectory();
-      this.atomPackagesDirectory = path.join(this.atomDirectory, 'packages');
-      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp');
-      this.atomNpmPath = require.resolve('npm/bin/npm-cli');
-      this.repoLocalPackagePathRegex = /^file:(?!\/\/)(.*)/;
+      this.installModules = this.installModules.bind(this)
+      this.installGitPackageDependencies = this.installGitPackageDependencies.bind(this)
+      super()
+      this.atomDirectory = config.getAtomDirectory()
+      this.atomPackagesDirectory = path.join(this.atomDirectory, 'packages')
+      this.atomNodeDirectory = path.join(this.atomDirectory, '.node-gyp')
+      this.atomNpmPath = require.resolve('npm/bin/npm-cli')
+      this.repoLocalPackagePathRegex = /^file:(?!\/\/)(.*)/
     }
 
-    parseOptions(argv) {
-      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+    parseOptions (argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
       options.usage(`\
 
 Usage: apm install [<package_name>...]
@@ -75,90 +89,90 @@ A packages file can be specified that is a newline separated list of
 package names to install with optional versions using the
 \`package-name@version\` syntax.\
 `
-      );
-      options.alias('c', 'compatible').string('compatible').describe('compatible', 'Only install packages/themes compatible with this Atom version');
-      options.alias('h', 'help').describe('help', 'Print this usage message');
-      options.alias('s', 'silent').boolean('silent').describe('silent', 'Set the npm log level to silent');
-      options.alias('q', 'quiet').boolean('quiet').describe('quiet', 'Set the npm log level to warn');
-      options.boolean('check').describe('check', 'Check that native build tools are installed');
-      options.boolean('verbose').default('verbose', false).describe('verbose', 'Show verbose debug information');
-      options.string('packages-file').describe('packages-file', 'A text file containing the packages to install');
-      return options.boolean('production').describe('production', 'Do not install dev dependencies');
+      )
+      options.alias('c', 'compatible').string('compatible').describe('compatible', 'Only install packages/themes compatible with this Atom version')
+      options.alias('h', 'help').describe('help', 'Print this usage message')
+      options.alias('s', 'silent').boolean('silent').describe('silent', 'Set the npm log level to silent')
+      options.alias('q', 'quiet').boolean('quiet').describe('quiet', 'Set the npm log level to warn')
+      options.boolean('check').describe('check', 'Check that native build tools are installed')
+      options.boolean('verbose').default('verbose', false).describe('verbose', 'Show verbose debug information')
+      options.string('packages-file').describe('packages-file', 'A text file containing the packages to install')
+      return options.boolean('production').describe('production', 'Do not install dev dependencies')
     }
 
-    installModule(options, pack, moduleURI, callback) {
-      let installDirectory, nodeModulesDirectory, vsArgs;
-      const installGlobally = options.installGlobally != null ? options.installGlobally : true;
+    installModule (options, pack, moduleURI, callback) {
+      let installDirectory, nodeModulesDirectory, vsArgs
+      const installGlobally = options.installGlobally != null ? options.installGlobally : true
 
-      const installArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'install'];
-      installArgs.push(moduleURI);
-      installArgs.push(...Array.from(this.getNpmBuildFlags() || []));
-      if (installGlobally) { installArgs.push("--global-style"); }
-      if (options.argv.silent) { installArgs.push('--silent'); }
-      if (options.argv.quiet) { installArgs.push('--quiet'); }
-      if (options.argv.production) { installArgs.push('--production'); }
+      const installArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'install']
+      installArgs.push(moduleURI)
+      installArgs.push(...Array.from(this.getNpmBuildFlags() || []))
+      if (installGlobally) { installArgs.push('--global-style') }
+      if (options.argv.silent) { installArgs.push('--silent') }
+      if (options.argv.quiet) { installArgs.push('--quiet') }
+      if (options.argv.production) { installArgs.push('--production') }
 
       if (vsArgs = this.getVisualStudioFlags()) {
-        installArgs.push(vsArgs);
+        installArgs.push(vsArgs)
       }
 
-      fs.makeTreeSync(this.atomDirectory);
+      fs.makeTreeSync(this.atomDirectory)
 
-      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
-      this.addBuildEnvVars(env);
+      const env = _.extend({}, process.env, { HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath() })
+      this.addBuildEnvVars(env)
 
-      const installOptions = {env};
-      if (this.verbose) { installOptions.streaming = true; }
+      const installOptions = { env }
+      if (this.verbose) { installOptions.streaming = true }
 
       if (installGlobally) {
-        installDirectory = temp.mkdirSync('apm-install-dir-');
-        nodeModulesDirectory = path.join(installDirectory, 'node_modules');
-        fs.makeTreeSync(nodeModulesDirectory);
-        installOptions.cwd = installDirectory;
+        installDirectory = temp.mkdirSync('apm-install-dir-')
+        nodeModulesDirectory = path.join(installDirectory, 'node_modules')
+        fs.makeTreeSync(nodeModulesDirectory)
+        installOptions.cwd = installDirectory
       }
 
       return this.fork(this.atomNpmPath, installArgs, installOptions, (code, stderr, stdout) => {
-        if (stderr == null) { stderr = ''; }
-        if (stdout == null) { stdout = ''; }
+        if (stderr == null) { stderr = '' }
+        if (stdout == null) { stdout = '' }
         if (code === 0) {
-          let child, destination;
+          let child, destination
           if (installGlobally) {
-            const commands = [];
+            const commands = []
             const children = fs.readdirSync(nodeModulesDirectory)
-              .filter(dir => dir !== ".bin");
-            assert.equal(children.length, 1, "Expected there to only be one child in node_modules");
-            child = children[0];
-            const source = path.join(nodeModulesDirectory, child);
-            destination = path.join(this.atomPackagesDirectory, child);
-            commands.push(next => fs.cp(source, destination, next));
-            commands.push(next => this.buildModuleCache(pack.name, next));
-            commands.push(next => this.warmCompileCache(pack.name, next));
+              .filter(dir => dir !== '.bin')
+            assert.equal(children.length, 1, 'Expected there to only be one child in node_modules')
+            child = children[0]
+            const source = path.join(nodeModulesDirectory, child)
+            destination = path.join(this.atomPackagesDirectory, child)
+            commands.push(next => fs.cp(source, destination, next))
+            commands.push(next => this.buildModuleCache(pack.name, next))
+            commands.push(next => this.warmCompileCache(pack.name, next))
 
             return async.waterfall(commands, error => {
               if (error != null) {
-                this.logFailure();
+                this.logFailure()
               } else {
-                if (!options.argv.json) { this.logSuccess(); }
+                if (!options.argv.json) { this.logSuccess() }
               }
-              return callback(error, {name: child, installPath: destination});
-            });
+              return callback(error, { name: child, installPath: destination })
+            })
           } else {
-            return callback(null, {name: child, installPath: destination});
+            return callback(null, { name: child, installPath: destination })
           }
         } else {
           if (installGlobally) {
-            fs.removeSync(installDirectory);
-            this.logFailure();
+            fs.removeSync(installDirectory)
+            this.logFailure()
           }
 
-          let error = `${stdout}\n${stderr}`;
-          if (error.indexOf('code ENOGIT') !== -1) { error = this.getGitErrorMessage(pack); }
-          return callback(error);
+          let error = `${stdout}\n${stderr}`
+          if (error.indexOf('code ENOGIT') !== -1) { error = this.getGitErrorMessage(pack) }
+          return callback(error)
         }
-      });
+      })
     }
 
-    getGitErrorMessage(pack) {
+    getGitErrorMessage (pack) {
       let message = `\
 Failed to install ${pack.name} because Git was not found.
 
@@ -166,7 +180,7 @@ The ${pack.name} package has module dependencies that cannot be installed withou
 
 You need to install Git and add it to your path environment variable in order to install this package.
 \
-`;
+`
 
       switch (process.platform) {
         case 'win32':
@@ -174,59 +188,59 @@ You need to install Git and add it to your path environment variable in order to
 
 You can install Git by downloading, installing, and launching GitHub for Windows: https://windows.github.com
 \
-`;
-          break;
+`
+          break
         case 'linux':
           message += `\
 
 You can install Git from your OS package manager.
 \
-`;
-          break;
+`
+          break
       }
 
       message += `\
 
 Run apm -v after installing Git to see what version has been detected.\
-`;
+`
 
-      return message;
+      return message
     }
 
-    installModules(options, callback) {
-      if (!options.argv.json) { process.stdout.write('Installing modules '); }
+    installModules (options, callback) {
+      if (!options.argv.json) { process.stdout.write('Installing modules ') }
 
       return this.forkInstallCommand(options, (...args) => {
         if (options.argv.json) {
-          return this.logCommandResultsIfFail(callback, ...Array.from(args));
+          return this.logCommandResultsIfFail(callback, ...Array.from(args))
         } else {
-          return this.logCommandResults(callback, ...Array.from(args));
+          return this.logCommandResults(callback, ...Array.from(args))
         }
-      });
+      })
     }
 
-    forkInstallCommand(options, callback) {
-      let vsArgs;
-      const installArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'install'];
-      installArgs.push(...Array.from(this.getNpmBuildFlags() || []));
-      if (options.argv.silent) { installArgs.push('--silent'); }
-      if (options.argv.quiet) { installArgs.push('--quiet'); }
-      if (options.argv.production) { installArgs.push('--production'); }
+    forkInstallCommand (options, callback) {
+      let vsArgs
+      const installArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'install']
+      installArgs.push(...Array.from(this.getNpmBuildFlags() || []))
+      if (options.argv.silent) { installArgs.push('--silent') }
+      if (options.argv.quiet) { installArgs.push('--quiet') }
+      if (options.argv.production) { installArgs.push('--production') }
 
       if (vsArgs = this.getVisualStudioFlags()) {
-        installArgs.push(vsArgs);
+        installArgs.push(vsArgs)
       }
 
-      fs.makeTreeSync(this.atomDirectory);
+      fs.makeTreeSync(this.atomDirectory)
 
-      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
-      this.addBuildEnvVars(env);
+      const env = _.extend({}, process.env, { HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath() })
+      this.addBuildEnvVars(env)
 
-      const installOptions = {env};
-      if (options.cwd) { installOptions.cwd = options.cwd; }
-      if (this.verbose) { installOptions.streaming = true; }
+      const installOptions = { env }
+      if (options.cwd) { installOptions.cwd = options.cwd }
+      if (this.verbose) { installOptions.streaming = true }
 
-      return this.fork(this.atomNpmPath, installArgs, installOptions, callback);
+      return this.fork(this.atomNpmPath, installArgs, installOptions, callback)
     }
 
     // Request package information from the atom.io API for a given package name.
@@ -234,43 +248,43 @@ Run apm -v after installing Git to see what version has been detected.\
     // packageName - The string name of the package to request.
     // callback - The function to invoke when the request completes with an error
     //            as the first argument and an object as the second.
-    requestPackage(packageName, callback) {
+    requestPackage (packageName, callback) {
       const requestSettings = {
         url: `${config.getAtomPackagesUrl()}/${packageName}`,
         json: true,
         retries: 4
-      };
-      return request.get(requestSettings, function(error, response, body) {
-        let message;
-        if (body == null) { body = {}; }
+      }
+      return request.get(requestSettings, function (error, response, body) {
+        let message
+        if (body == null) { body = {} }
         if (error != null) {
-          message = `Request for package information failed: ${error.message}`;
-          if (error.code) { message += ` (${error.code})`; }
-          return callback(message);
+          message = `Request for package information failed: ${error.message}`
+          if (error.code) { message += ` (${error.code})` }
+          return callback(message)
         } else if (response.statusCode !== 200) {
-          message = request.getErrorMessage(response, body);
-          return callback(`Request for package information failed: ${message}`);
+          message = request.getErrorMessage(response, body)
+          return callback(`Request for package information failed: ${message}`)
         } else {
           if (body.releases.latest) {
-            return callback(null, body);
+            return callback(null, body)
           } else {
-            return callback(`No releases available for ${packageName}`);
+            return callback(`No releases available for ${packageName}`)
           }
         }
-      });
+      })
     }
 
     // Is the package at the specified version already installed?
     //
     //  * packageName: The string name of the package.
     //  * packageVersion: The string version of the package.
-    isPackageInstalled(packageName, packageVersion) {
+    isPackageInstalled (packageName, packageVersion) {
       try {
-        let left;
-        const {version} = (left = CSON.readFileSync(CSON.resolve(path.join('node_modules', packageName, 'package')))) != null ? left : {};
-        return packageVersion === version;
+        let left
+        const { version } = (left = CSON.readFileSync(CSON.resolve(path.join('node_modules', packageName, 'package')))) != null ? left : {}
+        return packageVersion === version
       } catch (error) {
-        return false;
+        return false
       }
     }
 
@@ -282,76 +296,76 @@ Run apm -v after installing Git to see what version has been detected.\
     // options - The installation options object.
     // callback - The function to invoke when installation completes with an
     //            error as the first argument.
-    installRegisteredPackage(metadata, options, callback) {
-      const packageName = metadata.name;
-      let packageVersion = metadata.version;
+    installRegisteredPackage (metadata, options, callback) {
+      const packageName = metadata.name
+      let packageVersion = metadata.version
 
-      const installGlobally = options.installGlobally != null ? options.installGlobally : true;
+      const installGlobally = options.installGlobally != null ? options.installGlobally : true
       if (!installGlobally) {
         if (packageVersion && this.isPackageInstalled(packageName, packageVersion)) {
-          callback(null, {});
-          return;
+          callback(null, {})
+          return
         }
       }
 
-      let label = packageName;
-      if (packageVersion) { label += `@${packageVersion}`; }
+      let label = packageName
+      if (packageVersion) { label += `@${packageVersion}` }
       if (!options.argv.json) {
-        process.stdout.write(`Installing ${label} `);
+        process.stdout.write(`Installing ${label} `)
         if (installGlobally) {
-          process.stdout.write(`to ${this.atomPackagesDirectory} `);
+          process.stdout.write(`to ${this.atomPackagesDirectory} `)
         }
       }
 
       return this.requestPackage(packageName, (error, pack) => {
         if (error != null) {
-          this.logFailure();
-          return callback(error);
+          this.logFailure()
+          return callback(error)
         } else {
-          if (packageVersion == null) { packageVersion = this.getLatestCompatibleVersion(pack); }
+          if (packageVersion == null) { packageVersion = this.getLatestCompatibleVersion(pack) }
           if (!packageVersion) {
-            this.logFailure();
-            callback(`No available version compatible with the installed Atom version: ${this.installedAtomVersion}`);
-            return;
+            this.logFailure()
+            callback(`No available version compatible with the installed Atom version: ${this.installedAtomVersion}`)
+            return
           }
 
-          const {tarball} = (pack.versions[packageVersion] != null ? pack.versions[packageVersion].dist : undefined) != null ? (pack.versions[packageVersion] != null ? pack.versions[packageVersion].dist : undefined) : {};
+          const { tarball } = (pack.versions[packageVersion] != null ? pack.versions[packageVersion].dist : undefined) != null ? (pack.versions[packageVersion] != null ? pack.versions[packageVersion].dist : undefined) : {}
           if (!tarball) {
-            this.logFailure();
-            callback(`Package version: ${packageVersion} not found`);
-            return;
+            this.logFailure()
+            callback(`Package version: ${packageVersion} not found`)
+            return
           }
 
-          const commands = [];
-          commands.push(next => this.installModule(options, pack, tarball, next));
-          if (installGlobally && (packageName.localeCompare(pack.name, 'en', {sensitivity: 'accent'}) !== 0)) {
+          const commands = []
+          commands.push(next => this.installModule(options, pack, tarball, next))
+          if (installGlobally && (packageName.localeCompare(pack.name, 'en', { sensitivity: 'accent' }) !== 0)) {
             commands.push((newPack, next) => { // package was renamed; delete old package folder
-              fs.removeSync(path.join(this.atomPackagesDirectory, packageName));
-              return next(null, newPack);
-            });
+              fs.removeSync(path.join(this.atomPackagesDirectory, packageName))
+              return next(null, newPack)
+            })
           }
-          commands.push(function({installPath}, next) {
+          commands.push(function ({ installPath }, next) {
             if (installPath != null) {
-              metadata = JSON.parse(fs.readFileSync(path.join(installPath, 'package.json'), 'utf8'));
-              const json = {installPath, metadata};
-              return next(null, json);
+              metadata = JSON.parse(fs.readFileSync(path.join(installPath, 'package.json'), 'utf8'))
+              const json = { installPath, metadata }
+              return next(null, json)
             } else {
-              return next(null, {});
+              return next(null, {})
             }
-          }); // installed locally, no install path data
+          }) // installed locally, no install path data
 
           return async.waterfall(commands, (error, json) => {
             if (!installGlobally) {
               if (error != null) {
-                this.logFailure();
+                this.logFailure()
               } else {
-                if (!options.argv.json) { this.logSuccess(); }
+                if (!options.argv.json) { this.logSuccess() }
               }
             }
-            return callback(error, json);
-          });
+            return callback(error, json)
+          })
         }
-      });
+      })
     }
 
     // Install the package with the given name and local path
@@ -361,31 +375,31 @@ Run apm -v after installing Git to see what version has been detected.\
     // options     - The installation options object.
     // callback    - The function to invoke when installation completes with an
     //               error as the first argument.
-    installLocalPackage(packageName, packagePath, options, callback) {
+    installLocalPackage (packageName, packagePath, options, callback) {
       if (!options.argv.json) {
-        process.stdout.write(`Installing ${packageName} from ${packagePath.slice('file:'.length)} `);
-        const commands = [];
+        process.stdout.write(`Installing ${packageName} from ${packagePath.slice('file:'.length)} `)
+        const commands = []
         commands.push(next => {
-          return this.installModule(options, {name: packageName}, packagePath, next);
-        });
-        commands.push(function({installPath}, next) {
+          return this.installModule(options, { name: packageName }, packagePath, next)
+        })
+        commands.push(function ({ installPath }, next) {
           if (installPath != null) {
-            const metadata = JSON.parse(fs.readFileSync(path.join(installPath, 'package.json'), 'utf8'));
-            const json = {installPath, metadata};
-            return next(null, json);
+            const metadata = JSON.parse(fs.readFileSync(path.join(installPath, 'package.json'), 'utf8'))
+            const json = { installPath, metadata }
+            return next(null, json)
           } else {
-            return next(null, {});
+            return next(null, {})
           }
-        }); // installed locally, no install path data
+        }) // installed locally, no install path data
 
         return async.waterfall(commands, (error, json) => {
           if (error != null) {
-            this.logFailure();
+            this.logFailure()
           } else {
-            if (!options.argv.json) { this.logSuccess(); }
+            if (!options.argv.json) { this.logSuccess() }
           }
-          return callback(error, json);
-        });
+          return callback(error, json)
+        })
       }
     }
 
@@ -394,344 +408,344 @@ Run apm -v after installing Git to see what version has been detected.\
     // options - The installation options
     // callback - The callback function to invoke when done with an error as the
     //            first argument.
-    installPackageDependencies(options, callback) {
-      options = _.extend({}, options, {installGlobally: false});
-      const commands = [];
-      const object = this.getPackageDependencies();
-      for (let name in object) {
+    installPackageDependencies (options, callback) {
+      options = _.extend({}, options, { installGlobally: false })
+      const commands = []
+      const object = this.getPackageDependencies()
+      for (const name in object) {
         const version = object[name];
         ((name, version) => {
           return commands.push(next => {
             if (this.repoLocalPackagePathRegex.test(version)) {
-              return this.installLocalPackage(name, version, options, next);
+              return this.installLocalPackage(name, version, options, next)
             } else {
-              return this.installRegisteredPackage({name, version}, options, next);
+              return this.installRegisteredPackage({ name, version }, options, next)
             }
-          });
-        })(name, version);
+          })
+        })(name, version)
       }
 
-      return async.series(commands, callback);
+      return async.series(commands, callback)
     }
 
-    installDependencies(options, callback) {
-      options.installGlobally = false;
-      const commands = [];
-      commands.push(callback => this.installModules(options, callback));
-      commands.push(callback => this.installPackageDependencies(options, callback));
+    installDependencies (options, callback) {
+      options.installGlobally = false
+      const commands = []
+      commands.push(callback => this.installModules(options, callback))
+      commands.push(callback => this.installPackageDependencies(options, callback))
 
-      return async.waterfall(commands, callback);
+      return async.waterfall(commands, callback)
     }
 
     // Get all package dependency names and versions from the package.json file.
-    getPackageDependencies() {
+    getPackageDependencies () {
       try {
-        let left;
-        const metadata = fs.readFileSync('package.json', 'utf8');
-        const {packageDependencies, dependencies} = (left = JSON.parse(metadata)) != null ? left : {};
+        let left
+        const metadata = fs.readFileSync('package.json', 'utf8')
+        const { packageDependencies, dependencies } = (left = JSON.parse(metadata)) != null ? left : {}
 
-        if (!packageDependencies) { return {}; }
-        if (!dependencies) { return packageDependencies; }
+        if (!packageDependencies) { return {} }
+        if (!dependencies) { return packageDependencies }
 
         // This code filters out any `packageDependencies` that have an equivalent
         // normalized repo-local package path entry in the `dependencies` section of
         // `package.json`.  Versioned `packageDependencies` are always returned.
-        const filteredPackages = {};
-        for (let packageName in packageDependencies) {
-          const packageSpec = packageDependencies[packageName];
-          const dependencyPath = this.getRepoLocalPackagePath(dependencies[packageName]);
-          const packageDependencyPath = this.getRepoLocalPackagePath(packageSpec);
+        const filteredPackages = {}
+        for (const packageName in packageDependencies) {
+          const packageSpec = packageDependencies[packageName]
+          const dependencyPath = this.getRepoLocalPackagePath(dependencies[packageName])
+          const packageDependencyPath = this.getRepoLocalPackagePath(packageSpec)
           if (!packageDependencyPath || (dependencyPath !== packageDependencyPath)) {
-            filteredPackages[packageName] = packageSpec;
+            filteredPackages[packageName] = packageSpec
           }
         }
 
-        return filteredPackages;
+        return filteredPackages
       } catch (error) {
-        return {};
+        return {}
       }
     }
 
-    getRepoLocalPackagePath(packageSpec) {
-      if (!packageSpec) { return undefined; }
-      const repoLocalPackageMatch = packageSpec.match(this.repoLocalPackagePathRegex);
+    getRepoLocalPackagePath (packageSpec) {
+      if (!packageSpec) { return undefined }
+      const repoLocalPackageMatch = packageSpec.match(this.repoLocalPackagePathRegex)
       if (repoLocalPackageMatch) {
-        return path.normalize(repoLocalPackageMatch[1]);
+        return path.normalize(repoLocalPackageMatch[1])
       } else {
-        return undefined;
+        return undefined
       }
     }
 
-    createAtomDirectories() {
-      fs.makeTreeSync(this.atomDirectory);
-      fs.makeTreeSync(this.atomPackagesDirectory);
-      return fs.makeTreeSync(this.atomNodeDirectory);
+    createAtomDirectories () {
+      fs.makeTreeSync(this.atomDirectory)
+      fs.makeTreeSync(this.atomPackagesDirectory)
+      return fs.makeTreeSync(this.atomNodeDirectory)
     }
 
     // Compile a sample native module to see if a useable native build toolchain
     // is instlalled and successfully detected. This will include both Python
     // and a compiler.
-    checkNativeBuildTools(callback) {
-      let vsArgs;
-      process.stdout.write('Checking for native build tools ');
+    checkNativeBuildTools (callback) {
+      let vsArgs
+      process.stdout.write('Checking for native build tools ')
 
-      const buildArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'build'];
-      buildArgs.push(path.resolve(__dirname, '..', 'native-module'));
-      buildArgs.push(...Array.from(this.getNpmBuildFlags() || []));
+      const buildArgs = ['--globalconfig', config.getGlobalConfigPath(), '--userconfig', config.getUserConfigPath(), 'build']
+      buildArgs.push(path.resolve(__dirname, '..', 'native-module'))
+      buildArgs.push(...Array.from(this.getNpmBuildFlags() || []))
 
       if (vsArgs = this.getVisualStudioFlags()) {
-        buildArgs.push(vsArgs);
+        buildArgs.push(vsArgs)
       }
 
-      fs.makeTreeSync(this.atomDirectory);
+      fs.makeTreeSync(this.atomDirectory)
 
-      const env = _.extend({}, process.env, {HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath()});
-      this.addBuildEnvVars(env);
+      const env = _.extend({}, process.env, { HOME: this.atomNodeDirectory, RUSTUP_HOME: config.getRustupHomeDirPath() })
+      this.addBuildEnvVars(env)
 
-      const buildOptions = {env};
-      if (this.verbose) { buildOptions.streaming = true; }
+      const buildOptions = { env }
+      if (this.verbose) { buildOptions.streaming = true }
 
-      fs.removeSync(path.resolve(__dirname, '..', 'native-module', 'build'));
+      fs.removeSync(path.resolve(__dirname, '..', 'native-module', 'build'))
 
       return this.fork(this.atomNpmPath, buildArgs, buildOptions, (...args) => {
-        return this.logCommandResults(callback, ...Array.from(args));
-      });
+        return this.logCommandResults(callback, ...Array.from(args))
+      })
     }
 
-    packageNamesFromPath(filePath) {
-      filePath = path.resolve(filePath);
+    packageNamesFromPath (filePath) {
+      filePath = path.resolve(filePath)
 
       if (!fs.isFileSync(filePath)) {
-        throw new Error(`File '${filePath}' does not exist`);
+        throw new Error(`File '${filePath}' does not exist`)
       }
 
-      const packages = fs.readFileSync(filePath, 'utf8');
-      return this.sanitizePackageNames(packages.split(/\s/));
+      const packages = fs.readFileSync(filePath, 'utf8')
+      return this.sanitizePackageNames(packages.split(/\s/))
     }
 
-    buildModuleCache(packageName, callback) {
-      const packageDirectory = path.join(this.atomPackagesDirectory, packageName);
-      const rebuildCacheCommand = new RebuildModuleCache();
+    buildModuleCache (packageName, callback) {
+      const packageDirectory = path.join(this.atomPackagesDirectory, packageName)
+      const rebuildCacheCommand = new RebuildModuleCache()
       return rebuildCacheCommand.rebuild(packageDirectory, () => // Ignore cache errors and just finish the install
-      callback());
+        callback())
     }
 
-    warmCompileCache(packageName, callback) {
-      const packageDirectory = path.join(this.atomPackagesDirectory, packageName);
+    warmCompileCache (packageName, callback) {
+      const packageDirectory = path.join(this.atomPackagesDirectory, packageName)
 
       return this.getResourcePath(resourcePath => {
         try {
-          const CompileCache = require(path.join(resourcePath, 'src', 'compile-cache'));
+          const CompileCache = require(path.join(resourcePath, 'src', 'compile-cache'))
 
-          const onDirectory = directoryPath => path.basename(directoryPath) !== 'node_modules';
+          const onDirectory = directoryPath => path.basename(directoryPath) !== 'node_modules'
 
           const onFile = filePath => {
             try {
-              return CompileCache.addPathToCache(filePath, this.atomDirectory);
+              return CompileCache.addPathToCache(filePath, this.atomDirectory)
             } catch (error) {}
-          };
+          }
 
-          fs.traverseTreeSync(packageDirectory, onFile, onDirectory);
+          fs.traverseTreeSync(packageDirectory, onFile, onDirectory)
         } catch (error) {}
-        return callback(null);
-      });
+        return callback(null)
+      })
     }
 
-    isBundledPackage(packageName, callback) {
-      return this.getResourcePath(function(resourcePath) {
-        let atomMetadata;
+    isBundledPackage (packageName, callback) {
+      return this.getResourcePath(function (resourcePath) {
+        let atomMetadata
         try {
-          atomMetadata = JSON.parse(fs.readFileSync(path.join(resourcePath, 'package.json')));
+          atomMetadata = JSON.parse(fs.readFileSync(path.join(resourcePath, 'package.json')))
         } catch (error) {
-          return callback(false);
+          return callback(false)
         }
 
-        return callback(__guard__(atomMetadata != null ? atomMetadata.packageDependencies : undefined, x => x.hasOwnProperty(packageName)));
-      });
+        return callback(__guard__(atomMetadata != null ? atomMetadata.packageDependencies : undefined, x => x.hasOwnProperty(packageName)))
+      })
     }
 
-    getLatestCompatibleVersion(pack) {
+    getLatestCompatibleVersion (pack) {
       if (!this.installedAtomVersion) {
         if (isDeprecatedPackage(pack.name, pack.releases.latest)) {
-          return null;
+          return null
         } else {
-          return pack.releases.latest;
+          return pack.releases.latest
         }
       }
 
-      let latestVersion = null;
-      const object = pack.versions != null ? pack.versions : {};
-      for (let version in object) {
-        const metadata = object[version];
-        if (!semver.valid(version)) { continue; }
-        if (!metadata) { continue; }
-        if (isDeprecatedPackage(pack.name, version)) { continue; }
+      let latestVersion = null
+      const object = pack.versions != null ? pack.versions : {}
+      for (const version in object) {
+        const metadata = object[version]
+        if (!semver.valid(version)) { continue }
+        if (!metadata) { continue }
+        if (isDeprecatedPackage(pack.name, version)) { continue }
 
-        const engine = (metadata.engines != null ? metadata.engines.atom : undefined) != null ? (metadata.engines != null ? metadata.engines.atom : undefined) : '*';
-        if (!semver.validRange(engine)) { continue; }
-        if (!semver.satisfies(this.installedAtomVersion, engine)) { continue; }
+        const engine = (metadata.engines != null ? metadata.engines.atom : undefined) != null ? (metadata.engines != null ? metadata.engines.atom : undefined) : '*'
+        if (!semver.validRange(engine)) { continue }
+        if (!semver.satisfies(this.installedAtomVersion, engine)) { continue }
 
-        if (latestVersion == null) { latestVersion = version; }
-        if (semver.gt(version, latestVersion)) { latestVersion = version; }
+        if (latestVersion == null) { latestVersion = version }
+        if (semver.gt(version, latestVersion)) { latestVersion = version }
       }
 
-      return latestVersion;
+      return latestVersion
     }
 
-    getHostedGitInfo(name) {
-      return hostedGitInfo.fromUrl(name);
+    getHostedGitInfo (name) {
+      return hostedGitInfo.fromUrl(name)
     }
 
-    installGitPackage(packageUrl, options, callback) {
-      const tasks = [];
+    installGitPackage (packageUrl, options, callback) {
+      const tasks = []
 
-      const cloneDir = temp.mkdirSync("atom-git-package-clone-");
-
-      tasks.push((data, next) => {
-        const urls = this.getNormalizedGitUrls(packageUrl);
-        return this.cloneFirstValidGitUrl(urls, cloneDir, options, err => next(err, data));
-      });
+      const cloneDir = temp.mkdirSync('atom-git-package-clone-')
 
       tasks.push((data, next) => {
-        return this.installGitPackageDependencies(cloneDir, options, err => next(err, data));
-      });
+        const urls = this.getNormalizedGitUrls(packageUrl)
+        return this.cloneFirstValidGitUrl(urls, cloneDir, options, err => next(err, data))
+      })
 
       tasks.push((data, next) => {
-        return this.getRepositoryHeadSha(cloneDir, function(err, sha) {
-          data.sha = sha;
-          return next(err, data);
-        });
-      });
+        return this.installGitPackageDependencies(cloneDir, options, err => next(err, data))
+      })
 
-      tasks.push(function(data, next) {
-        const metadataFilePath = CSON.resolve(path.join(cloneDir, 'package'));
-        return CSON.readFile(metadataFilePath, function(err, metadata) {
-          data.metadataFilePath = metadataFilePath;
-          data.metadata = metadata;
-          return next(err, data);
-        });
-      });
+      tasks.push((data, next) => {
+        return this.getRepositoryHeadSha(cloneDir, function (err, sha) {
+          data.sha = sha
+          return next(err, data)
+        })
+      })
 
-      tasks.push(function(data, next) {
+      tasks.push(function (data, next) {
+        const metadataFilePath = CSON.resolve(path.join(cloneDir, 'package'))
+        return CSON.readFile(metadataFilePath, function (err, metadata) {
+          data.metadataFilePath = metadataFilePath
+          data.metadata = metadata
+          return next(err, data)
+        })
+      })
+
+      tasks.push(function (data, next) {
         data.metadata.apmInstallSource = {
-          type: "git",
+          type: 'git',
           source: packageUrl,
           sha: data.sha
-        };
-        return CSON.writeFile(data.metadataFilePath, data.metadata, err => next(err, data));
-      });
+        }
+        return CSON.writeFile(data.metadataFilePath, data.metadata, err => next(err, data))
+      })
 
       tasks.push((data, next) => {
-        const {name} = data.metadata;
-        const targetDir = path.join(this.atomPackagesDirectory, name);
-        if (!options.argv.json) { process.stdout.write(`Moving ${name} to ${targetDir} `); }
+        const { name } = data.metadata
+        const targetDir = path.join(this.atomPackagesDirectory, name)
+        if (!options.argv.json) { process.stdout.write(`Moving ${name} to ${targetDir} `) }
         return fs.cp(cloneDir, targetDir, err => {
           if (err) {
-            return next(err);
+            return next(err)
           } else {
-            if (!options.argv.json) { this.logSuccess(); }
-            const json = {installPath: targetDir, metadata: data.metadata};
-            return next(null, json);
+            if (!options.argv.json) { this.logSuccess() }
+            const json = { installPath: targetDir, metadata: data.metadata }
+            return next(null, json)
           }
-        });
-      });
+        })
+      })
 
-      const iteratee = (currentData, task, next) => task(currentData, next);
-      return async.reduce(tasks, {}, iteratee, callback);
+      const iteratee = (currentData, task, next) => task(currentData, next)
+      return async.reduce(tasks, {}, iteratee, callback)
     }
 
-    getNormalizedGitUrls(packageUrl) {
-      const packageInfo = this.getHostedGitInfo(packageUrl);
+    getNormalizedGitUrls (packageUrl) {
+      const packageInfo = this.getHostedGitInfo(packageUrl)
 
       if (packageUrl.indexOf('file://') === 0) {
-        return [packageUrl];
+        return [packageUrl]
       } else if (packageInfo.default === 'sshurl') {
-        return [packageInfo.toString()];
+        return [packageInfo.toString()]
       } else if (packageInfo.default === 'https') {
-        return [packageInfo.https().replace(/^git\+https:/, "https:")];
+        return [packageInfo.https().replace(/^git\+https:/, 'https:')]
       } else if (packageInfo.default === 'shortcut') {
         return [
-          packageInfo.https().replace(/^git\+https:/, "https:"),
+          packageInfo.https().replace(/^git\+https:/, 'https:'),
           packageInfo.sshurl()
-        ];
+        ]
       }
     }
 
-    cloneFirstValidGitUrl(urls, cloneDir, options, callback) {
+    cloneFirstValidGitUrl (urls, cloneDir, options, callback) {
       return async.detectSeries(urls, (url, next) => {
-        return this.cloneNormalizedUrl(url, cloneDir, options, error => next(!error));
+        return this.cloneNormalizedUrl(url, cloneDir, options, error => next(!error))
       }
-      , function(result) {
+      , function (result) {
         if (!result) {
-          const invalidUrls = `Couldn't clone ${urls.join(' or ')}`;
-          const invalidUrlsError = new Error(invalidUrls);
-          return callback(invalidUrlsError);
+          const invalidUrls = `Couldn't clone ${urls.join(' or ')}`
+          const invalidUrlsError = new Error(invalidUrls)
+          return callback(invalidUrlsError)
         } else {
-          return callback();
+          return callback()
         }
-      });
+      })
     }
 
-    cloneNormalizedUrl(url, cloneDir, options, callback) {
+    cloneNormalizedUrl (url, cloneDir, options, callback) {
       // Require here to avoid circular dependency
-      const Develop = require('./develop');
-      const develop = new Develop();
+      const Develop = require('./develop')
+      const develop = new Develop()
 
-      return develop.cloneRepository(url, cloneDir, options, err => callback(err));
+      return develop.cloneRepository(url, cloneDir, options, err => callback(err))
     }
 
-    installGitPackageDependencies(directory, options, callback) {
-      options.cwd = directory;
-      return this.installDependencies(options, callback);
+    installGitPackageDependencies (directory, options, callback) {
+      options.cwd = directory
+      return this.installDependencies(options, callback)
     }
 
-    getRepositoryHeadSha(repoDir, callback) {
+    getRepositoryHeadSha (repoDir, callback) {
       try {
-        const repo = Git.open(repoDir);
-        const sha = repo.getReferenceTarget("HEAD");
-        return callback(null, sha);
+        const repo = Git.open(repoDir)
+        const sha = repo.getReferenceTarget('HEAD')
+        return callback(null, sha)
       } catch (err) {
-        return callback(err);
+        return callback(err)
       }
     }
 
-    run(options) {
-      let packageNames;
-      const {callback} = options;
-      options = this.parseOptions(options.commandArgs);
-      const packagesFilePath = options.argv['packages-file'];
+    run (options) {
+      let packageNames
+      const { callback } = options
+      options = this.parseOptions(options.commandArgs)
+      const packagesFilePath = options.argv['packages-file']
 
-      this.createAtomDirectories();
+      this.createAtomDirectories()
 
       if (options.argv.check) {
         config.loadNpm((error, npm) => {
-          this.npm = npm;
+          this.npm = npm
           return this.loadInstalledAtomMetadata(() => {
-            return this.checkNativeBuildTools(callback);
-          });
-        });
-        return;
+            return this.checkNativeBuildTools(callback)
+          })
+        })
+        return
       }
 
-      this.verbose = options.argv.verbose;
+      this.verbose = options.argv.verbose
       if (this.verbose) {
-        request.debug(true);
-        process.env.NODE_DEBUG = 'request';
+        request.debug(true)
+        process.env.NODE_DEBUG = 'request'
       }
 
       const installPackage = (name, nextInstallStep) => {
-        const gitPackageInfo = this.getHostedGitInfo(name);
+        const gitPackageInfo = this.getHostedGitInfo(name)
 
         if (gitPackageInfo || (name.indexOf('file://') === 0)) {
-          return this.installGitPackage(name, options, nextInstallStep);
+          return this.installGitPackage(name, options, nextInstallStep)
         } else if (name === '.') {
-          return this.installDependencies(options, nextInstallStep);
+          return this.installDependencies(options, nextInstallStep)
         } else { // is registered package
-          let version;
-          const atIndex = name.indexOf('@');
+          let version
+          const atIndex = name.indexOf('@')
           if (atIndex > 0) {
-            version = name.substring(atIndex + 1);
-            name = name.substring(0, atIndex);
+            version = name.substring(atIndex + 1)
+            name = name.substring(0, atIndex)
           }
 
           return this.isBundledPackage(name, isBundledPackage => {
@@ -741,43 +755,43 @@ The ${name} package is bundled with Atom and should not be explicitly installed.
 You can run \`apm uninstall ${name}\` to uninstall it and then the version bundled
 with Atom will be used.\
 `.yellow
-              );
+              )
             }
-            return this.installRegisteredPackage({name, version}, options, nextInstallStep);
-          });
+            return this.installRegisteredPackage({ name, version }, options, nextInstallStep)
+          })
         }
-      };
+      }
 
       if (packagesFilePath) {
         try {
-          packageNames = this.packageNamesFromPath(packagesFilePath);
+          packageNames = this.packageNamesFromPath(packagesFilePath)
         } catch (error1) {
-          const error = error1;
-          return callback(error);
+          const error = error1
+          return callback(error)
         }
       } else {
-        packageNames = this.packageNamesFromArgv(options.argv);
-        if (packageNames.length === 0) { packageNames.push('.'); }
+        packageNames = this.packageNamesFromArgv(options.argv)
+        if (packageNames.length === 0) { packageNames.push('.') }
       }
 
-      const commands = [];
-      commands.push(callback => { return config.loadNpm((error, npm) => { this.npm = npm; return callback(error); }); });
-      commands.push(callback => this.loadInstalledAtomMetadata(() => callback()));
-      packageNames.forEach(packageName => commands.push(callback => installPackage(packageName, callback)));
-      const iteratee = (item, next) => item(next);
-      return async.mapSeries(commands, iteratee, function(err, installedPackagesInfo) {
-        if (err) { return callback(err); }
-        installedPackagesInfo = _.compact(installedPackagesInfo);
-        installedPackagesInfo = installedPackagesInfo.filter((item, idx) => packageNames[idx] !== ".");
-        if (options.argv.json) { console.log(JSON.stringify(installedPackagesInfo, null, "  ")); }
-        return callback(null);
-      });
+      const commands = []
+      commands.push(callback => { return config.loadNpm((error, npm) => { this.npm = npm; return callback(error) }) })
+      commands.push(callback => this.loadInstalledAtomMetadata(() => callback()))
+      packageNames.forEach(packageName => commands.push(callback => installPackage(packageName, callback)))
+      const iteratee = (item, next) => item(next)
+      return async.mapSeries(commands, iteratee, function (err, installedPackagesInfo) {
+        if (err) { return callback(err) }
+        installedPackagesInfo = _.compact(installedPackagesInfo)
+        installedPackagesInfo = installedPackagesInfo.filter((item, idx) => packageNames[idx] !== '.')
+        if (options.argv.json) { console.log(JSON.stringify(installedPackagesInfo, null, '  ')) }
+        return callback(null)
+      })
     }
-  };
-  Install.initClass();
-  return Install;
-})());
+  }
+  Install.initClass()
+  return Install
+})())
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

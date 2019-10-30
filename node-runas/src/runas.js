@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,33 +8,33 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const runas = require('../build/Release/runas.node');
+const runas = require('../build/Release/runas.node')
 
-const searchCommand = function(command) {
-  if (command[0] === '/') { return command; }
+const searchCommand = function (command) {
+  if (command[0] === '/') { return command }
 
-  const fs = require('fs');
-  const path = require('path');
-  const paths = process.env.PATH.split(path.delimiter);
-  for (let p of Array.from(paths)) {
+  const fs = require('fs')
+  const path = require('path')
+  const paths = process.env.PATH.split(path.delimiter)
+  for (const p of Array.from(paths)) {
     try {
-      const filename = path.join(p, command);
-      if (fs.statSync(filename).isFile()) { return filename; }
+      const filename = path.join(p, command)
+      if (fs.statSync(filename).isFile()) { return filename }
     } catch (e) {}
   }
-  return '';
-};
+  return ''
+}
 
-module.exports = function(command, args, options) {
-  if (args == null) { args = []; }
-  if (options == null) { options = {}; }
-  if (options.hide == null) { options.hide = true; }
-  if (options.admin == null) { options.admin = false; }
+module.exports = function (command, args, options) {
+  if (args == null) { args = [] }
+  if (options == null) { options = {} }
+  if (options.hide == null) { options.hide = true }
+  if (options.admin == null) { options.admin = false }
 
   // Convert command to its full path when using authorization service
   if ((process.platform === 'darwin') && (options.admin === true)) {
-    command = searchCommand(command);
+    command = searchCommand(command)
   }
 
-  return runas.runas(command, args, options);
-};
+  return runas.runas(command, args, options)
+}

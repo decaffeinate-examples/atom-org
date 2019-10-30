@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,9 +9,9 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Range;
-const Point = require('./point');
-let newlineRegex = null;
+let Range
+const Point = require('./point')
+let newlineRegex = null
 
 // Public: Represents a region in a buffer in row/column coordinates.
 //
@@ -24,18 +27,18 @@ let newlineRegex = null;
 // [[0, 1], [2, 3]] # Range compatible array
 // ```
 module.exports =
-(Range = (function() {
+(Range = (function () {
   Range = class Range {
-    static initClass() {
+    static initClass () {
       /*
       Section: Properties
       */
-  
+
       // Public: A {Point} representing the start of the {Range}.
-      this.prototype.start = null;
-  
+      this.prototype.start = null
+
       // Public: A {Point} representing the end of the {Range}.
-      this.prototype.end = null;
+      this.prototype.end = null
     }
 
     /*
@@ -51,13 +54,13 @@ module.exports =
     //   that are already ranges.
     //
     // Returns: A {Range} based on the given object.
-    static fromObject(object, copy) {
+    static fromObject (object, copy) {
       if (Array.isArray(object)) {
-        return new (this)(object[0], object[1]);
+        return new (this)(object[0], object[1])
       } else if (object instanceof this) {
-        if (copy) { return object.copy(); } else { return object; }
+        if (copy) { return object.copy() } else { return object }
       } else {
-        return new (this)(object.start, object.end);
+        return new (this)(object.start, object.end)
       }
     }
 
@@ -70,28 +73,30 @@ module.exports =
     //   last line.
     //
     // Returns: A {Range}
-    static fromText(...args) {
-      let startPoint;
-      if (newlineRegex == null) { ({
-        newlineRegex
-      } = require('./helpers')); }
+    static fromText (...args) {
+      let startPoint
+      if (newlineRegex == null) {
+        ({
+          newlineRegex
+        } = require('./helpers'))
+      }
 
       if (args.length > 1) {
-        startPoint = Point.fromObject(args.shift());
+        startPoint = Point.fromObject(args.shift())
       } else {
-        startPoint = new Point(0, 0);
+        startPoint = new Point(0, 0)
       }
-      const text = args.shift();
-      const endPoint = startPoint.copy();
-      const lines = text.split(newlineRegex);
+      const text = args.shift()
+      const endPoint = startPoint.copy()
+      const lines = text.split(newlineRegex)
       if (lines.length > 1) {
-        const lastIndex = lines.length - 1;
-        endPoint.row += lastIndex;
-        endPoint.column = lines[lastIndex].length;
+        const lastIndex = lines.length - 1
+        endPoint.row += lastIndex
+        endPoint.column = lines[lastIndex].length
       } else {
-        endPoint.column += lines[0].length;
+        endPoint.column += lines[0].length
       }
-      return new (this)(startPoint, endPoint);
+      return new (this)(startPoint, endPoint)
     }
 
     // Returns a {Range} that starts at the given point and ends at the
@@ -102,17 +107,16 @@ module.exports =
     //   to get the end point.
     // * `columnDelta` A {Number} indicating how many rows to columns to the start
     //   point to get the end point.
-    static fromPointWithDelta(startPoint, rowDelta, columnDelta) {
-      startPoint = Point.fromObject(startPoint);
-      const endPoint = new Point(startPoint.row + rowDelta, startPoint.column + columnDelta);
-      return new (this)(startPoint, endPoint);
+    static fromPointWithDelta (startPoint, rowDelta, columnDelta) {
+      startPoint = Point.fromObject(startPoint)
+      const endPoint = new Point(startPoint.row + rowDelta, startPoint.column + columnDelta)
+      return new (this)(startPoint, endPoint)
     }
 
-    static fromPointWithTraversalExtent(startPoint, extent) {
-      startPoint = Point.fromObject(startPoint);
-      return new (this)(startPoint, startPoint.traverse(extent));
+    static fromPointWithTraversalExtent (startPoint, extent) {
+      startPoint = Point.fromObject(startPoint)
+      return new (this)(startPoint, startPoint.traverse(extent))
     }
-
 
     /*
     Section: Serialization and Deserialization
@@ -121,11 +125,11 @@ module.exports =
     // Public: Call this with the result of {Range::serialize} to construct a new Range.
     //
     // * `array` {Array} of params to pass to the {::constructor}
-    static deserialize(array) {
+    static deserialize (array) {
       if (Array.isArray(array)) {
-        return new (this)(array[0], array[1]);
+        return new (this)(array[0], array[1])
       } else {
-        return new (this)();
+        return new (this)()
       }
     }
 
@@ -137,33 +141,33 @@ module.exports =
     //
     // * `pointA` {Point} or Point compatible {Array} (default: [0,0])
     // * `pointB` {Point} or Point compatible {Array} (default: [0,0])
-    constructor(pointA, pointB) {
-      if (pointA == null) { pointA = new Point(0, 0); }
-      if (pointB == null) { pointB = new Point(0, 0); }
+    constructor (pointA, pointB) {
+      if (pointA == null) { pointA = new Point(0, 0) }
+      if (pointB == null) { pointB = new Point(0, 0) }
       if (!(this instanceof Range)) {
-        return new Range(pointA, pointB);
+        return new Range(pointA, pointB)
       }
 
-      pointA = Point.fromObject(pointA);
-      pointB = Point.fromObject(pointB);
+      pointA = Point.fromObject(pointA)
+      pointB = Point.fromObject(pointB)
 
       if (pointA.isLessThanOrEqual(pointB)) {
-        this.start = pointA;
-        this.end = pointB;
+        this.start = pointA
+        this.end = pointB
       } else {
-        this.start = pointB;
-        this.end = pointA;
+        this.start = pointB
+        this.end = pointA
       }
     }
 
     // Public: Returns a new range with the same start and end positions.
-    copy() {
-      return new this.constructor(this.start.copy(), this.end.copy());
+    copy () {
+      return new this.constructor(this.start.copy(), this.end.copy())
     }
 
     // Public: Returns a new range with the start and end positions negated.
-    negate() {
-      return new this.constructor(this.start.negate(), this.end.negate());
+    negate () {
+      return new this.constructor(this.start.negate(), this.end.negate())
     }
 
     /*
@@ -171,8 +175,8 @@ module.exports =
     */
 
     // Public: Returns a plain javascript object representation of the range.
-    serialize() {
-      return [this.start.serialize(), this.end.serialize()];
+    serialize () {
+      return [this.start.serialize(), this.end.serialize()]
     }
 
     /*
@@ -182,26 +186,26 @@ module.exports =
     // Public: Is the start position of this range equal to the end position?
     //
     // Returns a {Boolean}.
-    isEmpty() {
-      return this.start.isEqual(this.end);
+    isEmpty () {
+      return this.start.isEqual(this.end)
     }
 
     // Public: Returns a {Boolean} indicating whether this range starts and ends on
     // the same row.
-    isSingleLine() {
-      return this.start.row === this.end.row;
+    isSingleLine () {
+      return this.start.row === this.end.row
     }
 
     // Public: Get the number of rows in this range.
     //
     // Returns a {Number}.
-    getRowCount() {
-      return (this.end.row - this.start.row) + 1;
+    getRowCount () {
+      return (this.end.row - this.start.row) + 1
     }
 
     // Public: Returns an array of all rows in the range.
-    getRows() {
-      return __range__(this.start.row, this.end.row, true);
+    getRows () {
+      return __range__(this.start.row, this.end.row, true)
     }
 
     /*
@@ -212,19 +216,19 @@ module.exports =
     // immutable and returns itself.
     //
     // Returns an immutable version of this {Range}
-    freeze() {
-      this.start.freeze();
-      this.end.freeze();
-      return Object.freeze(this);
+    freeze () {
+      this.start.freeze()
+      this.end.freeze()
+      return Object.freeze(this)
     }
 
     // Public: Returns a new range that contains this range and the given range.
     //
     // * `otherRange` A {Range} or range-compatible {Array}
-    union(otherRange) {
-      const start = this.start.isLessThan(otherRange.start) ? this.start : otherRange.start;
-      const end = this.end.isGreaterThan(otherRange.end) ? this.end : otherRange.end;
-      return new this.constructor(start, end);
+    union (otherRange) {
+      const start = this.start.isLessThan(otherRange.start) ? this.start : otherRange.start
+      const end = this.end.isGreaterThan(otherRange.end) ? this.end : otherRange.end
+      return new this.constructor(start, end)
     }
 
     // Public: Build and return a new range by translating this range's start and
@@ -235,9 +239,9 @@ module.exports =
     //   range. If omitted, the `startDelta` will be used instead.
     //
     // Returns a {Range}.
-    translate(startDelta, endDelta) {
-      if (endDelta == null) { endDelta = startDelta; }
-      return new this.constructor(this.start.translate(startDelta), this.end.translate(endDelta));
+    translate (startDelta, endDelta) {
+      if (endDelta == null) { endDelta = startDelta }
+      return new this.constructor(this.start.translate(startDelta), this.end.translate(endDelta))
     }
 
     // Public: Build and return a new range by traversing this range's start and
@@ -249,8 +253,8 @@ module.exports =
     //   the new range.
     //
     // Returns a {Range}.
-    traverse(delta) {
-      return new this.constructor(this.start.traverse(delta), this.end.traverse(delta));
+    traverse (delta) {
+      return new this.constructor(this.start.traverse(delta), this.end.traverse(delta))
     }
 
     /*
@@ -264,13 +268,13 @@ module.exports =
     // Returns `-1` if this range starts before the argument or contains it.
     // Returns `0` if this range is equivalent to the argument.
     // Returns `1` if this range starts after the argument or is contained by it.
-    compare(other) {
-      let value;
-      other = this.constructor.fromObject(other);
+    compare (other) {
+      let value
+      other = this.constructor.fromObject(other)
       if ((value = this.start.compare(other.start))) {
-        return value;
+        return value
       } else {
-        return other.end.compare(this.end);
+        return other.end.compare(this.end)
       }
     }
 
@@ -278,18 +282,18 @@ module.exports =
     // and end points as the given {Range} or range-compatible {Array}.
     //
     // * `otherRange` A {Range} or range-compatible {Array}.
-    isEqual(other) {
-      if (other == null) { return false; }
-      other = this.constructor.fromObject(other);
-      return other.start.isEqual(this.start) && other.end.isEqual(this.end);
+    isEqual (other) {
+      if (other == null) { return false }
+      other = this.constructor.fromObject(other)
+      return other.start.isEqual(this.start) && other.end.isEqual(this.end)
     }
 
     // Public: Returns a {Boolean} indicating whether this range starts and ends on
     // the same row as the argument.
     //
     // * `otherRange` A {Range} or range-compatible {Array}.
-    coversSameRows(other) {
-      return (this.start.row === other.start.row) && (this.end.row === other.end.row);
+    coversSameRows (other) {
+      return (this.start.row === other.start.row) && (this.end.row === other.end.row)
     }
 
     // Public: Determines whether this range intersects with the argument.
@@ -299,11 +303,11 @@ module.exports =
     //     when testing for intersection. Defaults to `false`.
     //
     // Returns a {Boolean}.
-    intersectsWith(otherRange, exclusive) {
+    intersectsWith (otherRange, exclusive) {
       if (exclusive) {
-        return !(this.end.isLessThanOrEqual(otherRange.start) || this.start.isGreaterThanOrEqual(otherRange.end));
+        return !(this.end.isLessThanOrEqual(otherRange.start) || this.start.isGreaterThanOrEqual(otherRange.end))
       } else {
-        return !(this.end.isLessThan(otherRange.start) || this.start.isGreaterThan(otherRange.end));
+        return !(this.end.isLessThan(otherRange.start) || this.start.isGreaterThan(otherRange.end))
       }
     }
 
@@ -313,9 +317,9 @@ module.exports =
     // * `otherRange` A {Range} or range-compatible {Array}
     // * `exclusive` (optional) {Boolean} including that the containment should be exclusive of
     //   endpoints. Defaults to false.
-    containsRange(otherRange, exclusive) {
-      const {start, end} = this.constructor.fromObject(otherRange);
-      return this.containsPoint(start, exclusive) && this.containsPoint(end, exclusive);
+    containsRange (otherRange, exclusive) {
+      const { start, end } = this.constructor.fromObject(otherRange)
+      return this.containsPoint(start, exclusive) && this.containsPoint(end, exclusive)
     }
 
     // Public: Returns a {Boolean} indicating whether this range contains the given
@@ -324,12 +328,12 @@ module.exports =
     // * `point` A {Point} or point-compatible {Array}
     // * `exclusive` (optional) {Boolean} including that the containment should be exclusive of
     //   endpoints. Defaults to false.
-    containsPoint(point, exclusive) {
-      point = Point.fromObject(point);
+    containsPoint (point, exclusive) {
+      point = Point.fromObject(point)
       if (exclusive) {
-        return point.isGreaterThan(this.start) && point.isLessThan(this.end);
+        return point.isGreaterThan(this.start) && point.isLessThan(this.end)
       } else {
-        return point.isGreaterThanOrEqual(this.start) && point.isLessThanOrEqual(this.end);
+        return point.isGreaterThanOrEqual(this.start) && point.isLessThanOrEqual(this.end)
       }
     }
 
@@ -337,8 +341,8 @@ module.exports =
     // given row {Number}.
     //
     // * `row` Row {Number}
-    intersectsRow(row) {
-      return this.start.row <= row && row <= this.end.row;
+    intersectsRow (row) {
+      return this.start.row <= row && row <= this.end.row
     }
 
     // Public: Returns a {Boolean} indicating whether this range intersects the
@@ -346,45 +350,45 @@ module.exports =
     //
     // * `startRow` {Number} start row
     // * `endRow` {Number} end row
-    intersectsRowRange(startRow, endRow) {
-      if (startRow > endRow) { [startRow, endRow] = Array.from([endRow, startRow]); }
-      return (this.end.row >= startRow) && (endRow >= this.start.row);
+    intersectsRowRange (startRow, endRow) {
+      if (startRow > endRow) { [startRow, endRow] = Array.from([endRow, startRow]) }
+      return (this.end.row >= startRow) && (endRow >= this.start.row)
     }
 
-    getExtent() {
-      return this.end.traversalFrom(this.start);
+    getExtent () {
+      return this.end.traversalFrom(this.start)
     }
 
     /*
     Section: Conversion
     */
 
-    toDelta() {
-      let columns;
-      const rows = this.end.row - this.start.row;
+    toDelta () {
+      let columns
+      const rows = this.end.row - this.start.row
       if (rows === 0) {
-        columns = this.end.column - this.start.column;
+        columns = this.end.column - this.start.column
       } else {
-        columns = this.end.column;
+        columns = this.end.column
       }
-      return new Point(rows, columns);
+      return new Point(rows, columns)
     }
 
     // Public: Returns a string representation of the range.
-    toString() {
-      return `[${this.start} - ${this.end}]`;
+    toString () {
+      return `[${this.start} - ${this.end}]`
     }
-  };
-  Range.initClass();
-  return Range;
-})());
-
-function __range__(left, right, inclusive) {
-  let range = [];
-  let ascending = left < right;
-  let end = !inclusive ? right : ascending ? right + 1 : right - 1;
-  for (let i = left; ascending ? i < end : i > end; ascending ? i++ : i--) {
-    range.push(i);
   }
-  return range;
+  Range.initClass()
+  return Range
+})())
+
+function __range__ (left, right, inclusive) {
+  const range = []
+  const ascending = left < right
+  const end = !inclusive ? right : ascending ? right + 1 : right - 1
+  for (let i = left; ascending ? i < end : i > end; ascending ? i++ : i--) {
+    range.push(i)
+  }
+  return range
 }

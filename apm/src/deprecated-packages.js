@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-prototype-builtins,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -5,16 +11,18 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const semver = require('semver');
-let deprecatedPackages = null;
+const semver = require('semver')
+let deprecatedPackages = null
 
-exports.isDeprecatedPackage = function(name, version) {
-  if (deprecatedPackages == null) { let left;
-  deprecatedPackages = (left = require('../deprecated-packages')) != null ? left : {}; }
-  if (!deprecatedPackages.hasOwnProperty(name)) { return false; }
+exports.isDeprecatedPackage = function (name, version) {
+  if (deprecatedPackages == null) {
+    let left
+    deprecatedPackages = (left = require('../deprecated-packages')) != null ? left : {}
+  }
+  if (!deprecatedPackages.hasOwnProperty(name)) { return false }
 
-  const deprecatedVersionRange = deprecatedPackages[name].version;
-  if (!deprecatedVersionRange) { return true; }
+  const deprecatedVersionRange = deprecatedPackages[name].version
+  if (!deprecatedVersionRange) { return true }
 
-  return semver.valid(version) && semver.validRange(deprecatedVersionRange) && semver.satisfies(version, deprecatedVersionRange);
-};
+  return semver.valid(version) && semver.validRange(deprecatedVersionRange) && semver.satisfies(version, deprecatedVersionRange)
+}

@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -13,30 +19,30 @@
 // *must* be called with an exact CustomEvent instance. We work around this fact
 // by building a CustomEvent directly, then injecting this object into the
 // prototype chain by setting its __proto__ property.
-let CommandEvent;
+let CommandEvent
 module.exports =
-(CommandEvent = (function() {
+(CommandEvent = (function () {
   CommandEvent = class CommandEvent extends CustomEvent {
-    static initClass() {
-      this.prototype.keyBindingAborted = false;
-      this.prototype.propagationStopped = false;
+    static initClass () {
+      this.prototype.keyBindingAborted = false
+      this.prototype.propagationStopped = false
     }
 
-    abortKeyBinding() {
-      this.stopImmediatePropagation();
-      return this.keyBindingAborted = true;
+    abortKeyBinding () {
+      this.stopImmediatePropagation()
+      return this.keyBindingAborted = true
     }
 
-    stopPropagation() {
-      this.propagationStopped = true;
-      return super.stopPropagation(...arguments);
+    stopPropagation () {
+      this.propagationStopped = true
+      return super.stopPropagation(...arguments)
     }
 
-    stopImmediatePropagation() {
-      this.propagationStopped = true;
-      return super.stopImmediatePropagation(...arguments);
+    stopImmediatePropagation () {
+      this.propagationStopped = true
+      return super.stopImmediatePropagation(...arguments)
     }
-  };
-  CommandEvent.initClass();
-  return CommandEvent;
-})());
+  }
+  CommandEvent.initClass()
+  return CommandEvent
+})())

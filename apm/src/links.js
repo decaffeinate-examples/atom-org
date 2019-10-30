@@ -1,3 +1,6 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -5,31 +8,31 @@
  * DS206: Consider reworking classes to avoid initClass
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Links;
-const path = require('path');
+let Links
+const path = require('path')
 
-const yargs = require('yargs');
+const yargs = require('yargs')
 
-const Command = require('./command');
-const config = require('./apm');
-const fs = require('./fs');
-const tree = require('./tree');
+const Command = require('./command')
+const config = require('./apm')
+const fs = require('./fs')
+const tree = require('./tree')
 
 module.exports =
-(Links = (function() {
+(Links = (function () {
   Links = class Links extends Command {
-    static initClass() {
-      this.commandNames = ['linked', 'links', 'lns'];
+    static initClass () {
+      this.commandNames = ['linked', 'links', 'lns']
     }
 
-    constructor() {
-      super();
-      this.devPackagesPath = path.join(config.getAtomDirectory(), 'dev', 'packages');
-      this.packagesPath = path.join(config.getAtomDirectory(), 'packages');
+    constructor () {
+      super()
+      this.devPackagesPath = path.join(config.getAtomDirectory(), 'dev', 'packages')
+      this.packagesPath = path.join(config.getAtomDirectory(), 'packages')
     }
 
-    parseOptions(argv) {
-      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()));
+    parseOptions (argv) {
+      const options = yargs(argv).wrap(Math.min(100, yargs.terminalWidth()))
       options.usage(`\
 
 Usage: apm links
@@ -37,45 +40,45 @@ Usage: apm links
 List all of the symlinked atom packages in ~/.atom/packages and
 ~/.atom/dev/packages.\
 `
-      );
-      return options.alias('h', 'help').describe('help', 'Print this usage message');
+      )
+      return options.alias('h', 'help').describe('help', 'Print this usage message')
     }
 
-    getDevPackagePath(packageName) { return path.join(this.devPackagesPath, packageName); }
+    getDevPackagePath (packageName) { return path.join(this.devPackagesPath, packageName) }
 
-    getPackagePath(packageName) { return path.join(this.packagesPath, packageName); }
+    getPackagePath (packageName) { return path.join(this.packagesPath, packageName) }
 
-    getSymlinks(directoryPath) {
-      const symlinks = [];
-      for (let directory of Array.from(fs.list(directoryPath))) {
-        const symlinkPath = path.join(directoryPath, directory);
-        if (fs.isSymbolicLinkSync(symlinkPath)) { symlinks.push(symlinkPath); }
+    getSymlinks (directoryPath) {
+      const symlinks = []
+      for (const directory of Array.from(fs.list(directoryPath))) {
+        const symlinkPath = path.join(directoryPath, directory)
+        if (fs.isSymbolicLinkSync(symlinkPath)) { symlinks.push(symlinkPath) }
       }
-      return symlinks;
+      return symlinks
     }
 
-    logLinks(directoryPath) {
-      const links = this.getSymlinks(directoryPath);
-      console.log(`${directoryPath.cyan} (${links.length})`);
-      return tree(links, {emptyMessage: '(no links)'}, function(link) {
-        let realpath;
+    logLinks (directoryPath) {
+      const links = this.getSymlinks(directoryPath)
+      console.log(`${directoryPath.cyan} (${links.length})`)
+      return tree(links, { emptyMessage: '(no links)' }, function (link) {
+        let realpath
         try {
-          realpath = fs.realpathSync(link);
+          realpath = fs.realpathSync(link)
         } catch (error) {
-          realpath = '???'.red;
+          realpath = '???'.red
         }
-        return `${path.basename(link).yellow} -> ${realpath}`;
-      });
+        return `${path.basename(link).yellow} -> ${realpath}`
+      })
     }
 
-    run(options) {
-      const {callback} = options;
+    run (options) {
+      const { callback } = options
 
-      this.logLinks(this.devPackagesPath);
-      this.logLinks(this.packagesPath);
-      return callback();
+      this.logLinks(this.devPackagesPath)
+      this.logLinks(this.packagesPath)
+      return callback()
     }
-  };
-  Links.initClass();
-  return Links;
-})());
+  }
+  Links.initClass()
+  return Links
+})())

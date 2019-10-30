@@ -1,11 +1,17 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let DisplayMarker;
-const {Emitter} = require('event-kit');
+let DisplayMarker
+const { Emitter } = require('event-kit')
 
 // Essential: Represents a buffer annotation that remains logically stationary
 // even as the buffer changes. This is used to represent cursors, folds, snippet
@@ -52,29 +58,29 @@ module.exports =
   Section: Construction and Destruction
   */
 
-  constructor(layer, bufferMarker) {
-    this.layer = layer;
+  constructor (layer, bufferMarker) {
+    this.layer = layer
     this.bufferMarker = bufferMarker;
-    ({id: this.id} = this.bufferMarker);
-    this.hasChangeObservers = false;
-    this.emitter = new Emitter;
-    this.bufferMarkerSubscription = null;
+    ({ id: this.id } = this.bufferMarker)
+    this.hasChangeObservers = false
+    this.emitter = new Emitter()
+    this.bufferMarkerSubscription = null
   }
 
   // Essential: Destroys the marker, causing it to emit the 'destroyed' event. Once
   // destroyed, a marker cannot be restored by undo/redo operations.
-  destroy() {
+  destroy () {
     if (!this.isDestroyed()) {
-      return this.bufferMarker.destroy();
+      return this.bufferMarker.destroy()
     }
   }
 
-  didDestroyBufferMarker() {
-    this.emitter.emit('did-destroy');
-    this.layer.didDestroyMarker(this);
-    this.emitter.dispose();
-    this.emitter.clear();
-    return (this.bufferMarkerSubscription != null ? this.bufferMarkerSubscription.dispose() : undefined);
+  didDestroyBufferMarker () {
+    this.emitter.emit('did-destroy')
+    this.layer.didDestroyMarker(this)
+    this.emitter.dispose()
+    this.emitter.clear()
+    return (this.bufferMarkerSubscription != null ? this.bufferMarkerSubscription.dispose() : undefined)
   }
 
   // Essential: Creates and returns a new {DisplayMarker} with the same properties as
@@ -91,8 +97,8 @@ module.exports =
   // properties with `properties`.
   //
   // Returns a {DisplayMarker}.
-  copy(params) {
-    return this.layer.getMarker(this.bufferMarker.copy(params).id);
+  copy (params) {
+    return this.layer.getMarker(this.bufferMarker.copy(params).id)
   }
 
   /*
@@ -121,17 +127,17 @@ module.exports =
   //       to the buffer or whether the marker was manipulated directly via its public API.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidChange(callback) {
+  onDidChange (callback) {
     if (!this.hasChangeObservers) {
-      this.oldHeadBufferPosition = this.getHeadBufferPosition();
-      this.oldHeadScreenPosition = this.getHeadScreenPosition();
-      this.oldTailBufferPosition = this.getTailBufferPosition();
-      this.oldTailScreenPosition = this.getTailScreenPosition();
-      this.wasValid = this.isValid();
-      this.bufferMarkerSubscription = this.bufferMarker.onDidChange(event => this.notifyObservers(event.textChanged));
-      this.hasChangeObservers = true;
+      this.oldHeadBufferPosition = this.getHeadBufferPosition()
+      this.oldHeadScreenPosition = this.getHeadScreenPosition()
+      this.oldTailBufferPosition = this.getTailBufferPosition()
+      this.oldTailScreenPosition = this.getTailScreenPosition()
+      this.wasValid = this.isValid()
+      this.bufferMarkerSubscription = this.bufferMarker.onDidChange(event => this.notifyObservers(event.textChanged))
+      this.hasChangeObservers = true
     }
-    return this.emitter.on('did-change', callback);
+    return this.emitter.on('did-change', callback)
   }
 
   // Essential: Invoke the given callback when the marker is destroyed.
@@ -139,9 +145,9 @@ module.exports =
   // * `callback` {Function} to be called when the marker is destroyed.
   //
   // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-  onDidDestroy(callback) {
-    this.layer.markersWithDestroyListeners.add(this);
-    return this.emitter.on('did-destroy', callback);
+  onDidDestroy (callback) {
+    this.layer.markersWithDestroyListeners.add(this)
+    return this.emitter.on('did-destroy', callback)
   }
 
   /*
@@ -151,8 +157,8 @@ module.exports =
   // Essential: Returns a {Boolean} indicating whether the marker is valid.
   // Markers can be invalidated when a region surrounding them in the buffer is
   // changed.
-  isValid() {
-    return this.bufferMarker.isValid();
+  isValid () {
+    return this.bufferMarker.isValid()
   }
 
   // Essential: Returns a {Boolean} indicating whether the marker has been
@@ -160,19 +166,19 @@ module.exports =
   // undoing the invalidating operation would restore the marker. Once a marker
   // is destroyed by calling {DisplayMarker::destroy}, no undo/redo operation
   // can ever bring it back.
-  isDestroyed() {
-    return this.layer.isDestroyed() || this.bufferMarker.isDestroyed();
+  isDestroyed () {
+    return this.layer.isDestroyed() || this.bufferMarker.isDestroyed()
   }
 
   // Essential: Returns a {Boolean} indicating whether the head precedes the tail.
-  isReversed() {
-    return this.bufferMarker.isReversed();
+  isReversed () {
+    return this.bufferMarker.isReversed()
   }
 
   // Essential: Returns a {Boolean} indicating whether changes that occur exactly
   // at the marker's head or tail cause it to move.
-  isExclusive() {
-    return this.bufferMarker.isExclusive();
+  isExclusive () {
+    return this.bufferMarker.isExclusive()
   }
 
   // Essential: Get the invalidation strategy for this marker.
@@ -180,29 +186,29 @@ module.exports =
   // Valid values include: `never`, `surround`, `overlap`, `inside`, and `touch`.
   //
   // Returns a {String}.
-  getInvalidationStrategy() {
-    return this.bufferMarker.getInvalidationStrategy();
+  getInvalidationStrategy () {
+    return this.bufferMarker.getInvalidationStrategy()
   }
 
   // Essential: Returns an {Object} containing any custom properties associated with
   // the marker.
-  getProperties() {
-    return this.bufferMarker.getProperties();
+  getProperties () {
+    return this.bufferMarker.getProperties()
   }
 
   // Essential: Merges an {Object} containing new properties into the marker's
   // existing properties.
   //
   // * `properties` {Object}
-  setProperties(properties) {
-    return this.bufferMarker.setProperties(properties);
+  setProperties (properties) {
+    return this.bufferMarker.setProperties(properties)
   }
 
   // Essential: Returns whether this marker matches the given parameters. The
   // parameters are the same as {DisplayMarkerLayer::findMarkers}.
-  matchesProperties(attributes) {
-    attributes = this.layer.translateToBufferMarkerParams(attributes);
-    return this.bufferMarker.matchesParams(attributes);
+  matchesProperties (attributes) {
+    attributes = this.layer.translateToBufferMarkerParams(attributes)
+    return this.bufferMarker.matchesParams(attributes)
   }
 
   /*
@@ -214,17 +220,17 @@ module.exports =
   // * `other` {DisplayMarker}
   //
   // Returns a {Number}
-  compare(otherMarker) {
-    return this.bufferMarker.compare(otherMarker.bufferMarker);
+  compare (otherMarker) {
+    return this.bufferMarker.compare(otherMarker.bufferMarker)
   }
 
   // Essential: Returns a {Boolean} indicating whether this marker is equivalent to
   // another marker, meaning they have the same range and options.
   //
   // * `other` {DisplayMarker} other marker
-  isEqual(other) {
-    if (!(other instanceof this.constructor)) { return false; }
-    return this.bufferMarker.isEqual(other.bufferMarker);
+  isEqual (other) {
+    if (!(other instanceof this.constructor)) { return false }
+    return this.bufferMarker.isEqual(other.bufferMarker)
   }
 
   /*
@@ -234,15 +240,15 @@ module.exports =
   // Essential: Gets the buffer range of this marker.
   //
   // Returns a {Range}.
-  getBufferRange() {
-    return this.bufferMarker.getRange();
+  getBufferRange () {
+    return this.bufferMarker.getRange()
   }
 
   // Essential: Gets the screen range of this marker.
   //
   // Returns a {Range}.
-  getScreenRange() {
-    return this.layer.translateBufferRange(this.getBufferRange());
+  getScreenRange () {
+    return this.layer.translateBufferRange(this.getBufferRange())
   }
 
   // Essential: Modifies the buffer range of this marker.
@@ -250,8 +256,8 @@ module.exports =
   // * `bufferRange` The new {Range} to use
   // * `properties` (optional) {Object} properties to associate with the marker.
   //   * `reversed` {Boolean} If true, the marker will to be in a reversed orientation.
-  setBufferRange(bufferRange, properties) {
-    return this.bufferMarker.setRange(bufferRange, properties);
+  setBufferRange (bufferRange, properties) {
+    return this.bufferMarker.setRange(bufferRange, properties)
   }
 
   // Essential: Modifies the screen range of this marker.
@@ -264,22 +270,22 @@ module.exports =
   //     first valid position following an invalid position. If `'closest'`,
   //     returns the first valid position closest to an invalid position.
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
-  setScreenRange(screenRange, options) {
-    return this.setBufferRange(this.layer.translateScreenRange(screenRange, options), options);
+  setScreenRange (screenRange, options) {
+    return this.setBufferRange(this.layer.translateScreenRange(screenRange, options), options)
   }
 
   // Extended: Retrieves the buffer position of the marker's head.
   //
   // Returns a {Point}.
-  getHeadBufferPosition() {
-    return this.bufferMarker.getHeadPosition();
+  getHeadBufferPosition () {
+    return this.bufferMarker.getHeadPosition()
   }
 
   // Extended: Sets the buffer position of the marker's head.
   //
   // * `bufferPosition` The new {Point} to use
-  setHeadBufferPosition(bufferPosition) {
-    return this.bufferMarker.setHeadPosition(bufferPosition);
+  setHeadBufferPosition (bufferPosition) {
+    return this.bufferMarker.setHeadPosition(bufferPosition)
   }
 
   // Extended: Retrieves the screen position of the marker's head.
@@ -292,8 +298,8 @@ module.exports =
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
   //
   // Returns a {Point}.
-  getHeadScreenPosition(options) {
-    return this.layer.translateBufferPosition(this.bufferMarker.getHeadPosition(), options);
+  getHeadScreenPosition (options) {
+    return this.layer.translateBufferPosition(this.bufferMarker.getHeadPosition(), options)
   }
 
   // Extended: Sets the screen position of the marker's head.
@@ -305,22 +311,22 @@ module.exports =
   //     first valid position following an invalid position. If `'closest'`,
   //     returns the first valid position closest to an invalid position.
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
-  setHeadScreenPosition(screenPosition, options) {
-    return this.setHeadBufferPosition(this.layer.translateScreenPosition(screenPosition, options));
+  setHeadScreenPosition (screenPosition, options) {
+    return this.setHeadBufferPosition(this.layer.translateScreenPosition(screenPosition, options))
   }
 
   // Extended: Retrieves the buffer position of the marker's tail.
   //
   // Returns a {Point}.
-  getTailBufferPosition() {
-    return this.bufferMarker.getTailPosition();
+  getTailBufferPosition () {
+    return this.bufferMarker.getTailPosition()
   }
 
   // Extended: Sets the buffer position of the marker's tail.
   //
   // * `bufferPosition` The new {Point} to use
-  setTailBufferPosition(bufferPosition) {
-    return this.bufferMarker.setTailPosition(bufferPosition);
+  setTailBufferPosition (bufferPosition) {
+    return this.bufferMarker.setTailPosition(bufferPosition)
   }
 
   // Extended: Retrieves the screen position of the marker's tail.
@@ -333,8 +339,8 @@ module.exports =
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
   //
   // Returns a {Point}.
-  getTailScreenPosition(options) {
-    return this.layer.translateBufferPosition(this.bufferMarker.getTailPosition(), options);
+  getTailScreenPosition (options) {
+    return this.layer.translateBufferPosition(this.bufferMarker.getTailPosition(), options)
   }
 
   // Extended: Sets the screen position of the marker's tail.
@@ -346,16 +352,16 @@ module.exports =
   //     first valid position following an invalid position. If `'closest'`,
   //     returns the first valid position closest to an invalid position.
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
-  setTailScreenPosition(screenPosition, options) {
-    return this.bufferMarker.setTailPosition(this.layer.translateScreenPosition(screenPosition, options));
+  setTailScreenPosition (screenPosition, options) {
+    return this.bufferMarker.setTailPosition(this.layer.translateScreenPosition(screenPosition, options))
   }
 
   // Extended: Retrieves the buffer position of the marker's start. This will always be
   // less than or equal to the result of {DisplayMarker::getEndBufferPosition}.
   //
   // Returns a {Point}.
-  getStartBufferPosition() {
-    return this.bufferMarker.getStartPosition();
+  getStartBufferPosition () {
+    return this.bufferMarker.getStartPosition()
   }
 
   // Essential: Retrieves the screen position of the marker's start. This will always be
@@ -369,16 +375,16 @@ module.exports =
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
   //
   // Returns a {Point}.
-  getStartScreenPosition(options) {
-    return this.layer.translateBufferPosition(this.getStartBufferPosition(), options);
+  getStartScreenPosition (options) {
+    return this.layer.translateBufferPosition(this.getStartBufferPosition(), options)
   }
 
   // Extended: Retrieves the buffer position of the marker's end. This will always be
   // greater than or equal to the result of {DisplayMarker::getStartBufferPosition}.
   //
   // Returns a {Point}.
-  getEndBufferPosition() {
-    return this.bufferMarker.getEndPosition();
+  getEndBufferPosition () {
+    return this.bufferMarker.getEndPosition()
   }
 
   // Essential: Retrieves the screen position of the marker's end. This will always be
@@ -392,73 +398,77 @@ module.exports =
   //     Defaults to `'closest'`. Applies to the start and end of the given range.
   //
   // Returns a {Point}.
-  getEndScreenPosition(options) {
-    return this.layer.translateBufferPosition(this.getEndBufferPosition(), options);
+  getEndScreenPosition (options) {
+    return this.layer.translateBufferPosition(this.getEndBufferPosition(), options)
   }
 
   // Extended: Returns a {Boolean} indicating whether the marker has a tail.
-  hasTail() {
-    return this.bufferMarker.hasTail();
+  hasTail () {
+    return this.bufferMarker.hasTail()
   }
 
   // Extended: Plants the marker's tail at the current head position. After calling
   // the marker's tail position will be its head position at the time of the
   // call, regardless of where the marker's head is moved.
-  plantTail() {
-    return this.bufferMarker.plantTail();
+  plantTail () {
+    return this.bufferMarker.plantTail()
   }
 
   // Extended: Removes the marker's tail. After calling the marker's head position
   // will be reported as its current tail position until the tail is planted
   // again.
-  clearTail() {
-    return this.bufferMarker.clearTail();
+  clearTail () {
+    return this.bufferMarker.clearTail()
   }
 
-  toString() {
-    return `[Marker ${this.id}, bufferRange: ${this.getBufferRange()}, screenRange: ${this.getScreenRange()}}]`;
+  toString () {
+    return `[Marker ${this.id}, bufferRange: ${this.getBufferRange()}, screenRange: ${this.getScreenRange()}}]`
   }
 
   /*
   Section: Private
   */
 
-  inspect() {
-    return this.toString();
+  inspect () {
+    return this.toString()
   }
 
-  notifyObservers(textChanged) {
-    if (!this.hasChangeObservers) { return; }
-    if (textChanged == null) { textChanged = false; }
+  notifyObservers (textChanged) {
+    if (!this.hasChangeObservers) { return }
+    if (textChanged == null) { textChanged = false }
 
-    const newHeadBufferPosition = this.getHeadBufferPosition();
-    const newHeadScreenPosition = this.getHeadScreenPosition();
-    const newTailBufferPosition = this.getTailBufferPosition();
-    const newTailScreenPosition = this.getTailScreenPosition();
-    const isValid = this.isValid();
+    const newHeadBufferPosition = this.getHeadBufferPosition()
+    const newHeadScreenPosition = this.getHeadScreenPosition()
+    const newTailBufferPosition = this.getTailBufferPosition()
+    const newTailScreenPosition = this.getTailScreenPosition()
+    const isValid = this.isValid()
 
     if ((isValid === this.wasValid) &&
       newHeadBufferPosition.isEqual(this.oldHeadBufferPosition) &&
       newHeadScreenPosition.isEqual(this.oldHeadScreenPosition) &&
       newTailBufferPosition.isEqual(this.oldTailBufferPosition) &&
-      newTailScreenPosition.isEqual(this.oldTailScreenPosition)) { return; }
+      newTailScreenPosition.isEqual(this.oldTailScreenPosition)) { return }
 
     const changeEvent = {
-      oldHeadScreenPosition: this.oldHeadScreenPosition, newHeadScreenPosition,
-      oldTailScreenPosition: this.oldTailScreenPosition, newTailScreenPosition,
-      oldHeadBufferPosition: this.oldHeadBufferPosition, newHeadBufferPosition,
-      oldTailBufferPosition: this.oldTailBufferPosition, newTailBufferPosition,
+      oldHeadScreenPosition: this.oldHeadScreenPosition,
+      newHeadScreenPosition,
+      oldTailScreenPosition: this.oldTailScreenPosition,
+      newTailScreenPosition,
+      oldHeadBufferPosition: this.oldHeadBufferPosition,
+      newHeadBufferPosition,
+      oldTailBufferPosition: this.oldTailBufferPosition,
+      newTailBufferPosition,
       textChanged,
       wasValid: this.wasValid,
       isValid
-    };
+    }
 
-    this.oldHeadBufferPosition = newHeadBufferPosition;
-    this.oldHeadScreenPosition = newHeadScreenPosition;
-    this.oldTailBufferPosition = newTailBufferPosition;
-    this.oldTailScreenPosition = newTailScreenPosition;
-    this.wasValid = isValid;
+    this.oldHeadBufferPosition = newHeadBufferPosition
+    this.oldHeadScreenPosition = newHeadScreenPosition
+    this.oldTailBufferPosition = newTailBufferPosition
+    this.oldTailScreenPosition = newTailScreenPosition
+    this.wasValid = isValid
 
-    return this.emitter.emit('did-change', changeEvent);
+    return this.emitter.emit('did-change', changeEvent)
   }
-});
+})

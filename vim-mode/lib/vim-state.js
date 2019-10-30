@@ -1,3 +1,11 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -9,92 +17,92 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let VimState;
-const Grim  = require('grim');
-const _ = require('underscore-plus');
-const {Point, Range} = require('atom');
-const {Emitter, Disposable, CompositeDisposable} = require('event-kit');
-const settings = require('./settings');
+let VimState
+const Grim = require('grim')
+const _ = require('underscore-plus')
+const { Point, Range } = require('atom')
+const { Emitter, Disposable, CompositeDisposable } = require('event-kit')
+const settings = require('./settings')
 
-const Operators = require('./operators/index');
-const Prefixes = require('./prefixes');
-const Motions = require('./motions/index');
-const InsertMode = require('./insert-mode');
+const Operators = require('./operators/index')
+const Prefixes = require('./prefixes')
+const Motions = require('./motions/index')
+const InsertMode = require('./insert-mode')
 
-const TextObjects = require('./text-objects');
-const Utils = require('./utils');
-const Scroll = require('./scroll');
+const TextObjects = require('./text-objects')
+const Utils = require('./utils')
+const Scroll = require('./scroll')
 
 module.exports =
-(VimState = (function() {
+(VimState = (function () {
   VimState = class VimState {
-    static initClass() {
-      this.prototype.editor = null;
-      this.prototype.opStack = null;
-      this.prototype.mode = null;
-      this.prototype.submode = null;
-      this.prototype.destroyed = false;
-      this.prototype.replaceModeListener = null;
+    static initClass () {
+      this.prototype.editor = null
+      this.prototype.opStack = null
+      this.prototype.mode = null
+      this.prototype.submode = null
+      this.prototype.destroyed = false
+      this.prototype.replaceModeListener = null
     }
 
-    constructor(editorElement, statusBarManager, globalVimState) {
-      this.replaceModeInsertHandler = this.replaceModeInsertHandler.bind(this);
-      this.replaceModeUndoHandler = this.replaceModeUndoHandler.bind(this);
-      this.checkSelections = this.checkSelections.bind(this);
-      this.ensureCursorsWithinLine = this.ensureCursorsWithinLine.bind(this);
-      this.editorElement = editorElement;
-      this.statusBarManager = statusBarManager;
-      this.globalVimState = globalVimState;
-      this.emitter = new Emitter;
-      this.subscriptions = new CompositeDisposable;
-      this.editor = this.editorElement.getModel();
-      this.opStack = [];
-      this.history = [];
-      this.marks = {};
-      this.subscriptions.add(this.editor.onDidDestroy(() => this.destroy()));
+    constructor (editorElement, statusBarManager, globalVimState) {
+      this.replaceModeInsertHandler = this.replaceModeInsertHandler.bind(this)
+      this.replaceModeUndoHandler = this.replaceModeUndoHandler.bind(this)
+      this.checkSelections = this.checkSelections.bind(this)
+      this.ensureCursorsWithinLine = this.ensureCursorsWithinLine.bind(this)
+      this.editorElement = editorElement
+      this.statusBarManager = statusBarManager
+      this.globalVimState = globalVimState
+      this.emitter = new Emitter()
+      this.subscriptions = new CompositeDisposable()
+      this.editor = this.editorElement.getModel()
+      this.opStack = []
+      this.history = []
+      this.marks = {}
+      this.subscriptions.add(this.editor.onDidDestroy(() => this.destroy()))
 
-      this.editorElement.addEventListener('mouseup', this.checkSelections);
+      this.editorElement.addEventListener('mouseup', this.checkSelections)
       if (atom.commands.onDidDispatch != null) {
         this.subscriptions.add(atom.commands.onDidDispatch(e => {
           if (e.target === this.editorElement) {
-            return this.checkSelections();
+            return this.checkSelections()
           }
         })
-        );
+        )
       }
 
-      this.editorElement.classList.add("vim-mode");
-      this.setupNormalMode();
+      this.editorElement.classList.add('vim-mode')
+      this.setupNormalMode()
       if (settings.startInInsertMode()) {
-        this.activateInsertMode();
+        this.activateInsertMode()
       } else {
-        this.activateNormalMode();
+        this.activateNormalMode()
       }
     }
 
-    destroy() {
+    destroy () {
       if (!this.destroyed) {
-        this.destroyed = true;
-        this.subscriptions.dispose();
+        this.destroyed = true
+        this.subscriptions.dispose()
         if (this.editor.isAlive()) {
-          this.deactivateInsertMode();
+          this.deactivateInsertMode()
           if (this.editorElement.component != null) {
-            this.editorElement.component.setInputEnabled(true);
+            this.editorElement.component.setInputEnabled(true)
           }
-          this.editorElement.classList.remove("vim-mode");
-          this.editorElement.classList.remove("normal-mode");
+          this.editorElement.classList.remove('vim-mode')
+          this.editorElement.classList.remove('normal-mode')
         }
-        this.editorElement.removeEventListener('mouseup', this.checkSelections);
-        this.editor = null;
-        this.editorElement = null;
-        return this.emitter.emit('did-destroy');
+        this.editorElement.removeEventListener('mouseup', this.checkSelections)
+        this.editor = null
+        this.editorElement = null
+        return this.emitter.emit('did-destroy')
       }
     }
 
     // Private: Creates the plugin's bindings
     //
     // Returns nothing.
-    setupNormalMode() {
+    setupNormalMode () {
       this.registerCommands({
         'activate-normal-mode': () => this.activateNormalMode(),
         'activate-linewise-visual-mode': () => this.activateVisualMode('linewise'),
@@ -103,25 +111,25 @@ module.exports =
         'reset-normal-mode': () => this.resetNormalMode(),
         'repeat-prefix': e => this.repeatPrefix(e),
         'reverse-selections': e => this.reverseSelections(e),
-        'undo': e => this.undo(e),
+        undo: e => this.undo(e),
         'replace-mode-backspace': () => this.replaceModeUndo(),
         'insert-mode-put': e => this.insertRegister(this.registerName(e)),
         'copy-from-line-above': () => InsertMode.copyCharacterFromAbove(this.editor, this),
         'copy-from-line-below': () => InsertMode.copyCharacterFromBelow(this.editor, this)
-      });
+      })
 
       return this.registerOperationCommands({
         'activate-insert-mode': () => new Operators.Insert(this.editor, this),
         'activate-replace-mode': () => new Operators.ReplaceMode(this.editor, this),
-        'substitute': () => [new Operators.Change(this.editor, this), new Motions.MoveRight(this.editor, this)],
+        substitute: () => [new Operators.Change(this.editor, this), new Motions.MoveRight(this.editor, this)],
         'substitute-line': () => [new Operators.Change(this.editor, this), new Motions.MoveToRelativeLine(this.editor, this)],
         'insert-after': () => new Operators.InsertAfter(this.editor, this),
         'insert-after-end-of-line': () => new Operators.InsertAfterEndOfLine(this.editor, this),
         'insert-at-beginning-of-line': () => new Operators.InsertAtBeginningOfLine(this.editor, this),
         'insert-above-with-newline': () => new Operators.InsertAboveWithNewline(this.editor, this),
         'insert-below-with-newline': () => new Operators.InsertBelowWithNewline(this.editor, this),
-        'delete': () => this.linewiseAliasedOperator(Operators.Delete),
-        'change': () => this.linewiseAliasedOperator(Operators.Change),
+        delete: () => this.linewiseAliasedOperator(Operators.Delete),
+        change: () => this.linewiseAliasedOperator(Operators.Change),
         'change-to-last-character-of-line': () => [new Operators.Change(this.editor, this), new Motions.MoveToLastCharacterOfLine(this.editor, this)],
         'delete-right': () => [new Operators.Delete(this.editor, this), new Motions.MoveRight(this.editor, this)],
         'delete-left': () => [new Operators.Delete(this.editor, this), new Motions.MoveLeft(this.editor, this)],
@@ -129,17 +137,17 @@ module.exports =
         'toggle-case': () => new Operators.ToggleCase(this.editor, this),
         'upper-case': () => new Operators.UpperCase(this.editor, this),
         'lower-case': () => new Operators.LowerCase(this.editor, this),
-        'toggle-case-now': () => new Operators.ToggleCase(this.editor, this, {complete: true}),
-        'yank': () => this.linewiseAliasedOperator(Operators.Yank),
+        'toggle-case-now': () => new Operators.ToggleCase(this.editor, this, { complete: true }),
+        yank: () => this.linewiseAliasedOperator(Operators.Yank),
         'yank-line': () => [new Operators.Yank(this.editor, this), new Motions.MoveToRelativeLine(this.editor, this)],
-        'put-before': () => new Operators.Put(this.editor, this, {location: 'before'}),
-        'put-after': () => new Operators.Put(this.editor, this, {location: 'after'}),
-        'join': () => new Operators.Join(this.editor, this),
-        'indent': () => this.linewiseAliasedOperator(Operators.Indent),
-        'outdent': () => this.linewiseAliasedOperator(Operators.Outdent),
+        'put-before': () => new Operators.Put(this.editor, this, { location: 'before' }),
+        'put-after': () => new Operators.Put(this.editor, this, { location: 'after' }),
+        join: () => new Operators.Join(this.editor, this),
+        indent: () => this.linewiseAliasedOperator(Operators.Indent),
+        outdent: () => this.linewiseAliasedOperator(Operators.Outdent),
         'auto-indent': () => this.linewiseAliasedOperator(Operators.Autoindent),
-        'increase': () => new Operators.Increase(this.editor, this),
-        'decrease': () => new Operators.Decrease(this.editor, this),
+        increase: () => new Operators.Increase(this.editor, this),
+        decrease: () => new Operators.Decrease(this.editor, this),
         'move-left': () => new Motions.MoveLeft(this.editor, this),
         'move-up': () => new Motions.MoveUp(this.editor, this),
         'move-down': () => new Motions.MoveDown(this.editor, this),
@@ -169,11 +177,11 @@ module.exports =
         'scroll-down': () => new Scroll.ScrollDown(this.editorElement),
         'scroll-up': () => new Scroll.ScrollUp(this.editorElement),
         'scroll-cursor-to-top': () => new Scroll.ScrollCursorToTop(this.editorElement),
-        'scroll-cursor-to-top-leave': () => new Scroll.ScrollCursorToTop(this.editorElement, {leaveCursor: true}),
+        'scroll-cursor-to-top-leave': () => new Scroll.ScrollCursorToTop(this.editorElement, { leaveCursor: true }),
         'scroll-cursor-to-middle': () => new Scroll.ScrollCursorToMiddle(this.editorElement),
-        'scroll-cursor-to-middle-leave': () => new Scroll.ScrollCursorToMiddle(this.editorElement, {leaveCursor: true}),
+        'scroll-cursor-to-middle-leave': () => new Scroll.ScrollCursorToMiddle(this.editorElement, { leaveCursor: true }),
         'scroll-cursor-to-bottom': () => new Scroll.ScrollCursorToBottom(this.editorElement),
-        'scroll-cursor-to-bottom-leave': () => new Scroll.ScrollCursorToBottom(this.editorElement, {leaveCursor: true}),
+        'scroll-cursor-to-bottom-leave': () => new Scroll.ScrollCursorToBottom(this.editorElement, { leaveCursor: true }),
         'scroll-half-screen-up': () => new Motions.ScrollHalfUpKeepCursor(this.editorElement, this),
         'scroll-full-screen-up': () => new Motions.ScrollFullUpKeepCursor(this.editorElement, this),
         'scroll-half-screen-down': () => new Motions.ScrollHalfDownKeepCursor(this.editorElement, this),
@@ -202,25 +210,25 @@ module.exports =
         'select-around-parentheses': () => new TextObjects.SelectInsideBrackets(this.editor, '(', ')', true),
         'select-around-paragraph': () => new TextObjects.SelectAParagraph(this.editor, true),
         'register-prefix': e => this.registerPrefix(e),
-        'repeat': e => new Operators.Repeat(this.editor, this),
+        repeat: e => new Operators.Repeat(this.editor, this),
         'repeat-search': e => new Motions.RepeatSearch(this.editor, this),
         'repeat-search-backwards': e => new Motions.RepeatSearch(this.editor, this).reversed(),
         'move-to-mark': e => new Motions.MoveToMark(this.editor, this),
         'move-to-mark-literal': e => new Motions.MoveToMark(this.editor, this, false),
-        'mark': e => new Operators.Mark(this.editor, this),
-        'find': e => new Motions.Find(this.editor, this),
+        mark: e => new Operators.Mark(this.editor, this),
+        find: e => new Motions.Find(this.editor, this),
         'find-backwards': e => new Motions.Find(this.editor, this).reverse(),
-        'till': e => new Motions.Till(this.editor, this),
+        till: e => new Motions.Till(this.editor, this),
         'till-backwards': e => new Motions.Till(this.editor, this).reverse(),
-        'repeat-find': e => { if (this.globalVimState.currentFind) { return new this.globalVimState.currentFind.constructor(this.editor, this, {repeated: true}); } },
-        'repeat-find-reverse': e => { if (this.globalVimState.currentFind) { return new this.globalVimState.currentFind.constructor(this.editor, this, {repeated: true, reverse: true}); } },
-        'replace': e => new Operators.Replace(this.editor, this),
-        'search': e => new Motions.Search(this.editor, this),
+        'repeat-find': e => { if (this.globalVimState.currentFind) { return new this.globalVimState.currentFind.constructor(this.editor, this, { repeated: true }) } },
+        'repeat-find-reverse': e => { if (this.globalVimState.currentFind) { return new this.globalVimState.currentFind.constructor(this.editor, this, { repeated: true, reverse: true }) } },
+        replace: e => new Operators.Replace(this.editor, this),
+        search: e => new Motions.Search(this.editor, this),
         'reverse-search': e => (new Motions.Search(this.editor, this)).reversed(),
         'search-current-word': e => new Motions.SearchCurrentWord(this.editor, this),
         'bracket-matching-motion': e => new Motions.BracketMatchingMotion(this.editor, this),
         'reverse-search-current-word': e => (new Motions.SearchCurrentWord(this.editor, this)).reversed()
-      });
+      })
     }
 
     // Private: Register multiple command handlers via an {Object} that maps
@@ -228,17 +236,17 @@ module.exports =
     //
     // Prefixes the given command names with 'vim-mode:' to reduce redundancy in
     // the provided object.
-    registerCommands(commands) {
+    registerCommands (commands) {
       return (() => {
-        const result = [];
+        const result = []
         for (var commandName in commands) {
-          const fn = commands[commandName];
+          const fn = commands[commandName]
           result.push((fn => {
-            return this.subscriptions.add(atom.commands.add(this.editorElement, `vim-mode:${commandName}`, fn));
-          })(fn));
+            return this.subscriptions.add(atom.commands.add(this.editorElement, `vim-mode:${commandName}`, fn))
+          })(fn))
         }
-        return result;
-      })();
+        return result
+      })()
     }
 
     // Private: Register multiple Operators via an {Object} that
@@ -246,112 +254,112 @@ module.exports =
     //
     // Prefixes the given command names with 'vim-mode:' to reduce redundancy in
     // the given object.
-    registerOperationCommands(operationCommands) {
-      const commands = {};
+    registerOperationCommands (operationCommands) {
+      const commands = {}
       for (var commandName in operationCommands) {
         const operationFn = operationCommands[commandName];
         (operationFn => {
-          return commands[commandName] = event => this.pushOperations(operationFn(event));
-        })(operationFn);
+          return commands[commandName] = event => this.pushOperations(operationFn(event))
+        })(operationFn)
       }
-      return this.registerCommands(commands);
+      return this.registerCommands(commands)
     }
 
     // Private: Push the given operations onto the operation stack, then process
     // it.
-    pushOperations(operations) {
-      if (operations == null) { return; }
-      if (!_.isArray(operations)) { operations = [operations]; }
+    pushOperations (operations) {
+      if (operations == null) { return }
+      if (!_.isArray(operations)) { operations = [operations] }
 
       return (() => {
-        const result = [];
-        for (let operation of Array.from(operations)) {
+        const result = []
+        for (const operation of Array.from(operations)) {
         // Motions in visual mode perform their selections.
-          var topOp;
+          var topOp
           if ((this.mode === 'visual') && (operation instanceof Motions.Motion || operation instanceof TextObjects.TextObject)) {
-            operation.execute = operation.select;
+            operation.execute = operation.select
           }
 
           // if we have started an operation that responds to canComposeWith check if it can compose
           // with the operation we're going to push onto the stack
           if (((topOp = this.topOperation()) != null) && (topOp.canComposeWith != null) && !topOp.canComposeWith(operation)) {
-            this.resetNormalMode();
-            this.emitter.emit('failed-to-compose');
-            break;
+            this.resetNormalMode()
+            this.emitter.emit('failed-to-compose')
+            break
           }
 
-          this.opStack.push(operation);
+          this.opStack.push(operation)
 
           // If we've received an operator in visual mode, mark the current
           // selection as the motion to operate on.
           if ((this.mode === 'visual') && operation instanceof Operators.Operator) {
-            this.opStack.push(new Motions.CurrentSelection(this.editor, this));
+            this.opStack.push(new Motions.CurrentSelection(this.editor, this))
           }
 
-          result.push(this.processOpStack());
+          result.push(this.processOpStack())
         }
-        return result;
-      })();
+        return result
+      })()
     }
 
-    onDidFailToCompose(fn) {
-      return this.emitter.on('failed-to-compose', fn);
+    onDidFailToCompose (fn) {
+      return this.emitter.on('failed-to-compose', fn)
     }
 
-    onDidDestroy(fn) {
-      return this.emitter.on('did-destroy', fn);
+    onDidDestroy (fn) {
+      return this.emitter.on('did-destroy', fn)
     }
 
     // Private: Removes all operations from the stack.
     //
     // Returns nothing.
-    clearOpStack() {
-      return this.opStack = [];
+    clearOpStack () {
+      return this.opStack = []
     }
 
-    undo() {
-      this.editor.undo();
-      return this.activateNormalMode();
+    undo () {
+      this.editor.undo()
+      return this.activateNormalMode()
     }
 
     // Private: Processes the command if the last operation is complete.
     //
     // Returns nothing.
-    processOpStack() {
+    processOpStack () {
       if (!(this.opStack.length > 0)) {
-        return;
+        return
       }
 
       if (!this.topOperation().isComplete()) {
         if ((this.mode === 'normal') && this.topOperation() instanceof Operators.Operator) {
-          this.activateOperatorPendingMode();
+          this.activateOperatorPendingMode()
         }
-        return;
+        return
       }
 
-      const poppedOperation = this.opStack.pop();
+      const poppedOperation = this.opStack.pop()
       if (this.opStack.length) {
         try {
-          this.topOperation().compose(poppedOperation);
-          return this.processOpStack();
+          this.topOperation().compose(poppedOperation)
+          return this.processOpStack()
         } catch (e) {
           if ((e instanceof Operators.OperatorError) || (e instanceof Motions.MotionError)) {
-            return this.resetNormalMode();
+            return this.resetNormalMode()
           } else {
-            throw e;
+            throw e
           }
         }
       } else {
-        if (poppedOperation.isRecordable()) { this.history.unshift(poppedOperation); }
-        return poppedOperation.execute();
+        if (poppedOperation.isRecordable()) { this.history.unshift(poppedOperation) }
+        return poppedOperation.execute()
       }
     }
 
     // Private: Fetches the last operation.
     //
     // Returns the last operation.
-    topOperation() {
-      return _.last(this.opStack);
+    topOperation () {
+      return _.last(this.opStack)
     }
 
     // Private: Fetches the value of a given register.
@@ -360,25 +368,25 @@ module.exports =
     //
     // Returns the value of the given register or undefined if it hasn't
     // been set.
-    getRegister(name) {
-      let text, type;
+    getRegister (name) {
+      let text, type
       if (name === '"') {
-        name = settings.defaultRegister();
+        name = settings.defaultRegister()
       }
       if (['*', '+'].includes(name)) {
-        text = atom.clipboard.read();
-        type = Utils.copyType(text);
-        return {text, type};
+        text = atom.clipboard.read()
+        type = Utils.copyType(text)
+        return { text, type }
       } else if (name === '%') {
-        text = this.editor.getURI();
-        type = Utils.copyType(text);
-        return {text, type};
-      } else if (name === "_") { // Blackhole always returns nothing
-        text = '';
-        type = Utils.copyType(text);
-        return {text, type};
+        text = this.editor.getURI()
+        type = Utils.copyType(text)
+        return { text, type }
+      } else if (name === '_') { // Blackhole always returns nothing
+        text = ''
+        type = Utils.copyType(text)
+        return { text, type }
       } else {
-        return this.globalVimState.registers[name.toLowerCase()];
+        return this.globalVimState.registers[name.toLowerCase()]
       }
     }
 
@@ -388,11 +396,11 @@ module.exports =
     //
     // Returns the value of the given mark or undefined if it hasn't
     // been set.
-    getMark(name) {
+    getMark (name) {
       if (this.marks[name]) {
-        return this.marks[name].getBufferRange().start;
+        return this.marks[name].getBufferRange().start
       } else {
-        return undefined;
+        return undefined
       }
     }
 
@@ -402,36 +410,35 @@ module.exports =
     // value - The value to set the register to.
     //
     // Returns nothing.
-    setRegister(name, value) {
+    setRegister (name, value) {
       if (name === '"') {
-        name = settings.defaultRegister();
+        name = settings.defaultRegister()
       }
       if (['*', '+'].includes(name)) {
-        return atom.clipboard.write(value.text);
+        return atom.clipboard.write(value.text)
       } else if (name === '_') {
         // Blackhole register, nothing to do
       } else if (/^[A-Z]$/.test(name)) {
-        return this.appendRegister(name.toLowerCase(), value);
+        return this.appendRegister(name.toLowerCase(), value)
       } else {
-        return this.globalVimState.registers[name] = value;
+        return this.globalVimState.registers[name] = value
       }
     }
 
-
     // Private: append a value into a given register
     // like setRegister, but appends the value
-    appendRegister(name, value) {
+    appendRegister (name, value) {
       const register = this.globalVimState.registers[name] != null ? this.globalVimState.registers[name] : (this.globalVimState.registers[name] = {
         type: 'character',
-        text: ""
-      });
+        text: ''
+      })
       if ((register.type === 'linewise') && (value.type !== 'linewise')) {
-        return register.text += value.text + '\n';
+        return register.text += value.text + '\n'
       } else if ((register.type !== 'linewise') && (value.type === 'linewise')) {
-        register.text += '\n' + value.text;
-        return register.type = 'linewise';
+        register.text += '\n' + value.text
+        return register.type = 'linewise'
       } else {
-        return register.text += value.text;
+        return register.text += value.text
       }
     }
 
@@ -441,12 +448,12 @@ module.exports =
     // pos {Point} - The value to set the mark to.
     //
     // Returns nothing.
-    setMark(name, pos) {
+    setMark (name, pos) {
       // check to make sure name is in [a-z] or is `
-      let charCode;
+      let charCode
       if (((charCode = name.charCodeAt(0)) >= 96) && (charCode <= 122)) {
-        const marker = this.editor.markBufferRange(new Range(pos, pos), {invalidate: 'never', persistent: false});
-        return this.marks[name] = marker;
+        const marker = this.editor.markBufferRange(new Range(pos, pos), { invalidate: 'never', persistent: false })
+        return this.marks[name] = marker
       }
     }
 
@@ -455,8 +462,8 @@ module.exports =
     // Motions.Search - The confirmed search motion to append
     //
     // Returns nothing
-    pushSearchHistory(search) {
-      return this.globalVimState.searchHistory.unshift(search);
+    pushSearchHistory (search) {
+      return this.globalVimState.searchHistory.unshift(search)
     }
 
     // Public: Get the search history item at the given index.
@@ -464,132 +471,132 @@ module.exports =
     // index - the index of the search history item
     //
     // Returns a search motion
-    getSearchHistoryItem(index) {
-      if (index == null) { index = 0; }
-      return this.globalVimState.searchHistory[index];
+    getSearchHistoryItem (index) {
+      if (index == null) { index = 0 }
+      return this.globalVimState.searchHistory[index]
     }
 
-    //#############################################################################
+    // #############################################################################
     // Mode Switching
-    //#############################################################################
+    // #############################################################################
 
     // Private: Used to enable normal mode.
     //
     // Returns nothing.
-    activateNormalMode() {
-      this.deactivateInsertMode();
-      this.deactivateVisualMode();
+    activateNormalMode () {
+      this.deactivateInsertMode()
+      this.deactivateVisualMode()
 
-      this.mode = 'normal';
-      this.submode = null;
+      this.mode = 'normal'
+      this.submode = null
 
-      this.changeModeClass('normal-mode');
+      this.changeModeClass('normal-mode')
 
-      this.clearOpStack();
-      for (let selection of Array.from(this.editor.getSelections())) { selection.clear({autoscroll: false}); }
-      this.ensureCursorsWithinLine();
+      this.clearOpStack()
+      for (const selection of Array.from(this.editor.getSelections())) { selection.clear({ autoscroll: false }) }
+      this.ensureCursorsWithinLine()
 
-      return this.updateStatusBar();
+      return this.updateStatusBar()
     }
 
     // TODO: remove this method and bump the `vim-mode` service version number.
-    activateCommandMode() {
-      Grim.deprecate("Use ::activateNormalMode instead");
-      return this.activateNormalMode();
+    activateCommandMode () {
+      Grim.deprecate('Use ::activateNormalMode instead')
+      return this.activateNormalMode()
     }
 
     // Private: Used to enable insert mode.
     //
     // Returns nothing.
-    activateInsertMode(subtype = null) {
-      this.mode = 'insert';
-      this.editorElement.component.setInputEnabled(true);
-      this.setInsertionCheckpoint();
-      this.submode = subtype;
-      this.changeModeClass('insert-mode');
-      return this.updateStatusBar();
+    activateInsertMode (subtype = null) {
+      this.mode = 'insert'
+      this.editorElement.component.setInputEnabled(true)
+      this.setInsertionCheckpoint()
+      this.submode = subtype
+      this.changeModeClass('insert-mode')
+      return this.updateStatusBar()
     }
 
-    activateReplaceMode() {
-      this.activateInsertMode('replace');
-      this.replaceModeCounter = 0;
-      this.editorElement.classList.add('replace-mode');
-      this.subscriptions.add(this.replaceModeListener = this.editor.onWillInsertText(this.replaceModeInsertHandler));
-      return this.subscriptions.add(this.replaceModeUndoListener = this.editor.onDidInsertText(this.replaceModeUndoHandler));
+    activateReplaceMode () {
+      this.activateInsertMode('replace')
+      this.replaceModeCounter = 0
+      this.editorElement.classList.add('replace-mode')
+      this.subscriptions.add(this.replaceModeListener = this.editor.onWillInsertText(this.replaceModeInsertHandler))
+      return this.subscriptions.add(this.replaceModeUndoListener = this.editor.onDidInsertText(this.replaceModeUndoHandler))
     }
 
-    replaceModeInsertHandler(event) {
-      const chars = (event.text != null ? event.text.split('') : undefined) || [];
-      const selections = this.editor.getSelections();
-      for (let char of Array.from(chars)) {
-        if (char === '\n') { continue; }
-        for (let selection of Array.from(selections)) {
-          if (!selection.cursor.isAtEndOfLine()) { selection.delete(); }
+    replaceModeInsertHandler (event) {
+      const chars = (event.text != null ? event.text.split('') : undefined) || []
+      const selections = this.editor.getSelections()
+      for (const char of Array.from(chars)) {
+        if (char === '\n') { continue }
+        for (const selection of Array.from(selections)) {
+          if (!selection.cursor.isAtEndOfLine()) { selection.delete() }
         }
       }
     }
 
-    replaceModeUndoHandler(event) {
-      return this.replaceModeCounter++;
+    replaceModeUndoHandler (event) {
+      return this.replaceModeCounter++
     }
 
-    replaceModeUndo() {
+    replaceModeUndo () {
       if (this.replaceModeCounter > 0) {
-        this.editor.undo();
-        this.editor.undo();
-        this.editor.moveLeft();
-        return this.replaceModeCounter--;
+        this.editor.undo()
+        this.editor.undo()
+        this.editor.moveLeft()
+        return this.replaceModeCounter--
       }
     }
 
-    setInsertionCheckpoint() {
-      if (this.insertionCheckpoint == null) { return this.insertionCheckpoint = this.editor.createCheckpoint(); }
+    setInsertionCheckpoint () {
+      if (this.insertionCheckpoint == null) { return this.insertionCheckpoint = this.editor.createCheckpoint() }
     }
 
-    deactivateInsertMode() {
-      if (![null, 'insert'].includes(this.mode)) { return; }
-      this.editorElement.component.setInputEnabled(false);
-      this.editorElement.classList.remove('replace-mode');
-      this.editor.groupChangesSinceCheckpoint(this.insertionCheckpoint);
-      const changes = this.editor.buffer.getChangesSinceCheckpoint(this.insertionCheckpoint);
-      const item = this.inputOperator(this.history[0]);
-      this.insertionCheckpoint = null;
+    deactivateInsertMode () {
+      if (![null, 'insert'].includes(this.mode)) { return }
+      this.editorElement.component.setInputEnabled(false)
+      this.editorElement.classList.remove('replace-mode')
+      this.editor.groupChangesSinceCheckpoint(this.insertionCheckpoint)
+      const changes = this.editor.buffer.getChangesSinceCheckpoint(this.insertionCheckpoint)
+      const item = this.inputOperator(this.history[0])
+      this.insertionCheckpoint = null
       if (item != null) {
-        item.confirmChanges(changes);
+        item.confirmChanges(changes)
       }
-      for (let cursor of Array.from(this.editor.getCursors())) {
-        if (!cursor.isAtBeginningOfLine()) { cursor.moveLeft(); }
+      for (const cursor of Array.from(this.editor.getCursors())) {
+        if (!cursor.isAtBeginningOfLine()) { cursor.moveLeft() }
       }
       if (this.replaceModeListener != null) {
-        this.replaceModeListener.dispose();
-        this.subscriptions.remove(this.replaceModeListener);
-        this.replaceModeListener = null;
-        this.replaceModeUndoListener.dispose();
-        this.subscriptions.remove(this.replaceModeUndoListener);
-        return this.replaceModeUndoListener = null;
+        this.replaceModeListener.dispose()
+        this.subscriptions.remove(this.replaceModeListener)
+        this.replaceModeListener = null
+        this.replaceModeUndoListener.dispose()
+        this.subscriptions.remove(this.replaceModeUndoListener)
+        return this.replaceModeUndoListener = null
       }
     }
 
-    deactivateVisualMode() {
-      if (this.mode !== 'visual') { return; }
+    deactivateVisualMode () {
+      if (this.mode !== 'visual') { return }
       return (() => {
-        const result = [];
-        for (let selection of Array.from(this.editor.getSelections())) {
-          if (!selection.isEmpty() && !selection.isReversed()) { result.push(selection.cursor.moveLeft()); } else {
-            result.push(undefined);
+        const result = []
+        for (const selection of Array.from(this.editor.getSelections())) {
+          if (!selection.isEmpty() && !selection.isReversed()) { result.push(selection.cursor.moveLeft()) } else {
+            result.push(undefined)
           }
         }
-        return result;
-      })();
+        return result
+      })()
     }
 
     // Private: Get the input operator that needs to be told about about the
     // typed undo transaction in a recently completed operation, if there
     // is one.
-    inputOperator(item) {
-      if (item == null) { return item; }
-      if (typeof item.inputOperator === 'function' ? item.inputOperator() : undefined) { return item; }
-      if (__guardMethod__(item.composedObject, 'inputOperator', o => o.inputOperator())) { return item.composedObject; }
+    inputOperator (item) {
+      if (item == null) { return item }
+      if (typeof item.inputOperator === 'function' ? item.inputOperator() : undefined) { return item }
+      if (__guardMethod__(item.composedObject, 'inputOperator', o => o.inputOperator())) { return item.composedObject }
     }
 
     // Private: Used to enable visual mode.
@@ -597,92 +604,90 @@ module.exports =
     // type - One of 'characterwise', 'linewise' or 'blockwise'
     //
     // Returns nothing.
-    activateVisualMode(type) {
+    activateVisualMode (type) {
       // Already in 'visual', this means one of following command is
       // executed within `vim-mode.visual-mode`
       //  * activate-blockwise-visual-mode
       //  * activate-characterwise-visual-mode
       //  * activate-linewise-visual-mode
       if (this.mode === 'visual') {
-        let end, originalRange, row, selection, start;
+        let end, originalRange, row, selection, start
         if (this.submode === type) {
-          this.activateNormalMode();
-          return;
+          this.activateNormalMode()
+          return
         }
 
-        this.submode = type;
+        this.submode = type
         if (this.submode === 'linewise') {
           for (selection of Array.from(this.editor.getSelections())) {
             // Keep original range as marker's property to get back
             // to characterwise.
             // Since selectLine lost original cursor column.
-            var asc, end1;
-            originalRange = selection.getBufferRange();
-            selection.marker.setProperties({originalRange});
-            [start, end] = Array.from(selection.getBufferRowRange());
-            for (row = start, end1 = end, asc = start <= end1; asc ? row <= end1 : row >= end1; asc ? row++ : row--) { selection.selectLine(row); }
+            var asc, end1
+            originalRange = selection.getBufferRange()
+            selection.marker.setProperties({ originalRange });
+            [start, end] = Array.from(selection.getBufferRowRange())
+            for (row = start, end1 = end, asc = start <= end1; asc ? row <= end1 : row >= end1; asc ? row++ : row--) { selection.selectLine(row) }
           }
-
         } else if (['characterwise', 'blockwise'].includes(this.submode)) {
           // Currently, 'blockwise' is not yet implemented.
           // So treat it as characterwise.
           // Recover original range.
           for (selection of Array.from(this.editor.getSelections())) {
-            ({originalRange} = selection.marker.getProperties());
+            ({ originalRange } = selection.marker.getProperties())
             if (originalRange) {
-              const [startRow, endRow] = Array.from(selection.getBufferRowRange());
-              originalRange.start.row = startRow;
-              originalRange.end.row   = endRow;
-              selection.setBufferRange(originalRange);
+              const [startRow, endRow] = Array.from(selection.getBufferRowRange())
+              originalRange.start.row = startRow
+              originalRange.end.row = endRow
+              selection.setBufferRange(originalRange)
             }
           }
         }
       } else {
-        this.deactivateInsertMode();
-        this.mode = 'visual';
-        this.submode = type;
-        this.changeModeClass('visual-mode');
+        this.deactivateInsertMode()
+        this.mode = 'visual'
+        this.submode = type
+        this.changeModeClass('visual-mode')
 
         if (this.submode === 'linewise') {
-          this.editor.selectLinesContainingCursors();
+          this.editor.selectLinesContainingCursors()
         } else if (this.editor.getSelectedText() === '') {
-          this.editor.selectRight();
+          this.editor.selectRight()
         }
       }
 
-      return this.updateStatusBar();
+      return this.updateStatusBar()
     }
 
     // Private: Used to re-enable visual mode
-    resetVisualMode() {
-      return this.activateVisualMode(this.submode);
+    resetVisualMode () {
+      return this.activateVisualMode(this.submode)
     }
 
     // Private: Used to enable operator-pending mode.
-    activateOperatorPendingMode() {
-      this.deactivateInsertMode();
-      this.mode = 'operator-pending';
-      this.submode = null;
-      this.changeModeClass('operator-pending-mode');
+    activateOperatorPendingMode () {
+      this.deactivateInsertMode()
+      this.mode = 'operator-pending'
+      this.submode = null
+      this.changeModeClass('operator-pending-mode')
 
-      return this.updateStatusBar();
+      return this.updateStatusBar()
     }
 
-    changeModeClass(targetMode) {
+    changeModeClass (targetMode) {
       return ['normal-mode', 'insert-mode', 'visual-mode', 'operator-pending-mode'].map((mode) =>
-        mode === targetMode ?
-          this.editorElement.classList.add(mode)
-        :
-          this.editorElement.classList.remove(mode));
+        mode === targetMode
+          ? this.editorElement.classList.add(mode)
+          : this.editorElement.classList.remove(mode))
     }
 
     // Private: Resets the normal mode back to it's initial state.
     //
     // Returns nothing.
-    resetNormalMode() {
-      this.clearOpStack();
-      this.editor.clearSelections();
-      return this.activateNormalMode();
+    resetNormalMode () {
+      this.clearOpStack()
+      this.editor.clearSelections()
+      return this.activateNormalMode()
     }
 
     // Private: A generic way to create a Register prefix based on the event.
@@ -690,8 +695,8 @@ module.exports =
     // e - The event that triggered the Register prefix.
     //
     // Returns nothing.
-    registerPrefix(e) {
-      return new Prefixes.Register(this.registerName(e));
+    registerPrefix (e) {
+      return new Prefixes.Register(this.registerName(e))
     }
 
     // Private: Gets a register name from a keyboard event
@@ -699,13 +704,13 @@ module.exports =
     // e - The event
     //
     // Returns the name of the register
-    registerName(e) {
-      const keyboardEvent = (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) != null ? (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) : e.originalEvent;
-      let name = atom.keymaps.keystrokeForKeyboardEvent(keyboardEvent);
+    registerName (e) {
+      const keyboardEvent = (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) != null ? (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) : e.originalEvent
+      let name = atom.keymaps.keystrokeForKeyboardEvent(keyboardEvent)
       if (name.lastIndexOf('shift-', 0) === 0) {
-        name = name.slice(6);
+        name = name.slice(6)
       }
-      return name;
+      return name
     }
 
     // Private: A generic way to create a Number prefix based on the event.
@@ -713,24 +718,24 @@ module.exports =
     // e - The event that triggered the Number prefix.
     //
     // Returns nothing.
-    repeatPrefix(e) {
-      const keyboardEvent = (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) != null ? (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) : e.originalEvent;
-      const num = parseInt(atom.keymaps.keystrokeForKeyboardEvent(keyboardEvent));
+    repeatPrefix (e) {
+      const keyboardEvent = (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) != null ? (e.originalEvent != null ? e.originalEvent.originalEvent : undefined) : e.originalEvent
+      const num = parseInt(atom.keymaps.keystrokeForKeyboardEvent(keyboardEvent))
       if (this.topOperation() instanceof Prefixes.Repeat) {
-        return this.topOperation().addDigit(num);
+        return this.topOperation().addDigit(num)
       } else {
         if (num === 0) {
-          return e.abortKeyBinding();
+          return e.abortKeyBinding()
         } else {
-          return this.pushOperations(new Prefixes.Repeat(num));
+          return this.pushOperations(new Prefixes.Repeat(num))
         }
       }
     }
 
-    reverseSelections() {
-      const reversed = !this.editor.getLastSelection().isReversed();
+    reverseSelections () {
+      const reversed = !this.editor.getLastSelection().isReversed()
       return Array.from(this.editor.getSelections()).map((selection) =>
-        selection.setBufferRange(selection.getBufferRange(), {reversed}));
+        selection.setBufferRange(selection.getBufferRange(), { reversed }))
     }
 
     // Private: Figure out whether or not we are in a repeat sequence or we just
@@ -740,12 +745,12 @@ module.exports =
     // e - The triggered event.
     //
     // Returns new motion or nothing.
-    moveOrRepeat(e) {
+    moveOrRepeat (e) {
       if (this.topOperation() instanceof Prefixes.Repeat) {
-        this.repeatPrefix(e);
-        return null;
+        this.repeatPrefix(e)
+        return null
       } else {
-        return new Motions.MoveToBeginningOfLine(this.editor, this);
+        return new Motions.MoveToBeginningOfLine(this.editor, this)
       }
     }
 
@@ -755,11 +760,11 @@ module.exports =
     // constructor - The constructor of the operator.
     //
     // Returns nothing.
-    linewiseAliasedOperator(constructor) {
+    linewiseAliasedOperator (constructor) {
       if (this.isOperatorPending(constructor)) {
-        return new Motions.MoveToRelativeLine(this.editor, this);
+        return new Motions.MoveToRelativeLine(this.editor, this)
       } else {
-        return new constructor(this.editor, this);
+        return new constructor(this.editor, this)
       }
     }
 
@@ -768,19 +773,19 @@ module.exports =
     //
     // constructor - The constructor of the object type you're looking for.
     //
-    isOperatorPending(constructor) {
+    isOperatorPending (constructor) {
       if (constructor != null) {
-        for (let op of Array.from(this.opStack)) {
-          if (op instanceof constructor) { return op; }
+        for (const op of Array.from(this.opStack)) {
+          if (op instanceof constructor) { return op }
         }
-        return false;
+        return false
       } else {
-        return this.opStack.length > 0;
+        return this.opStack.length > 0
       }
     }
 
-    updateStatusBar() {
-      return this.statusBarManager.update(this.mode, this.submode);
+    updateStatusBar () {
+      return this.statusBarManager.update(this.mode, this.submode)
     }
 
     // Private: insert the contents of the register in the editor
@@ -788,46 +793,46 @@ module.exports =
     // name - the name of the register to insert
     //
     // Returns nothing.
-    insertRegister(name) {
-      const text = __guard__(this.getRegister(name), x => x.text);
-      if (text != null) { return this.editor.insertText(text); }
+    insertRegister (name) {
+      const text = __guard__(this.getRegister(name), x => x.text)
+      if (text != null) { return this.editor.insertText(text) }
     }
 
     // Private: ensure the mode follows the state of selections
-    checkSelections() {
-      if (this.editor == null) { return; }
+    checkSelections () {
+      if (this.editor == null) { return }
       if (this.editor.getSelections().every(selection => selection.isEmpty())) {
-        if (this.mode === 'normal') { this.ensureCursorsWithinLine(); }
-        if (this.mode === 'visual') { return this.activateNormalMode(); }
+        if (this.mode === 'normal') { this.ensureCursorsWithinLine() }
+        if (this.mode === 'visual') { return this.activateNormalMode() }
       } else {
-        if (this.mode === 'normal') { return this.activateVisualMode('characterwise'); }
+        if (this.mode === 'normal') { return this.activateVisualMode('characterwise') }
       }
     }
 
     // Private: ensure the cursor stays within the line as appropriate
-    ensureCursorsWithinLine() {
-      for (let cursor of Array.from(this.editor.getCursors())) {
-        const {goalColumn} = cursor;
+    ensureCursorsWithinLine () {
+      for (const cursor of Array.from(this.editor.getCursors())) {
+        const { goalColumn } = cursor
         if (cursor.isAtEndOfLine() && !cursor.isAtBeginningOfLine()) {
-          cursor.moveLeft();
+          cursor.moveLeft()
         }
-        cursor.goalColumn = goalColumn;
+        cursor.goalColumn = goalColumn
       }
 
-      return this.editor.mergeCursors();
+      return this.editor.mergeCursors()
     }
-  };
-  VimState.initClass();
-  return VimState;
-})());
+  }
+  VimState.initClass()
+  return VimState
+})())
 
-function __guardMethod__(obj, methodName, transform) {
+function __guardMethod__ (obj, methodName, transform) {
   if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
-    return transform(obj, methodName);
+    return transform(obj, methodName)
   } else {
-    return undefined;
+    return undefined
   }
 }
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

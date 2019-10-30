@@ -1,3 +1,11 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-undef,
+    no-useless-escape,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -7,10 +15,10 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const fs = require('fs');
-const path = require('path');
-const fuzzaldrin = require('fuzzaldrin');
-const emoji = require('emoji-images');
+const fs = require('fs')
+const path = require('path')
+const fuzzaldrin = require('fuzzaldrin')
+const emoji = require('emoji-images')
 
 module.exports = {
   selector: '.source.gfm, .text.md, .text.restructuredtext, .text.html, .text.slim, .text.plain, .text.git-commit, .comment, .string, .source.emojicode',
@@ -20,76 +28,76 @@ module.exports = {
   properties: {},
   keys: [],
 
-  loadProperties() {
+  loadProperties () {
     return fs.readFile(path.resolve(__dirname, '..', 'properties.json'), (error, content) => {
-      if (error) { return; }
+      if (error) { return }
 
-      this.properties = JSON.parse(content);
-      return this.keys = Object.keys(this.properties);
-    });
+      this.properties = JSON.parse(content)
+      return this.keys = Object.keys(this.properties)
+    })
   },
 
-  getSuggestions({editor, bufferPosition}) {
-    let isMarkdownEmojiOnly, replacementPrefix;
-    let prefix = this.getPrefix(editor, bufferPosition);
-    if (!((prefix != null ? prefix.length : undefined) >= 2)) { return []; }
+  getSuggestions ({ editor, bufferPosition }) {
+    let isMarkdownEmojiOnly, replacementPrefix
+    let prefix = this.getPrefix(editor, bufferPosition)
+    if (!((prefix != null ? prefix.length : undefined) >= 2)) { return [] }
 
     if (prefix.charAt(1) === ':') {
-      isMarkdownEmojiOnly = true;
-      replacementPrefix = prefix;
-      prefix = prefix.slice(1);
+      isMarkdownEmojiOnly = true
+      replacementPrefix = prefix
+      prefix = prefix.slice(1)
     }
 
-    let unicodeEmojis = [];
+    let unicodeEmojis = []
     if (atom.config.get('autocomplete-emojis.enableUnicodeEmojis') && !isMarkdownEmojiOnly) {
-      unicodeEmojis = this.getUnicodeEmojiSuggestions(prefix);
+      unicodeEmojis = this.getUnicodeEmojiSuggestions(prefix)
     }
 
-    let markdownEmojis = [];
+    let markdownEmojis = []
     if (atom.config.get('autocomplete-emojis.enableMarkdownEmojis')) {
-      markdownEmojis = this.getMarkdownEmojiSuggestions(prefix, replacementPrefix);
+      markdownEmojis = this.getMarkdownEmojiSuggestions(prefix, replacementPrefix)
     }
 
-    return unicodeEmojis.concat(markdownEmojis);
+    return unicodeEmojis.concat(markdownEmojis)
   },
 
-  getPrefix(editor, bufferPosition) {
-    const line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition]);
-    return __guard__(line.match(this.wordRegex), x => x[0]) || '';
+  getPrefix (editor, bufferPosition) {
+    const line = editor.getTextInRange([[bufferPosition.row, 0], bufferPosition])
+    return __guard__(line.match(this.wordRegex), x => x[0]) || ''
   },
 
-  getUnicodeEmojiSuggestions(prefix) {
-    const words = fuzzaldrin.filter(this.keys, prefix.slice(1));
+  getUnicodeEmojiSuggestions (prefix) {
+    const words = fuzzaldrin.filter(this.keys, prefix.slice(1))
     return Array.from(words).map((word) => (
       {
         text: this.properties[word].emoji,
         replacementPrefix: prefix,
         rightLabel: word
-      }));
+      }))
   },
 
-  getMarkdownEmojiSuggestions(prefix, replacementPrefix) {
-    const words = fuzzaldrin.filter(emoji.list, prefix);
+  getMarkdownEmojiSuggestions (prefix, replacementPrefix) {
+    const words = fuzzaldrin.filter(emoji.list, prefix)
     return (() => {
-      const result = [];
-      for (let word of Array.from(words)) {
-        let emojiImageElement = emoji(word, this.emojiFolder, 20);
+      const result = []
+      for (const word of Array.from(words)) {
+        let emojiImageElement = emoji(word, this.emojiFolder, 20)
         if (emojiImageElement.match(/src="(.*\.png)"/)) {
-          const uri = RegExp.$1;
-          emojiImageElement = emojiImageElement.replace(uri, decodeURIComponent(uri));
+          const uri = RegExp.$1
+          emojiImageElement = emojiImageElement.replace(uri, decodeURIComponent(uri))
         }
 
         result.push({
           text: word,
           replacementPrefix: replacementPrefix || prefix,
           rightLabelHTML: emojiImageElement
-        });
+        })
       }
-      return result;
-    })();
+      return result
+    })()
   }
-};
+}
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

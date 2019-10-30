@@ -1,3 +1,14 @@
+/** @babel */
+/* eslint-disable
+    constructor-super,
+    handle-callback-err,
+    no-constant-condition,
+    no-eval,
+    no-this-before-super,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS001: Remove Babel/TypeScript constructor workaround
@@ -5,13 +16,13 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let PathScanner;
-const fs = require("fs");
-const path = require("path");
-const {EventEmitter} = require("events");
-const PathFilter = require("./path-filter");
+let PathScanner
+const fs = require('fs')
+const path = require('path')
+const { EventEmitter } = require('events')
+const PathFilter = require('./path-filter')
 
-const DIR_SEP = path.sep;
+const DIR_SEP = path.sep
 
 // Public: Scans a directory and emits events when paths matching input options
 // have been found.
@@ -41,7 +52,6 @@ const DIR_SEP = path.sep;
 //
 module.exports =
 (PathScanner = class PathScanner extends EventEmitter {
-
   // Public: Create a {PathScanner} object.
   //
   // * `rootPath` {String} top level directory to scan. eg. `/Users/ben/somedir`
@@ -53,22 +63,22 @@ module.exports =
   //      directory dirname.
   //   * `exclusions` {Array} of patterns to exclude. Same matcher as inclusions.
   //   * `includeHidden` {Boolean} default false; true includes hidden files
-  constructor(rootPath, options) {
+  constructor (rootPath, options) {
     {
       // Hack: trick Babel/TypeScript into allowing this before super.
-      if (false) { super(); }
-      let thisFn = (() => { return this; }).toString();
-      let thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1];
-      eval(`${thisName} = this;`);
+      if (false) { super() }
+      const thisFn = (() => { return this }).toString()
+      const thisName = thisFn.match(/return (?:_assertThisInitialized\()*(\w+)\)*;/)[1]
+      eval(`${thisName} = this;`)
     }
-    this.rootPath = rootPath;
-    if (options == null) { options = {}; }
-    this.options = options;
-    this.asyncCallsInProgress = 0;
-    this.realPathCache = {};
-    this.rootPath = path.resolve(this.rootPath);
-    this.rootPathLength = this.rootPath.length;
-    this.pathFilter = new PathFilter(this.rootPath, this.options);
+    this.rootPath = rootPath
+    if (options == null) { options = {} }
+    this.options = options
+    this.asyncCallsInProgress = 0
+    this.realPathCache = {}
+    this.rootPath = path.resolve(this.rootPath)
+    this.rootPathLength = this.rootPath.length
+    this.pathFilter = new PathFilter(this.rootPath, this.options)
   }
 
   /*
@@ -76,85 +86,85 @@ module.exports =
   */
 
   // Public: Begin the scan
-  scan() {
-    return this.readDir(this.rootPath);
+  scan () {
+    return this.readDir(this.rootPath)
   }
 
-  readDir(filePath) {
-    this.asyncCallStarting();
+  readDir (filePath) {
+    this.asyncCallStarting()
     return fs.readdir(filePath, (err, files) => {
-      if (!files) { return this.asyncCallDone(); }
+      if (!files) { return this.asyncCallDone() }
 
-      let fileCount = files.length;
-      const prefix = filePath + DIR_SEP;
+      let fileCount = files.length
+      const prefix = filePath + DIR_SEP
       while (fileCount--) {
-        const file = files.shift();
-        const filename = prefix + file;
-        this.processFile(filename);
+        const file = files.shift()
+        const filename = prefix + file
+        this.processFile(filename)
       }
 
-      return this.asyncCallDone();
-    });
+      return this.asyncCallDone()
+    })
   }
 
-  relativize(filePath) {
-    const len = filePath.length;
-    let i = this.rootPathLength;
+  relativize (filePath) {
+    const len = filePath.length
+    let i = this.rootPathLength
     while (i < len) {
-      if (filePath[i] !== DIR_SEP) { break; }
-      i++;
+      if (filePath[i] !== DIR_SEP) { break }
+      i++
     }
 
-    return filePath.slice(i);
+    return filePath.slice(i)
   }
 
-  processFile(filePath) {
-    const relPath = this.relativize(filePath);
-    const stat = this.stat(filePath);
-    if (!stat) { return; }
+  processFile (filePath) {
+    const relPath = this.relativize(filePath)
+    const stat = this.stat(filePath)
+    if (!stat) { return }
 
     if (stat.isFile() && this.pathFilter.isFileAccepted(relPath)) {
-      return this.emit('path-found', filePath);
+      return this.emit('path-found', filePath)
     } else if (stat.isDirectory() && this.pathFilter.isDirectoryAccepted(relPath)) {
-      return this.readDir(filePath);
+      return this.readDir(filePath)
     }
   }
 
-  stat(filePath) {
+  stat (filePath) {
     // lstat is SLOW, but what other way to determine if something is a directory or file ?
     // also, sync is about 200ms faster than async...
-    let stat = fs.lstatSync(filePath);
+    let stat = fs.lstatSync(filePath)
 
     if (this.options.follow && stat.isSymbolicLink()) {
       if (this.isInternalSymlink(filePath)) {
-        return null;
+        return null
       }
       try {
-        stat = fs.statSync(filePath);
+        stat = fs.statSync(filePath)
       } catch (e) {
-        return null;
+        return null
       }
     }
 
-    return stat;
+    return stat
   }
 
-  isInternalSymlink(filePath) {
-    let realPath = null;
+  isInternalSymlink (filePath) {
+    let realPath = null
     try {
-      realPath = fs.realpathSync(filePath, this.realPathCache);
+      realPath = fs.realpathSync(filePath, this.realPathCache)
     } catch (error) {}
-       // ignore
-    return (realPath != null ? realPath.search(this.rootPath) : undefined) === 0;
+    // ignore
+    return (realPath != null ? realPath.search(this.rootPath) : undefined) === 0
   }
 
-  asyncCallStarting() {
-    return this.asyncCallsInProgress++;
+  asyncCallStarting () {
+    return this.asyncCallsInProgress++
   }
 
-  asyncCallDone() {
+  asyncCallDone () {
     if (--this.asyncCallsInProgress === 0) {
-      return this.emit('finished-scanning', this);
+      return this.emit('finished-scanning', this)
     }
   }
-});
+})

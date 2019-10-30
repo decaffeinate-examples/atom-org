@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    no-undef,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -7,37 +14,37 @@
  */
 
 // Public:
-let registerElement;
+let registerElement
 module.exports =
-(registerElement = function(elementName, elementPrototype) {
-  let tagToExtend = null;
-  let classToExtend = null;
+(registerElement = function (elementName, elementPrototype) {
+  let tagToExtend = null
+  let classToExtend = null
 
   if (typeof elementPrototype.extends === 'string') {
-    tagToExtend = elementPrototype.extends;
+    tagToExtend = elementPrototype.extends
   } else if (elementPrototype.extends != null) {
-    classToExtend = elementPrototype.extends;
+    classToExtend = elementPrototype.extends
   }
 
-  if (classToExtend == null) { classToExtend = HTMLElement; }
+  if (classToExtend == null) { classToExtend = HTMLElement }
 
-  const prototype = Object.create(classToExtend.prototype);
-  for (let key in elementPrototype) { const value = elementPrototype[key]; prototype[key] = value; }
-  const registerArgs = {prototype};
-  if (tagToExtend != null) { registerArgs.extends = tagToExtend; }
+  const prototype = Object.create(classToExtend.prototype)
+  for (const key in elementPrototype) { const value = elementPrototype[key]; prototype[key] = value }
+  const registerArgs = { prototype }
+  if (tagToExtend != null) { registerArgs.extends = tagToExtend }
 
-  const viewClass = document.registerElement(elementName, registerArgs);
+  const viewClass = document.registerElement(elementName, registerArgs)
 
   if ((elementPrototype.modelConstructor != null) && (__guard__(typeof atom !== 'undefined' && atom !== null ? atom.views : undefined, x => x.addViewProvider) != null)) {
     atom.views.addViewProvider({
       modelConstructor: elementPrototype.modelConstructor,
       viewConstructor: viewClass
-    });
+    })
   }
 
-  return viewClass;
-});
+  return viewClass
+})
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

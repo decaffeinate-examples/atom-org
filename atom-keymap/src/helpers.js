@@ -1,3 +1,11 @@
+/** @babel */
+/* eslint-disable
+    camelcase,
+    no-cond-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -7,45 +15,45 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let isKeyup;
-const {calculateSpecificity} = require('clear-cut');
-const KeyboardLayout = require('keyboard-layout');
+let isKeyup
+const { calculateSpecificity } = require('clear-cut')
+const KeyboardLayout = require('keyboard-layout')
 
-const MODIFIERS = new Set(['ctrl', 'alt', 'shift', 'cmd']);
-const ENDS_IN_MODIFIER_REGEX = /(ctrl|alt|shift|cmd)$/;
-const WHITESPACE_REGEX = /\s+/;
+const MODIFIERS = new Set(['ctrl', 'alt', 'shift', 'cmd'])
+const ENDS_IN_MODIFIER_REGEX = /(ctrl|alt|shift|cmd)$/
+const WHITESPACE_REGEX = /\s+/
 const KEY_NAMES_BY_KEYBOARD_EVENT_CODE = {
-  'Space': 'space',
-  'Backspace': 'backspace'
-};
+  Space: 'space',
+  Backspace: 'backspace'
+}
 const NON_CHARACTER_KEY_NAMES_BY_KEYBOARD_EVENT_KEY = {
-  'Control': 'ctrl',
-  'Meta': 'cmd',
-  'ArrowDown': 'down',
-  'ArrowUp': 'up',
-  'ArrowLeft': 'left',
-  'ArrowRight': 'right'
-};
+  Control: 'ctrl',
+  Meta: 'cmd',
+  ArrowDown: 'down',
+  ArrowUp: 'up',
+  ArrowLeft: 'left',
+  ArrowRight: 'right'
+}
 const NUMPAD_KEY_NAMES_BY_KEYBOARD_EVENT_CODE = {
-  'Numpad0': 'numpad0',
-  'Numpad1': 'numpad1',
-  'Numpad2': 'numpad2',
-  'Numpad3': 'numpad3',
-  'Numpad4': 'numpad4',
-  'Numpad5': 'numpad5',
-  'Numpad6': 'numpad6',
-  'Numpad7': 'numpad7',
-  'Numpad8': 'numpad8',
-  'Numpad9': 'numpad9'
-};
+  Numpad0: 'numpad0',
+  Numpad1: 'numpad1',
+  Numpad2: 'numpad2',
+  Numpad3: 'numpad3',
+  Numpad4: 'numpad4',
+  Numpad5: 'numpad5',
+  Numpad6: 'numpad6',
+  Numpad7: 'numpad7',
+  Numpad8: 'numpad8',
+  Numpad9: 'numpad9'
+}
 
-const LATIN_KEYMAP_CACHE = new WeakMap();
-const isLatinKeymap = function(keymap) {
-  if (keymap == null) { return true; }
+const LATIN_KEYMAP_CACHE = new WeakMap()
+const isLatinKeymap = function (keymap) {
+  if (keymap == null) { return true }
 
-  let isLatin = LATIN_KEYMAP_CACHE.get(keymap);
+  let isLatin = LATIN_KEYMAP_CACHE.get(keymap)
   if (isLatin != null) {
-    return isLatin;
+    return isLatin
   } else {
     // To avoid exceptions, if the native keymap does not have entries for a key,
     // assume that key is latin.
@@ -53,173 +61,173 @@ const isLatinKeymap = function(keymap) {
       ((keymap.KeyA == null) || isLatinCharacter(keymap.KeyA.unmodified)) &&
       ((keymap.KeyS == null) || isLatinCharacter(keymap.KeyS.unmodified)) &&
       ((keymap.KeyD == null) || isLatinCharacter(keymap.KeyD.unmodified)) &&
-      ((keymap.KeyF == null) || isLatinCharacter(keymap.KeyF.unmodified));
-    LATIN_KEYMAP_CACHE.set(keymap, isLatin);
-    return isLatin;
+      ((keymap.KeyF == null) || isLatinCharacter(keymap.KeyF.unmodified))
+    LATIN_KEYMAP_CACHE.set(keymap, isLatin)
+    return isLatin
   }
-};
+}
 
-const isASCIICharacter = character => (character != null) && (character.length === 1) && (character.charCodeAt(0) <= 127);
+const isASCIICharacter = character => (character != null) && (character.length === 1) && (character.charCodeAt(0) <= 127)
 
-var isLatinCharacter = character => (character != null) && (character.length === 1) && (character.charCodeAt(0) <= 0x024F);
+var isLatinCharacter = character => (character != null) && (character.length === 1) && (character.charCodeAt(0) <= 0x024F)
 
-const isUpperCaseCharacter = character => (character != null) && (character.length === 1) && (character.toLowerCase() !== character);
+const isUpperCaseCharacter = character => (character != null) && (character.length === 1) && (character.toLowerCase() !== character)
 
-const isLowerCaseCharacter = character => (character != null) && (character.length === 1) && (character.toUpperCase() !== character);
+const isLowerCaseCharacter = character => (character != null) && (character.length === 1) && (character.toUpperCase() !== character)
 
-let usKeymap = null;
-const usCharactersForKeyCode = function(code) {
-  if (usKeymap == null) { usKeymap = require('./us-keymap'); }
-  return usKeymap[code];
-};
+let usKeymap = null
+const usCharactersForKeyCode = function (code) {
+  if (usKeymap == null) { usKeymap = require('./us-keymap') }
+  return usKeymap[code]
+}
 
-let slovakCmdKeymap = null;
-let slovakQwertyCmdKeymap = null;
-const slovakCmdCharactersForKeyCode = function(code, layout) {
-  if (slovakCmdKeymap == null) { slovakCmdKeymap = require('./slovak-cmd-keymap'); }
-  if (slovakQwertyCmdKeymap == null) { slovakQwertyCmdKeymap = require('./slovak-qwerty-cmd-keymap'); }
+let slovakCmdKeymap = null
+let slovakQwertyCmdKeymap = null
+const slovakCmdCharactersForKeyCode = function (code, layout) {
+  if (slovakCmdKeymap == null) { slovakCmdKeymap = require('./slovak-cmd-keymap') }
+  if (slovakQwertyCmdKeymap == null) { slovakQwertyCmdKeymap = require('./slovak-qwerty-cmd-keymap') }
 
   if (layout === 'com.apple.keylayout.Slovak') {
-    return slovakCmdKeymap[code];
+    return slovakCmdKeymap[code]
   } else {
-    return slovakQwertyCmdKeymap[code];
+    return slovakQwertyCmdKeymap[code]
   }
-};
+}
 
-exports.normalizeKeystrokes = function(keystrokes) {
-  const normalizedKeystrokes = [];
-  for (let keystroke of Array.from(keystrokes.split(WHITESPACE_REGEX))) {
-    var normalizedKeystroke;
+exports.normalizeKeystrokes = function (keystrokes) {
+  const normalizedKeystrokes = []
+  for (const keystroke of Array.from(keystrokes.split(WHITESPACE_REGEX))) {
+    var normalizedKeystroke
     if (normalizedKeystroke = normalizeKeystroke(keystroke)) {
-      normalizedKeystrokes.push(normalizedKeystroke);
+      normalizedKeystrokes.push(normalizedKeystroke)
     } else {
-      return false;
+      return false
     }
   }
-  return normalizedKeystrokes.join(' ');
-};
+  return normalizedKeystrokes.join(' ')
+}
 
-var normalizeKeystroke = function(keystroke) {
-  let keyup;
+var normalizeKeystroke = function (keystroke) {
+  let keyup
   if (keyup = isKeyup(keystroke)) {
-    keystroke = keystroke.slice(1);
+    keystroke = keystroke.slice(1)
   }
-  const keys = parseKeystroke(keystroke);
-  if (!keys) { return false; }
+  const keys = parseKeystroke(keystroke)
+  if (!keys) { return false }
 
-  let primaryKey = null;
-  const modifiers = new Set;
+  let primaryKey = null
+  const modifiers = new Set()
 
   for (let i = 0; i < keys.length; i++) {
-    const key = keys[i];
+    const key = keys[i]
     if (MODIFIERS.has(key)) {
-      modifiers.add(key);
+      modifiers.add(key)
     } else {
       // only the last key can be a non-modifier
       if (i === (keys.length - 1)) {
-        primaryKey = key;
+        primaryKey = key
       } else {
-        return false;
+        return false
       }
     }
   }
 
   if (keyup) {
-    if (primaryKey != null) { primaryKey = primaryKey.toLowerCase(); }
+    if (primaryKey != null) { primaryKey = primaryKey.toLowerCase() }
   } else {
-    if (isUpperCaseCharacter(primaryKey)) { modifiers.add('shift'); }
+    if (isUpperCaseCharacter(primaryKey)) { modifiers.add('shift') }
     if (modifiers.has('shift') && isLowerCaseCharacter(primaryKey)) {
-      primaryKey = primaryKey.toUpperCase();
+      primaryKey = primaryKey.toUpperCase()
     }
   }
 
-  keystroke = [];
+  keystroke = []
   if (!keyup || (keyup && (primaryKey == null))) {
-    if (modifiers.has('ctrl')) { keystroke.push('ctrl'); }
-    if (modifiers.has('alt')) { keystroke.push('alt'); }
-    if (modifiers.has('shift')) { keystroke.push('shift'); }
-    if (modifiers.has('cmd')) { keystroke.push('cmd'); }
+    if (modifiers.has('ctrl')) { keystroke.push('ctrl') }
+    if (modifiers.has('alt')) { keystroke.push('alt') }
+    if (modifiers.has('shift')) { keystroke.push('shift') }
+    if (modifiers.has('cmd')) { keystroke.push('cmd') }
   }
-  if (primaryKey != null) { keystroke.push(primaryKey); }
-  keystroke = keystroke.join('-');
-  if (keyup) { keystroke = `^${keystroke}`; }
-  return keystroke;
-};
+  if (primaryKey != null) { keystroke.push(primaryKey) }
+  keystroke = keystroke.join('-')
+  if (keyup) { keystroke = `^${keystroke}` }
+  return keystroke
+}
 
-var parseKeystroke = function(keystroke) {
-  const keys = [];
-  let keyStart = 0;
+var parseKeystroke = function (keystroke) {
+  const keys = []
+  let keyStart = 0
   for (let index = 0; index < keystroke.length; index++) {
-    const character = keystroke[index];
+    const character = keystroke[index]
     if (character === '-') {
       if (index > keyStart) {
-        keys.push(keystroke.substring(keyStart, index));
-        keyStart = index + 1;
+        keys.push(keystroke.substring(keyStart, index))
+        keyStart = index + 1
 
         // The keystroke has a trailing - and is invalid
-        if (keyStart === keystroke.length) { return false; }
+        if (keyStart === keystroke.length) { return false }
       }
     }
   }
-  if (keyStart < keystroke.length) { keys.push(keystroke.substring(keyStart)); }
-  return keys;
-};
+  if (keyStart < keystroke.length) { keys.push(keystroke.substring(keyStart)) }
+  return keys
+}
 
-exports.keystrokeForKeyboardEvent = function(event, customKeystrokeResolvers) {
-  let characters;
-  let {key, code, ctrlKey, altKey, shiftKey, metaKey} = event;
+exports.keystrokeForKeyboardEvent = function (event, customKeystrokeResolvers) {
+  let characters
+  let { key, code, ctrlKey, altKey, shiftKey, metaKey } = event
 
-  const currentLayout = KeyboardLayout.getCurrentKeyboardLayout();
+  const currentLayout = KeyboardLayout.getCurrentKeyboardLayout()
 
   if (key === 'Dead') {
     if ((process.platform === 'darwin') && (characters = __guard__(KeyboardLayout.getCurrentKeymap(), x => x[event.code]))) {
       if (altKey && shiftKey && (characters.withAltGraphShift != null)) {
-        key = characters.withAltGraphShift;
+        key = characters.withAltGraphShift
       } else if (altKey && (characters.withAltGraph != null)) {
-        key = characters.withAltGraph;
+        key = characters.withAltGraph
       } else if (shiftKey && (characters.withShift != null)) {
-        key = characters.withShift;
+        key = characters.withShift
       } else if (characters.unmodified != null) {
-        key = characters.unmodified;
+        key = characters.unmodified
       }
     }
   }
 
   if ((NUMPAD_KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code] != null) && event.getModifierState('NumLock')) {
-    key = NUMPAD_KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code];
+    key = NUMPAD_KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code]
   }
 
   if (KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code] != null) {
-    key = KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code];
+    key = KEY_NAMES_BY_KEYBOARD_EVENT_CODE[code]
   }
 
   // Work around Chrome bugs on Linux
   if (process.platform === 'linux') {
     // Fix NumpadDecimal key value being '' with NumLock disabled.
     if ((code === 'NumpadDecimal') && !event.getModifierState('NumLock')) {
-      key = 'delete';
+      key = 'delete'
     }
     // Fix 'Unidentified' key value for '/' key on Brazillian keyboards
     if ((code === 'IntlRo') && (key === 'Unidentified') && ctrlKey) {
-      key = '/';
+      key = '/'
     }
   }
 
-  let isAltModifiedKey = false;
-  const isNonCharacterKey = key.length > 1;
+  let isAltModifiedKey = false
+  const isNonCharacterKey = key.length > 1
   if (isNonCharacterKey) {
-    key = NON_CHARACTER_KEY_NAMES_BY_KEYBOARD_EVENT_KEY[key] != null ? NON_CHARACTER_KEY_NAMES_BY_KEYBOARD_EVENT_KEY[key] : key.toLowerCase();
-    if ((key === "altgraph") && (process.platform === "win32")) {
-      key = "alt";
+    key = NON_CHARACTER_KEY_NAMES_BY_KEYBOARD_EVENT_KEY[key] != null ? NON_CHARACTER_KEY_NAMES_BY_KEYBOARD_EVENT_KEY[key] : key.toLowerCase()
+    if ((key === 'altgraph') && (process.platform === 'win32')) {
+      key = 'alt'
     }
   } else {
     // Deal with caps-lock issues. Key bindings should always adjust the
     // capitalization of the key based on the shiftKey state and never the state
     // of the caps-lock key
     if (shiftKey) {
-      key = key.toUpperCase();
+      key = key.toUpperCase()
     } else {
-      key = key.toLowerCase();
+      key = key.toLowerCase()
     }
 
     if (event.getModifierState('AltGraph') || ((process.platform === 'darwin') && altKey)) {
@@ -229,14 +237,14 @@ exports.keystrokeForKeyboardEvent = function(event, customKeystrokeResolvers) {
       // are rare and we bind very few by default on macOS, we will only shadow
       // an `alt-*` binding with an alt-modified character variant if it is a
       // basic ASCII character.
-      let nonAltModifiedKey;
+      let nonAltModifiedKey
       if ((process.platform === 'darwin') && event.code) {
-        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event);
+        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event)
         if (nonAltModifiedKey && (ctrlKey || metaKey || !isASCIICharacter(key))) {
-          key = nonAltModifiedKey;
+          key = nonAltModifiedKey
         } else if (key !== nonAltModifiedKey) {
-          altKey = false;
-          isAltModifiedKey = true;
+          altKey = false
+          isAltModifiedKey = true
         }
       // Windows layouts are more sparing in their use of AltGr-modified
       // characters, and the U.S. layout doesn't have any of them at all. That
@@ -245,24 +253,24 @@ exports.keystrokeForKeyboardEvent = function(event, customKeystrokeResolvers) {
       // interpret it as such rather than favoring a `ctrl-alt-*` binding
       // intepretation.
       } else if ((process.platform === 'win32') && event.code) {
-        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event);
+        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event)
         if (nonAltModifiedKey && (metaKey || !isASCIICharacter(key))) {
-          key = nonAltModifiedKey;
+          key = nonAltModifiedKey
         } else if (key !== nonAltModifiedKey) {
-          ctrlKey = false;
-          altKey = false;
-          isAltModifiedKey = true;
+          ctrlKey = false
+          altKey = false
+          isAltModifiedKey = true
         }
       // Linux has a dedicated `AltGraph` key that is distinct from all other
       // modifiers, including LeftAlt. However, if AltGraph is used in
       // combination with other modifiers, we want to treat it as a modifier and
       // fall back to the non-alt-modified character.
       } else if (process.platform === 'linux') {
-        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event);
+        nonAltModifiedKey = nonAltModifiedKeyForKeyboardEvent(event)
         if (nonAltModifiedKey && (ctrlKey || altKey || metaKey)) {
-          key = nonAltModifiedKey;
-          altKey = event.getModifierState('AltGraph');
-          isAltModifiedKey = !altKey;
+          key = nonAltModifiedKey
+          altKey = event.getModifierState('AltGraph')
+          isAltModifiedKey = !altKey
         }
       }
     }
@@ -278,22 +286,22 @@ exports.keystrokeForKeyboardEvent = function(event, customKeystrokeResolvers) {
       // or when using the dvorak-qwertycmd layout and holding down the command key.
       // if (key.length is 1 and not isLatinKeymap(KeyboardLayout.getCurrentKeymap())) or
       (() => {
-      if ((!isLatinKeymap(KeyboardLayout.getCurrentKeymap())) ||
+        if ((!isLatinKeymap(KeyboardLayout.getCurrentKeymap())) ||
          (metaKey && (currentLayout.indexOf('DVORAK-QWERTYCMD') > -1))) {
-        return usCharactersForKeyCode(event.code);
-      // As of Chromium ~62, KeyboardEvent.key is now sent in its un-shifted
-      // for writing system characters (`8` vs `*`) so we need to manually
-      // fetch the shifted version to maintain our former keystroke output
-      } else if (!isAltModifiedKey) {
-        return __guard__(KeyboardLayout.getCurrentKeymap(), x1 => x1[event.code]);
-      }
-    })();
+          return usCharactersForKeyCode(event.code)
+          // As of Chromium ~62, KeyboardEvent.key is now sent in its un-shifted
+          // for writing system characters (`8` vs `*`) so we need to manually
+          // fetch the shifted version to maintain our former keystroke output
+        } else if (!isAltModifiedKey) {
+          return __guard__(KeyboardLayout.getCurrentKeymap(), x1 => x1[event.code])
+        }
+      })()
 
     if (characters) {
       if (event.shiftKey) {
-        key = characters.withShift;
+        key = characters.withShift
       } else if (characters.unmodified != null) {
-        key = characters.unmodified;
+        key = characters.unmodified
       }
     }
   }
@@ -303,118 +311,118 @@ exports.keystrokeForKeyboardEvent = function(event, customKeystrokeResolvers) {
   if ((metaKey && (currentLayout === 'com.apple.keylayout.Slovak')) || (currentLayout === 'com.apple.keylayout.Slovak-QWERTY')) {
     if (characters = slovakCmdCharactersForKeyCode(event.code, currentLayout)) {
       if (event.shiftKey) {
-        key = characters.withShift;
+        key = characters.withShift
       } else {
-        key = characters.unmodified;
+        key = characters.unmodified
       }
     }
   }
 
-  let keystroke = '';
+  let keystroke = ''
   if ((key === 'ctrl') || (ctrlKey && (event.type !== 'keyup'))) {
-    keystroke += 'ctrl';
+    keystroke += 'ctrl'
   }
 
   if ((key === 'alt') || (altKey && (event.type !== 'keyup'))) {
-    if (keystroke.length > 0) { keystroke += '-'; }
-    keystroke += 'alt';
+    if (keystroke.length > 0) { keystroke += '-' }
+    keystroke += 'alt'
   }
 
   if ((key === 'shift') || (shiftKey && (event.type !== 'keyup') && (isNonCharacterKey || (isLatinCharacter(key) && isUpperCaseCharacter(key))))) {
-    if (keystroke) { keystroke += '-'; }
-    keystroke += 'shift';
+    if (keystroke) { keystroke += '-' }
+    keystroke += 'shift'
   }
 
   if ((key === 'cmd') || (metaKey && (event.type !== 'keyup'))) {
-    if (keystroke) { keystroke += '-'; }
-    keystroke += 'cmd';
+    if (keystroke) { keystroke += '-' }
+    keystroke += 'cmd'
   }
 
   if (!MODIFIERS.has(key)) {
-    if (keystroke) { keystroke += '-'; }
-    keystroke += key;
+    if (keystroke) { keystroke += '-' }
+    keystroke += key
   }
 
-  if (event.type === 'keyup') { keystroke = normalizeKeystroke(`^${keystroke}`); }
+  if (event.type === 'keyup') { keystroke = normalizeKeystroke(`^${keystroke}`) }
 
   if (customKeystrokeResolvers != null) {
-    for (let resolver of Array.from(customKeystrokeResolvers)) {
+    for (const resolver of Array.from(customKeystrokeResolvers)) {
       const customKeystroke = resolver({
-        keystroke, event,
+        keystroke,
+        event,
         layoutName: KeyboardLayout.getCurrentKeyboardLayout(),
         keymap: KeyboardLayout.getCurrentKeymap()
-      });
+      })
       if (customKeystroke) {
-        keystroke = normalizeKeystroke(customKeystroke);
+        keystroke = normalizeKeystroke(customKeystroke)
       }
     }
   }
 
-  return keystroke;
-};
+  return keystroke
+}
 
-var nonAltModifiedKeyForKeyboardEvent = function(event) {
-  let characters;
+var nonAltModifiedKeyForKeyboardEvent = function (event) {
+  let characters
   if (event.code && (characters = __guard__(KeyboardLayout.getCurrentKeymap(), x => x[event.code]))) {
     if (event.shiftKey) {
-      return characters.withShift;
+      return characters.withShift
     } else {
-      return characters.unmodified;
+      return characters.unmodified
     }
   }
-};
+}
 
-exports.MODIFIERS = MODIFIERS;
+exports.MODIFIERS = MODIFIERS
 
-exports.characterForKeyboardEvent = function(event) {
-  if ((event.key.length === 1) && !(event.ctrlKey || event.metaKey)) { return event.key; }
-};
+exports.characterForKeyboardEvent = function (event) {
+  if ((event.key.length === 1) && !(event.ctrlKey || event.metaKey)) { return event.key }
+}
 
-exports.calculateSpecificity = calculateSpecificity;
+exports.calculateSpecificity = calculateSpecificity
 
-exports.isBareModifier = keystroke => ENDS_IN_MODIFIER_REGEX.test(keystroke);
+exports.isBareModifier = keystroke => ENDS_IN_MODIFIER_REGEX.test(keystroke)
 
-exports.isModifierKeyup = keystroke => isKeyup(keystroke) && ENDS_IN_MODIFIER_REGEX.test(keystroke);
+exports.isModifierKeyup = keystroke => isKeyup(keystroke) && ENDS_IN_MODIFIER_REGEX.test(keystroke)
 
-exports.isKeyup = (isKeyup = keystroke => keystroke.startsWith('^') && (keystroke !== '^'));
+exports.isKeyup = (isKeyup = keystroke => keystroke.startsWith('^') && (keystroke !== '^'))
 
-exports.keydownEvent = (key, options) => buildKeyboardEvent(key, 'keydown', options);
+exports.keydownEvent = (key, options) => buildKeyboardEvent(key, 'keydown', options)
 
-exports.keyupEvent = (key, options) => buildKeyboardEvent(key, 'keyup', options);
+exports.keyupEvent = (key, options) => buildKeyboardEvent(key, 'keyup', options)
 
-exports.getModifierKeys = function(keystroke) {
-  const keys = keystroke.split('-');
-  const mod_keys = [];
-  for (let key of Array.from(keys)) {
+exports.getModifierKeys = function (keystroke) {
+  const keys = keystroke.split('-')
+  const mod_keys = []
+  for (const key of Array.from(keys)) {
     if (MODIFIERS.has(key)) {
-      mod_keys.push(key);
+      mod_keys.push(key)
     }
   }
-  return mod_keys;
-};
+  return mod_keys
+}
 
-
-var buildKeyboardEvent = function(key, eventType, param) {
-  if (param == null) { param = {}; }
-  const {ctrl, shift, alt, cmd, keyCode, target, location} = param;
-  const ctrlKey = ctrl != null ? ctrl : false;
-  const altKey = alt != null ? alt : false;
-  const shiftKey = shift != null ? shift : false;
-  const metaKey = cmd != null ? cmd : false;
-  const bubbles = true;
-  const cancelable = true;
+var buildKeyboardEvent = function (key, eventType, param) {
+  if (param == null) { param = {} }
+  const { ctrl, shift, alt, cmd, keyCode, target, location } = param
+  const ctrlKey = ctrl != null ? ctrl : false
+  const altKey = alt != null ? alt : false
+  const shiftKey = shift != null ? shift : false
+  const metaKey = cmd != null ? cmd : false
+  const bubbles = true
+  const cancelable = true
 
   const event = new KeyboardEvent(eventType, {
     key, ctrlKey, altKey, shiftKey, metaKey, bubbles, cancelable
-  });
+  })
 
   if (target != null) {
-    Object.defineProperty(event, 'target', {get() { return target; }});
-    Object.defineProperty(event, 'path', {get() { return [target]; }});
+    Object.defineProperty(event, 'target', { get () { return target } })
+    Object.defineProperty(event, 'path', { get () { return [target] } })
   }
-  return event;
-};
+  return event
+}
 
-function __guard__(value, transform) {
-  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined;
+function __guard__ (value, transform) {
+  return (typeof value !== 'undefined' && value !== null) ? transform(value) : undefined
 }

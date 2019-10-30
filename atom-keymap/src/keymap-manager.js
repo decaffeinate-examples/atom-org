@@ -1,3 +1,12 @@
+/** @babel */
+/* eslint-disable
+    no-cond-assign,
+    no-proto,
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -8,20 +17,20 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let KeymapManager;
-const CSON = require('season');
-const fs = require('fs-plus');
-const {isSelectorValid} = require('clear-cut');
-const path = require('path');
-const {File} = require('pathwatcher');
-const {Emitter, Disposable, CompositeDisposable} = require('event-kit');
-const {KeyBinding, MATCH_TYPES} = require('./key-binding');
-const CommandEvent = require('./command-event');
-const {normalizeKeystrokes, keystrokeForKeyboardEvent, isBareModifier, keydownEvent, keyupEvent, characterForKeyboardEvent, keystrokesMatch, isKeyup} = require('./helpers');
-const PartialKeyupMatcher = require('./partial-keyup-matcher');
+let KeymapManager
+const CSON = require('season')
+const fs = require('fs-plus')
+const { isSelectorValid } = require('clear-cut')
+const path = require('path')
+const { File } = require('pathwatcher')
+const { Emitter, Disposable, CompositeDisposable } = require('event-kit')
+const { KeyBinding, MATCH_TYPES } = require('./key-binding')
+const CommandEvent = require('./command-event')
+const { normalizeKeystrokes, keystrokeForKeyboardEvent, isBareModifier, keydownEvent, keyupEvent, characterForKeyboardEvent, keystrokesMatch, isKeyup } = require('./helpers')
+const PartialKeyupMatcher = require('./partial-keyup-matcher')
 
-const Platforms = ['darwin', 'freebsd', 'linux', 'sunos', 'win32'];
-const OtherPlatforms = Platforms.filter(platform => platform !== process.platform);
+const Platforms = ['darwin', 'freebsd', 'linux', 'sunos', 'win32']
+const OtherPlatforms = Platforms.filter(platform => platform !== process.platform)
 
 // Extended: Allows commands to be associated with keystrokes in a
 // context-sensitive way. In Atom, you can access a global instance of this
@@ -74,23 +83,22 @@ const OtherPlatforms = Platforms.filter(platform => platform !== process.platfor
 // replay, the next longest bindings are disabled and the keystrokes are replayed
 // again.
 module.exports =
-(KeymapManager = (function() {
+(KeymapManager = (function () {
   KeymapManager = class KeymapManager {
-    static initClass() {
-  
+    static initClass () {
       /*
       Section: Properties
       */
-  
-      this.prototype.partialMatchTimeout = 1000;
-  
-      this.prototype.defaultTarget = null;
-      this.prototype.pendingPartialMatches = null;
-      this.prototype.pendingStateTimeoutHandle = null;
-  
+
+      this.prototype.partialMatchTimeout = 1000
+
+      this.prototype.defaultTarget = null
+      this.prototype.pendingPartialMatches = null
+      this.prototype.pendingStateTimeoutHandle = null
+
       // Pending matches to bindings that begin with keydowns and end with a subset
       // of matching keyups
-      this.prototype.pendingKeyupMatcher = new PartialKeyupMatcher();
+      this.prototype.pendingKeyupMatcher = new PartialKeyupMatcher()
     }
     /*
     Section: Class Methods
@@ -108,9 +116,9 @@ module.exports =
     //   * `which`  A {Number} indicating `which` value of the event. See
     //     the docs for KeyboardEvent for more information.
     //   * `target` The target element of the event.
-    static buildKeydownEvent(key, options) { return keydownEvent(key, options); }
+    static buildKeydownEvent (key, options) { return keydownEvent(key, options) }
 
-    static buildKeyupEvent(key, options) { return keyupEvent(key, options); }
+    static buildKeyupEvent (key, options) { return keyupEvent(key, options) }
 
     /*
     Section: Construction and Destruction
@@ -123,31 +131,30 @@ module.exports =
     //   following properties are also supported:
     //   * `defaultTarget` This will be used as the target of events whose target
     //     is `document.body` to allow for a catch-all element when nothing is focused.
-    constructor(options) {
-      if (options == null) { options = {}; }
-      for (let key in options) { const value = options[key]; this[key] = value; }
-      this.watchSubscriptions = {};
-      this.customKeystrokeResolvers = [];
-      this.clear();
+    constructor (options) {
+      if (options == null) { options = {} }
+      for (const key in options) { const value = options[key]; this[key] = value }
+      this.watchSubscriptions = {}
+      this.customKeystrokeResolvers = []
+      this.clear()
     }
 
     // Public: Clear all registered key bindings and enqueued keystrokes. For use
     // in tests.
-    clear() {
-      this.emitter = new Emitter;
-      this.keyBindings = [];
-      this.queuedKeyboardEvents = [];
-      this.queuedKeystrokes = [];
-      return this.bindingsToDisable = [];
+    clear () {
+      this.emitter = new Emitter()
+      this.keyBindings = []
+      this.queuedKeyboardEvents = []
+      this.queuedKeystrokes = []
+      return this.bindingsToDisable = []
     }
 
     // Public: Unwatch all watched paths.
-    destroy() {
-      for (let filePath in this.watchSubscriptions) {
-        const subscription = this.watchSubscriptions[filePath];
-        subscription.dispose();
+    destroy () {
+      for (const filePath in this.watchSubscriptions) {
+        const subscription = this.watchSubscriptions[filePath]
+        subscription.dispose()
       }
-
     }
 
     /*
@@ -165,8 +172,8 @@ module.exports =
     //        recent keyboard event.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidMatchBinding(callback) {
-      return this.emitter.on('did-match-binding', callback);
+    onDidMatchBinding (callback) {
+      return this.emitter.on('did-match-binding', callback)
     }
 
     // Public: Invoke the given callback when one or more keystrokes partially
@@ -182,8 +189,8 @@ module.exports =
     //       recent keyboard event.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidPartiallyMatchBindings(callback) {
-      return this.emitter.on('did-partially-match-binding', callback);
+    onDidPartiallyMatchBindings (callback) {
+      return this.emitter.on('did-partially-match-binding', callback)
     }
 
     // Public: Invoke the given callback when one or more keystrokes fail to match
@@ -197,8 +204,8 @@ module.exports =
     //        recent keyboard event.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidFailToMatchBinding(callback) {
-      return this.emitter.on('did-fail-to-match-binding', callback);
+    onDidFailToMatchBinding (callback) {
+      return this.emitter.on('did-fail-to-match-binding', callback)
     }
 
     // Invoke the given callback when a keymap file is reloaded.
@@ -208,8 +215,8 @@ module.exports =
     //     * `path` {String} representing the path of the reloaded keymap file.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidReloadKeymap(callback) {
-      return this.emitter.on('did-reload-keymap', callback);
+    onDidReloadKeymap (callback) {
+      return this.emitter.on('did-reload-keymap', callback)
     }
 
     // Invoke the given callback when a keymap file is unloaded.
@@ -219,8 +226,8 @@ module.exports =
     //     * `path` {String} representing the path of the unloaded keymap file.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidUnloadKeymap(callback) {
-      return this.emitter.on('did-unload-keymap', callback);
+    onDidUnloadKeymap (callback) {
+      return this.emitter.on('did-unload-keymap', callback)
     }
 
     // Public: Invoke the given callback when a keymap file not able to be loaded.
@@ -231,8 +238,8 @@ module.exports =
     //     * `stack` {String} the error stack trace.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidFailToReadFile(callback) {
-      return this.emitter.on('did-fail-to-read-file', callback);
+    onDidFailToReadFile (callback) {
+      return this.emitter.on('did-fail-to-read-file', callback)
     }
 
     /*
@@ -247,41 +254,41 @@ module.exports =
     //   keystroke patterns to commands.
     // * `priority` A {Number} used to sort keybindings which have the same
     //   specificity. Defaults to `0`.
-    build(source, keyBindingsBySelector, priority, throwOnInvalidSelector) {
-      if (priority == null) { priority = 0; }
-      if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true; }
-      const bindings = [];
-      for (let selector in keyBindingsBySelector) {
+    build (source, keyBindingsBySelector, priority, throwOnInvalidSelector) {
+      if (priority == null) { priority = 0 }
+      if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true }
+      const bindings = []
+      for (const selector in keyBindingsBySelector) {
         // Verify selector is valid before registering any bindings
-        const keyBindings = keyBindingsBySelector[selector];
+        const keyBindings = keyBindingsBySelector[selector]
         if (throwOnInvalidSelector && !isSelectorValid(selector.replace(/!important/g, ''))) {
-          console.warn(`Encountered an invalid selector adding key bindings from '${source}': '${selector}'`);
-          continue;
+          console.warn(`Encountered an invalid selector adding key bindings from '${source}': '${selector}'`)
+          continue
         }
 
         if (typeof keyBindings !== 'object') {
-          console.warn(`Encountered an invalid key binding when adding key bindings from '${source}' '${keyBindings}'`);
-          continue;
+          console.warn(`Encountered an invalid key binding when adding key bindings from '${source}' '${keyBindings}'`)
+          continue
         }
 
-        for (let keystrokes in keyBindings) {
-          var left, normalizedKeystrokes;
-          let command = keyBindings[keystrokes];
-          command = (left = __guardMethod__(command, 'toString', o => o.toString())) != null ? left : '';
+        for (const keystrokes in keyBindings) {
+          var left, normalizedKeystrokes
+          let command = keyBindings[keystrokes]
+          command = (left = __guardMethod__(command, 'toString', o => o.toString())) != null ? left : ''
 
           if (command.length === 0) {
-            console.warn(`Empty command for binding: \`${selector}\` \`${keystrokes}\` in ${source}`);
-            continue;
+            console.warn(`Empty command for binding: \`${selector}\` \`${keystrokes}\` in ${source}`)
+            continue
           }
 
           if ((normalizedKeystrokes = normalizeKeystrokes(keystrokes))) {
-            bindings.push(new KeyBinding(source, command, normalizedKeystrokes, selector, priority));
+            bindings.push(new KeyBinding(source, command, normalizedKeystrokes, selector, priority))
           } else {
-            console.warn(`Invalid keystroke sequence for binding: \`${keystrokes}: ${command}\` in ${source}`);
+            console.warn(`Invalid keystroke sequence for binding: \`${keystrokes}: ${command}\` in ${source}`)
           }
         }
       }
-      return bindings;
+      return bindings
     }
 
     // Public: Add sets of key bindings grouped by CSS selector.
@@ -292,22 +299,22 @@ module.exports =
     //   keystroke patterns to commands.
     // * `priority` A {Number} used to sort keybindings which have the same
     //   specificity. Defaults to `0`.
-    add(source, keyBindingsBySelector, priority, throwOnInvalidSelector) {
-      if (priority == null) { priority = 0; }
-      if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true; }
-      const addedKeyBindings = this.build(source, keyBindingsBySelector, priority, throwOnInvalidSelector);
-      this.keyBindings.push(...Array.from(addedKeyBindings || []));
+    add (source, keyBindingsBySelector, priority, throwOnInvalidSelector) {
+      if (priority == null) { priority = 0 }
+      if (throwOnInvalidSelector == null) { throwOnInvalidSelector = true }
+      const addedKeyBindings = this.build(source, keyBindingsBySelector, priority, throwOnInvalidSelector)
+      this.keyBindings.push(...Array.from(addedKeyBindings || []))
       return new Disposable(() => {
-        for (let keyBinding of Array.from(addedKeyBindings)) {
-          const index = this.keyBindings.indexOf(keyBinding);
-          if (index !== -1) { this.keyBindings.splice(index, 1); }
+        for (const keyBinding of Array.from(addedKeyBindings)) {
+          const index = this.keyBindings.indexOf(keyBinding)
+          if (index !== -1) { this.keyBindings.splice(index, 1) }
         }
-      });
+      })
     }
 
-    removeBindingsFromSource(source) {
-      this.keyBindings = this.keyBindings.filter(keyBinding => keyBinding.source !== source);
-      return undefined;
+    removeBindingsFromSource (source) {
+      this.keyBindings = this.keyBindings.filter(keyBinding => keyBinding.source !== source)
+      return undefined
     }
 
     /*
@@ -317,8 +324,8 @@ module.exports =
     // Public: Get all current key bindings.
     //
     // Returns an {Array} of {KeyBinding}s.
-    getKeyBindings() {
-      return this.keyBindings.slice();
+    getKeyBindings () {
+      return this.keyBindings.slice()
     }
 
     // Public: Get the key bindings for a given command and optional target.
@@ -333,35 +340,34 @@ module.exports =
     //     can be invoked by a KeyboardEvent originating from the target element.
     //
     // Returns an {Array} of key bindings.
-    findKeyBindings(params) {
-      if (params == null) { params = {}; }
-      const {keystrokes, command, target, keyBindings} = params;
+    findKeyBindings (params) {
+      if (params == null) { params = {} }
+      const { keystrokes, command, target, keyBindings } = params
 
-      let bindings = keyBindings != null ? keyBindings : this.keyBindings;
+      let bindings = keyBindings != null ? keyBindings : this.keyBindings
 
       if (command != null) {
-        bindings = bindings.filter(binding => binding.command === command);
+        bindings = bindings.filter(binding => binding.command === command)
       }
 
       if (keystrokes != null) {
-        bindings = bindings.filter(binding => binding.keystrokes === keystrokes);
+        bindings = bindings.filter(binding => binding.keystrokes === keystrokes)
       }
 
       if (target != null) {
-        const candidateBindings = bindings;
-        bindings = [];
-        let element = target;
+        const candidateBindings = bindings
+        bindings = []
+        let element = target
         while ((element != null) && (element !== document)) {
           const matchingBindings = candidateBindings
             .filter(binding => element.webkitMatchesSelector(binding.selector))
-            .sort((a, b) => a.compare(b));
-          bindings.push(...Array.from(matchingBindings || []));
-          element = element.parentElement;
+            .sort((a, b) => a.compare(b))
+          bindings.push(...Array.from(matchingBindings || []))
+          element = element.parentElement
         }
       }
-      return bindings;
+      return bindings
     }
-
 
     /*
     Section: Managing Keymap Files
@@ -376,20 +382,20 @@ module.exports =
     //     path whenever it changes. This option cannot be used with directory paths.
     //   * `priority` A {Number} used to sort keybindings which have the same
     //     specificity.
-    loadKeymap(bindingsPath, options) {
-      const checkIfDirectory = (options != null ? options.checkIfDirectory : undefined) != null ? (options != null ? options.checkIfDirectory : undefined) : true;
+    loadKeymap (bindingsPath, options) {
+      const checkIfDirectory = (options != null ? options.checkIfDirectory : undefined) != null ? (options != null ? options.checkIfDirectory : undefined) : true
       if (checkIfDirectory && fs.isDirectorySync(bindingsPath)) {
-        for (let filePath of Array.from(fs.listSync(bindingsPath, ['.cson', '.json']))) {
+        for (const filePath of Array.from(fs.listSync(bindingsPath, ['.cson', '.json']))) {
           if (this.filePathMatchesPlatform(filePath)) {
-            this.loadKeymap(filePath, {checkIfDirectory: false});
+            this.loadKeymap(filePath, { checkIfDirectory: false })
           }
         }
       } else {
-        this.add(bindingsPath, this.readKeymap(bindingsPath, options != null ? options.suppressErrors : undefined), options != null ? options.priority : undefined);
-        if (options != null ? options.watch : undefined) { this.watchKeymap(bindingsPath, options); }
+        this.add(bindingsPath, this.readKeymap(bindingsPath, options != null ? options.suppressErrors : undefined), options != null ? options.priority : undefined)
+        if (options != null ? options.watch : undefined) { this.watchKeymap(bindingsPath, options) }
       }
 
-      return undefined;
+      return undefined
     }
 
     // Public: Cause the keymap to reload the key bindings file at the given path
@@ -403,48 +409,48 @@ module.exports =
     // * `options` An {Object} containing the following optional keys:
     //   * `priority` A {Number} used to sort keybindings which have the same
     //     specificity.
-    watchKeymap(filePath, options) {
+    watchKeymap (filePath, options) {
       if ((this.watchSubscriptions[filePath] == null) || this.watchSubscriptions[filePath].disposed) {
-        const file = new File(filePath);
-        const reloadKeymap = () => this.reloadKeymap(filePath, options);
+        const file = new File(filePath)
+        const reloadKeymap = () => this.reloadKeymap(filePath, options)
         this.watchSubscriptions[filePath] = new CompositeDisposable(
           file.onDidChange(reloadKeymap),
           file.onDidRename(reloadKeymap),
           file.onDidDelete(reloadKeymap)
-        );
+        )
       }
 
-      return undefined;
+      return undefined
     }
 
     // Called by the path watcher callback to reload a file at the given path. If
     // we can't read the file cleanly, we don't proceed with the reload.
-    reloadKeymap(filePath, options) {
+    reloadKeymap (filePath, options) {
       if (fs.isFileSync(filePath)) {
-        const bindings = this.readKeymap(filePath, true);
+        const bindings = this.readKeymap(filePath, true)
 
-        if (typeof bindings !== "undefined") {
-          this.removeBindingsFromSource(filePath);
-          this.add(filePath, bindings, options != null ? options.priority : undefined);
-          return this.emitter.emit('did-reload-keymap', {path: filePath});
+        if (typeof bindings !== 'undefined') {
+          this.removeBindingsFromSource(filePath)
+          this.add(filePath, bindings, options != null ? options.priority : undefined)
+          return this.emitter.emit('did-reload-keymap', { path: filePath })
         }
       } else {
-        this.removeBindingsFromSource(filePath);
-        return this.emitter.emit('did-unload-keymap', {path: filePath});
+        this.removeBindingsFromSource(filePath)
+        return this.emitter.emit('did-unload-keymap', { path: filePath })
       }
     }
 
-    readKeymap(filePath, suppressErrors) {
+    readKeymap (filePath, suppressErrors) {
       if (suppressErrors) {
         try {
-          return CSON.readFileSync(filePath, {allowDuplicateKeys: false});
+          return CSON.readFileSync(filePath, { allowDuplicateKeys: false })
         } catch (error) {
-          console.warn(`Failed to reload key bindings file: ${filePath}`, error.stack != null ? error.stack : error);
-          this.emitter.emit('did-fail-to-read-file', error);
-          return undefined;
+          console.warn(`Failed to reload key bindings file: ${filePath}`, error.stack != null ? error.stack : error)
+          this.emitter.emit('did-fail-to-read-file', error)
+          return undefined
         }
       } else {
-        return CSON.readFileSync(filePath, {allowDuplicateKeys: false});
+        return CSON.readFileSync(filePath, { allowDuplicateKeys: false })
       }
     }
 
@@ -452,12 +458,12 @@ module.exports =
     // filename has the pattern '<platform>.cson' or 'foo.<platform>.cson' and
     // <platform> does not match the current platform, returns false. Otherwise
     // returns true.
-    filePathMatchesPlatform(filePath) {
-      const otherPlatforms = this.getOtherPlatforms();
-      for (let component of Array.from(path.basename(filePath).split('.').slice(0, -1))) {
-        if (Array.from(otherPlatforms).includes(component)) { return false; }
+    filePathMatchesPlatform (filePath) {
+      const otherPlatforms = this.getOtherPlatforms()
+      for (const component of Array.from(path.basename(filePath).split('.').slice(0, -1))) {
+        if (Array.from(otherPlatforms).includes(component)) { return false }
       }
-      return true;
+      return true
     }
 
     /*
@@ -485,7 +491,7 @@ module.exports =
     // target is `.defaultTarget` if that property is assigned on the keymap.
     //
     // * `event` A `KeyboardEvent` of type 'keydown'
-    handleKeyboardEvent(event, param) {
+    handleKeyboardEvent (event, param) {
       // Handling keyboard events is complicated and very nuanced. The complexity
       // is all due to supporting multi-stroke bindings. An example binding we'll
       // use throughout this very long comment:
@@ -569,55 +575,55 @@ module.exports =
       // 229, which is the "composition key code". This API is deprecated, but this
       // is the most simple and reliable way we found to ignore keystrokes that are
       // part of IME compositions.
-      let binding, exactMatchCandidate;
-      if (param == null) { param = {}; }
-      const {replay, disabledBindings} = param;
+      let binding, exactMatchCandidate
+      if (param == null) { param = {} }
+      const { replay, disabledBindings } = param
       if ((event.keyCode === 229) && (event.key !== 'Dead')) {
-        return;
+        return
       }
 
       // keystroke is the atom keybind syntax, e.g. 'ctrl-a'
-      const keystroke = this.keystrokeForKeyboardEvent(event);
+      const keystroke = this.keystrokeForKeyboardEvent(event)
 
       // We dont care about bare modifier keys in the bindings. e.g. `ctrl y` isnt going to work.
       if ((event.type === 'keydown') && (this.queuedKeystrokes.length > 0) && isBareModifier(keystroke)) {
-        event.preventDefault();
-        return;
+        event.preventDefault()
+        return
       }
 
-      this.queuedKeystrokes.push(keystroke);
-      this.queuedKeyboardEvents.push(event);
-      const keystrokes = this.queuedKeystrokes.join(' ');
+      this.queuedKeystrokes.push(keystroke)
+      this.queuedKeyboardEvents.push(event)
+      const keystrokes = this.queuedKeystrokes.join(' ')
 
       // If the event's target is document.body, assign it to defaultTarget instead
       // to provide a catch-all element when nothing is focused.
       let {
         target
-      } = event;
-      if ((event.target === document.body) && (this.defaultTarget != null)) { target = this.defaultTarget; }
+      } = event
+      if ((event.target === document.body) && (this.defaultTarget != null)) { target = this.defaultTarget }
 
       // First screen for any bindings that match the current keystrokes,
       // regardless of their current selector. Matching strings is cheaper than
       // matching selectors.
-      let {partialMatchCandidates, pendingKeyupMatchCandidates, exactMatchCandidates} = this.findMatchCandidates(this.queuedKeystrokes, disabledBindings);
-      let dispatchedExactMatch = null;
-      const partialMatches = this.findPartialMatches(partialMatchCandidates, target);
+      let { partialMatchCandidates, pendingKeyupMatchCandidates, exactMatchCandidates } = this.findMatchCandidates(this.queuedKeystrokes, disabledBindings)
+      let dispatchedExactMatch = null
+      const partialMatches = this.findPartialMatches(partialMatchCandidates, target)
 
       // If any partial match *was* pending but has now failed to match, add it to
       // the list of bindings to disable so we don't attempt to match it again
       // during a subsequent event replay by `terminatePendingState`.
       if (this.pendingPartialMatches != null) {
-        const liveMatches = new Set(partialMatches.concat(exactMatchCandidates));
+        const liveMatches = new Set(partialMatches.concat(exactMatchCandidates))
         for (binding of Array.from(this.pendingPartialMatches)) {
-          if (!liveMatches.has(binding)) { this.bindingsToDisable.push(binding); }
+          if (!liveMatches.has(binding)) { this.bindingsToDisable.push(binding) }
         }
       }
 
-      const hasPartialMatches = partialMatches.length > 0;
-      let shouldUsePartialMatches = hasPartialMatches;
+      const hasPartialMatches = partialMatches.length > 0
+      let shouldUsePartialMatches = hasPartialMatches
 
       if (isKeyup(keystroke)) {
-        exactMatchCandidates = exactMatchCandidates.concat(this.pendingKeyupMatcher.getMatches(keystroke));
+        exactMatchCandidates = exactMatchCandidates.concat(this.pendingKeyupMatcher.getMatches(keystroke))
       }
 
       // Determine if the current keystrokes match any bindings *exactly*. If we
@@ -626,58 +632,58 @@ module.exports =
       // immediately. Otherwise we break and allow ourselves to enter the pending
       // state with a timeout.
       if (exactMatchCandidates.length > 0) {
-        let currentTarget = target;
-        let eventHandled = false;
+        let currentTarget = target
+        let eventHandled = false
         while (!eventHandled && (currentTarget != null) && (currentTarget !== document)) {
-          const exactMatches = this.findExactMatches(exactMatchCandidates, currentTarget);
+          const exactMatches = this.findExactMatches(exactMatchCandidates, currentTarget)
           for (exactMatchCandidate of Array.from(exactMatches)) {
             if (exactMatchCandidate.command === 'native!') {
-              shouldUsePartialMatches = false;
+              shouldUsePartialMatches = false
               // `break` breaks out of this loop, `eventHandled = true` breaks out of the parent loop
-              eventHandled = true;
-              break;
+              eventHandled = true
+              break
             }
 
             if (exactMatchCandidate.command === 'abort!') {
-              event.preventDefault();
-              eventHandled = true;
-              break;
+              event.preventDefault()
+              eventHandled = true
+              break
             }
 
             if (exactMatchCandidate.command === 'unset!') {
-              break;
+              break
             }
 
             if (hasPartialMatches) {
               // When there is a set of bindings like `'ctrl-y', 'ctrl-y ^ctrl'`,
               // and a `ctrl-y` comes in, this will allow the `ctrl-y` command to be
               // dispatched without waiting for any other keystrokes.
-              let allPartialMatchesContainKeyupRemainder = true;
-              for (let partialMatch of Array.from(partialMatches)) {
+              let allPartialMatchesContainKeyupRemainder = true
+              for (const partialMatch of Array.from(partialMatches)) {
                 if (pendingKeyupMatchCandidates.indexOf(partialMatch) < 0) {
-                  allPartialMatchesContainKeyupRemainder = false;
+                  allPartialMatchesContainKeyupRemainder = false
                   // We found one partial match with unmatched keydowns.
                   // We can stop looking.
-                  break;
+                  break
                 }
               }
               // Don't dispatch this exact match. There are partial matches left
               // that have keydowns.
-              if (allPartialMatchesContainKeyupRemainder === false) { break; }
+              if (allPartialMatchesContainKeyupRemainder === false) { break }
             } else {
-              shouldUsePartialMatches = false;
+              shouldUsePartialMatches = false
             }
 
             if (this.dispatchCommandEvent(exactMatchCandidate.command, target, event)) {
-              dispatchedExactMatch = exactMatchCandidate;
-              eventHandled = true;
-              for (let pendingKeyupMatch of Array.from(pendingKeyupMatchCandidates)) {
-                this.pendingKeyupMatcher.addPendingMatch(pendingKeyupMatch);
+              dispatchedExactMatch = exactMatchCandidate
+              eventHandled = true
+              for (const pendingKeyupMatch of Array.from(pendingKeyupMatchCandidates)) {
+                this.pendingKeyupMatcher.addPendingMatch(pendingKeyupMatch)
               }
-              break;
+              break
             }
           }
-          currentTarget = currentTarget.parentElement;
+          currentTarget = currentTarget.parentElement
         }
       }
 
@@ -689,48 +695,48 @@ module.exports =
           eventType: event.type,
           binding: dispatchedExactMatch,
           keyboardEventTarget: target
-        });
+        })
       } else if (hasPartialMatches && shouldUsePartialMatches) {
-        event.preventDefault();
+        event.preventDefault()
         this.emitter.emit('did-partially-match-binding', {
           keystrokes,
           eventType: event.type,
           partiallyMatchedBindings: partialMatches,
           keyboardEventTarget: target
-        });
+        })
       } else if ((dispatchedExactMatch == null) && !hasPartialMatches) {
         this.emitter.emit('did-fail-to-match-binding', {
           keystrokes,
           eventType: event.type,
           keyboardEventTarget: target
-        });
+        })
         // Some of the queued keyboard events might have inserted characters had
         // we not prevented their default action. If we're replaying a keystroke
         // whose default action was prevented and no binding is matched, we'll
         // simulate the text input event that was previously prevented to insert
         // the missing characters.
-        if (event.defaultPrevented && (event.type === 'keydown')) { this.simulateTextInput(event); }
+        if (event.defaultPrevented && (event.type === 'keydown')) { this.simulateTextInput(event) }
       }
 
       // Manage the keystroke queue state. State is updated separately for clarity.
 
-      if (dispatchedExactMatch) { this.bindingsToDisable.push(dispatchedExactMatch); }
+      if (dispatchedExactMatch) { this.bindingsToDisable.push(dispatchedExactMatch) }
       if (hasPartialMatches && shouldUsePartialMatches) {
         let enableTimeout = (
           (this.pendingStateTimeoutHandle != null) ||
           (exactMatchCandidate != null) ||
           (characterForKeyboardEvent(this.queuedKeyboardEvents[0]) != null)
-        );
-        if (replay) { enableTimeout = false; }
-        return this.enterPendingState(partialMatches, enableTimeout);
+        )
+        if (replay) { enableTimeout = false }
+        return this.enterPendingState(partialMatches, enableTimeout)
       } else if ((dispatchedExactMatch == null) && !hasPartialMatches && (this.pendingPartialMatches != null)) {
         // There are partial matches from a previous event, but none from this
         // event. This means the current event has removed any hope that the queued
         // key events will ever match any binding. So we will clear the state and
         // start over after replaying the events in `terminatePendingState`.
-        return this.terminatePendingState();
+        return this.terminatePendingState()
       } else {
-        return this.clearQueuedKeystrokes();
+        return this.clearQueuedKeystrokes()
       }
     }
 
@@ -739,8 +745,8 @@ module.exports =
     // * `event` A `KeyboardEvent` of type 'keydown'
     //
     // Returns a {String} describing the keystroke.
-    keystrokeForKeyboardEvent(event) {
-      return keystrokeForKeyboardEvent(event, this.customKeystrokeResolvers);
+    keystrokeForKeyboardEvent (event) {
+      return keystrokeForKeyboardEvent(event, this.customKeystrokeResolvers)
     }
 
     // Public: Customize translation of raw keyboard events to keystroke strings.
@@ -761,117 +767,117 @@ module.exports =
     //      the current operating system layout.
     //
     // Returns a {Disposable} that removes the added resolver.
-    addKeystrokeResolver(resolver) {
-      this.customKeystrokeResolvers.push(resolver);
+    addKeystrokeResolver (resolver) {
+      this.customKeystrokeResolvers.push(resolver)
       return new Disposable(() => {
-        const index = this.customKeystrokeResolvers.indexOf(resolver);
-        if (index >= 0) { return this.customKeystrokeResolvers.splice(index, 1); }
-      });
+        const index = this.customKeystrokeResolvers.indexOf(resolver)
+        if (index >= 0) { return this.customKeystrokeResolvers.splice(index, 1) }
+      })
     }
 
     // Public: Get the number of milliseconds allowed before pending states caused
     // by partial matches of multi-keystroke bindings are terminated.
     //
     // Returns a {Number}
-    getPartialMatchTimeout() {
-      return this.partialMatchTimeout;
+    getPartialMatchTimeout () {
+      return this.partialMatchTimeout
     }
 
     /*
     Section: Private
     */
 
-    simulateTextInput(keydownEvent) {
-      let character;
+    simulateTextInput (keydownEvent) {
+      let character
       if (character = characterForKeyboardEvent(keydownEvent)) {
-        const textInputEvent = document.createEvent("TextEvent");
-        textInputEvent.initTextEvent("textInput", true, true, window, character);
-        return keydownEvent.path[0].dispatchEvent(textInputEvent);
+        const textInputEvent = document.createEvent('TextEvent')
+        textInputEvent.initTextEvent('textInput', true, true, window, character)
+        return keydownEvent.path[0].dispatchEvent(textInputEvent)
       }
     }
 
     // For testing purposes
-    getOtherPlatforms() { return OtherPlatforms; }
+    getOtherPlatforms () { return OtherPlatforms }
 
     // Finds all key bindings whose keystrokes match the given keystrokes. Returns
     // both partial and exact matches.
-    findMatchCandidates(keystrokeArray, disabledBindings) {
-      const partialMatchCandidates = [];
-      const exactMatchCandidates = [];
-      const pendingKeyupMatchCandidates = [];
-      const disabledBindingSet = new Set(disabledBindings);
+    findMatchCandidates (keystrokeArray, disabledBindings) {
+      const partialMatchCandidates = []
+      const exactMatchCandidates = []
+      const pendingKeyupMatchCandidates = []
+      const disabledBindingSet = new Set(disabledBindings)
 
-      for (let binding of Array.from(this.keyBindings)) {
+      for (const binding of Array.from(this.keyBindings)) {
         if (!disabledBindingSet.has(binding)) {
-          const doesMatch = binding.matchesKeystrokes(keystrokeArray);
+          const doesMatch = binding.matchesKeystrokes(keystrokeArray)
           if (doesMatch === MATCH_TYPES.EXACT) {
-            exactMatchCandidates.push(binding);
+            exactMatchCandidates.push(binding)
           } else if (doesMatch === MATCH_TYPES.PARTIAL) {
-            partialMatchCandidates.push(binding);
+            partialMatchCandidates.push(binding)
           } else if (doesMatch === MATCH_TYPES.PENDING_KEYUP) {
-            partialMatchCandidates.push(binding);
-            pendingKeyupMatchCandidates.push(binding);
+            partialMatchCandidates.push(binding)
+            pendingKeyupMatchCandidates.push(binding)
           }
         }
       }
-      return {partialMatchCandidates, pendingKeyupMatchCandidates, exactMatchCandidates};
+      return { partialMatchCandidates, pendingKeyupMatchCandidates, exactMatchCandidates }
     }
 
     // Determine which of the given bindings have selectors matching the target or
     // one of its ancestors. This is used by {::handleKeyboardEvent} to determine
     // if there are any partial matches for the keyboard event.
-    findPartialMatches(partialMatchCandidates, target) {
-      const partialMatches = [];
-      const ignoreKeystrokes = new Set;
+    findPartialMatches (partialMatchCandidates, target) {
+      const partialMatches = []
+      const ignoreKeystrokes = new Set()
 
-      partialMatchCandidates.forEach(function(binding) {
+      partialMatchCandidates.forEach(function (binding) {
         if (binding.command === 'unset!') {
-          return ignoreKeystrokes.add(binding.keystrokes);
+          return ignoreKeystrokes.add(binding.keystrokes)
         }
-      });
+      })
 
       while ((partialMatchCandidates.length > 0) && (target != null) && (target !== document)) {
-        partialMatchCandidates = partialMatchCandidates.filter(function(binding) {
+        partialMatchCandidates = partialMatchCandidates.filter(function (binding) {
           if (!ignoreKeystrokes.has(binding.keystrokes) && target.webkitMatchesSelector(binding.selector)) {
-            partialMatches.push(binding);
-            return false;
+            partialMatches.push(binding)
+            return false
           } else {
-            return true;
+            return true
           }
-        });
-        target = target.parentElement;
+        })
+        target = target.parentElement
       }
-      return partialMatches.sort((a, b) => b.keystrokeCount - a.keystrokeCount);
+      return partialMatches.sort((a, b) => b.keystrokeCount - a.keystrokeCount)
     }
 
     // Find the matching bindings among the given candidates for the given target,
     // ordered by specificity. Does not traverse up the target's ancestors. This is
     // used by {::handleKeyboardEvent} to find a matching binding when there are no
     // partially-matching bindings.
-    findExactMatches(exactMatchCandidates, target) {
+    findExactMatches (exactMatchCandidates, target) {
       return exactMatchCandidates
         .filter(binding => target.webkitMatchesSelector(binding.selector))
-        .sort((a, b) => a.compare(b));
+        .sort((a, b) => a.compare(b))
     }
 
-    clearQueuedKeystrokes() {
-      this.queuedKeyboardEvents = [];
-      this.queuedKeystrokes = [];
-      return this.bindingsToDisable = [];
+    clearQueuedKeystrokes () {
+      this.queuedKeyboardEvents = []
+      this.queuedKeystrokes = []
+      return this.bindingsToDisable = []
     }
 
-    enterPendingState(pendingPartialMatches, enableTimeout) {
-      if (this.pendingStateTimeoutHandle != null) { this.cancelPendingState(); }
-      this.pendingPartialMatches = pendingPartialMatches;
+    enterPendingState (pendingPartialMatches, enableTimeout) {
+      if (this.pendingStateTimeoutHandle != null) { this.cancelPendingState() }
+      this.pendingPartialMatches = pendingPartialMatches
       if (enableTimeout) {
-        return this.pendingStateTimeoutHandle = setTimeout(this.terminatePendingState.bind(this, true), this.partialMatchTimeout);
+        return this.pendingStateTimeoutHandle = setTimeout(this.terminatePendingState.bind(this, true), this.partialMatchTimeout)
       }
     }
 
-    cancelPendingState() {
-      clearTimeout(this.pendingStateTimeoutHandle);
-      this.pendingStateTimeoutHandle = null;
-      return this.pendingPartialMatches = null;
+    cancelPendingState () {
+      clearTimeout(this.pendingStateTimeoutHandle)
+      this.pendingStateTimeoutHandle = null
+      return this.pendingPartialMatches = null
     }
 
     // This is called by {::handleKeyboardEvent} when no matching bindings are
@@ -886,75 +892,74 @@ module.exports =
     // potentially replay the events (or a subset of events) several times, while
     // disabling bindings here and there. See any spec that handles multiple
     // keystrokes failures to match a binding.
-    terminatePendingState(fromTimeout) {
-      let bindingsToDisable = this.pendingPartialMatches.concat(this.bindingsToDisable);
-      const eventsToReplay = this.queuedKeyboardEvents;
+    terminatePendingState (fromTimeout) {
+      let bindingsToDisable = this.pendingPartialMatches.concat(this.bindingsToDisable)
+      const eventsToReplay = this.queuedKeyboardEvents
 
-      this.cancelPendingState();
-      this.clearQueuedKeystrokes();
+      this.cancelPendingState()
+      this.clearQueuedKeystrokes()
 
       const keyEventOptions = {
         replay: true,
         disabledBindings: bindingsToDisable
-      };
+      }
 
-      for (let event of Array.from(eventsToReplay)) {
-        keyEventOptions.disabledBindings = bindingsToDisable;
-        this.handleKeyboardEvent(event, keyEventOptions);
+      for (const event of Array.from(eventsToReplay)) {
+        keyEventOptions.disabledBindings = bindingsToDisable
+        this.handleKeyboardEvent(event, keyEventOptions)
 
         // We can safely re-enable the bindings when we no longer have any partial matches
-        if ((bindingsToDisable != null) && (this.pendingPartialMatches == null)) { bindingsToDisable = null; }
+        if ((bindingsToDisable != null) && (this.pendingPartialMatches == null)) { bindingsToDisable = null }
       }
 
       if (fromTimeout && (this.pendingPartialMatches != null)) {
-        this.terminatePendingState(true);
+        this.terminatePendingState(true)
       }
-
     }
 
     // After we match a binding, we call this method to dispatch a custom event
     // based on the binding's command.
-    dispatchCommandEvent(command, target, keyboardEvent) {
+    dispatchCommandEvent (command, target, keyboardEvent) {
       // Here we use prototype chain injection to add CommandEvent methods to this
       // custom event to support aborting key bindings and simulated bubbling for
       // detached targets.
-      const commandEvent = new CustomEvent(command, {bubbles: true, cancelable: true});
-      commandEvent.__proto__ = CommandEvent.prototype;
-      commandEvent.originalEvent = keyboardEvent;
+      const commandEvent = new CustomEvent(command, { bubbles: true, cancelable: true })
+      commandEvent.__proto__ = CommandEvent.prototype
+      commandEvent.originalEvent = keyboardEvent
 
       if (document.contains(target)) {
-        target.dispatchEvent(commandEvent);
+        target.dispatchEvent(commandEvent)
       } else {
-        this.simulateBubblingOnDetachedTarget(target, commandEvent);
+        this.simulateBubblingOnDetachedTarget(target, commandEvent)
       }
 
-      const {keyBindingAborted} = commandEvent;
-      if (!keyBindingAborted) { keyboardEvent.preventDefault(); }
-      return !keyBindingAborted;
+      const { keyBindingAborted } = commandEvent
+      if (!keyBindingAborted) { keyboardEvent.preventDefault() }
+      return !keyBindingAborted
     }
 
     // Chromium does not bubble events dispatched on detached targets, which makes
     // testing a pain in the ass. This method simulates bubbling manually.
-    simulateBubblingOnDetachedTarget(target, commandEvent) {
-      Object.defineProperty(commandEvent, 'target', {get() { return target; }});
-      Object.defineProperty(commandEvent, 'currentTarget', {get() { return currentTarget; }});
-      var currentTarget = target;
+    simulateBubblingOnDetachedTarget (target, commandEvent) {
+      Object.defineProperty(commandEvent, 'target', { get () { return target } })
+      Object.defineProperty(commandEvent, 'currentTarget', { get () { return currentTarget } })
+      var currentTarget = target
       while (currentTarget != null) {
-        currentTarget.dispatchEvent(commandEvent);
-        if (commandEvent.propagationStopped) { break; }
-        if (currentTarget === window) { break; }
-        currentTarget = currentTarget.parentNode != null ? currentTarget.parentNode : window;
+        currentTarget.dispatchEvent(commandEvent)
+        if (commandEvent.propagationStopped) { break }
+        if (currentTarget === window) { break }
+        currentTarget = currentTarget.parentNode != null ? currentTarget.parentNode : window
       }
     }
-  };
-  KeymapManager.initClass();
-  return KeymapManager;
-})());
+  }
+  KeymapManager.initClass()
+  return KeymapManager
+})())
 
-function __guardMethod__(obj, methodName, transform) {
+function __guardMethod__ (obj, methodName, transform) {
   if (typeof obj !== 'undefined' && obj !== null && typeof obj[methodName] === 'function') {
-    return transform(obj, methodName);
+    return transform(obj, methodName)
   } else {
-    return undefined;
+    return undefined
   }
 }

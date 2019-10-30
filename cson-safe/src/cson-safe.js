@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
 Copyright (c) 2014, Groupon, Inc.
 All rights reserved.
@@ -30,8 +36,8 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-let CSON;
-const stringify = require('./stringify');
-const parse = require('./parse');
+let CSON
+const stringify = require('./stringify')
+const parse = require('./parse')
 
-module.exports = (CSON = { stringify, parse });
+module.exports = (CSON = { stringify, parse })

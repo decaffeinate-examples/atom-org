@@ -1,39 +1,46 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let ScrollSearch;
-const {CompositeDisposable} = require('event-kit');
+let ScrollSearch
+const { CompositeDisposable } = require('event-kit')
 module.exports =
 (ScrollSearch = class ScrollSearch {
-
-  constructor(main) {
+  constructor (main) {
     // This class defines HTML container for scrollbar markers
-    this.destroy = this.destroy.bind(this);
-    this.main = main;
-    this.domNode = document.createElement('div');
-    this.domNode.classList.add("scroll-searcher");
-    this.subscriptions = new CompositeDisposable;
+    this.destroy = this.destroy.bind(this)
+    this.main = main
+    this.domNode = document.createElement('div')
+    this.domNode.classList.add('scroll-searcher')
+    this.subscriptions = new CompositeDisposable()
     // Event subscriptions
-    this.subscriptions.add(this.main.onDidDeactivate(this.destroy.bind(this)));
-    this.subscriptions.add(this.main.onDidHide(this.hide.bind(this)));
-    this.subscriptions.add(this.main.onDidShow(this.show.bind(this)));
-  }
-  destroy() {
-    this.domNode.remove();
-    return this.subscriptions.dispose();
+    this.subscriptions.add(this.main.onDidDeactivate(this.destroy.bind(this)))
+    this.subscriptions.add(this.main.onDidHide(this.hide.bind(this)))
+    this.subscriptions.add(this.main.onDidShow(this.show.bind(this)))
   }
 
-  getElement() {
-    return this.domNode;
+  destroy () {
+    this.domNode.remove()
+    return this.subscriptions.dispose()
   }
 
-  hide() {
-    return this.domNode.style.visibility = "hidden";
+  getElement () {
+    return this.domNode
   }
 
-  show() {
-    return this.domNode.style.visibility = "visible";
+  hide () {
+    return this.domNode.style.visibility = 'hidden'
   }
-});
+
+  show () {
+    return this.domNode.style.visibility = 'visible'
+  }
+})

@@ -1,10 +1,12 @@
+/** @babel */
+// TODO: This file was created by bulk-decaffeinate.
+// Sanity-check the conversion and remove this comment.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-module.exports = function(grunt) {
-
+module.exports = function (grunt) {
   // Project configuration.
   grunt.initConfig({
 
@@ -27,7 +29,7 @@ module.exports = function(grunt) {
             value: 2,
             level: 'warn'
           },
-          'no_trailing_semicolons': {
+          no_trailing_semicolons: {
             level: 'warn'
           }
         }
@@ -37,26 +39,27 @@ module.exports = function(grunt) {
       two: ['test/fixtures/correct.coffee', 'test/fixtures/some.coffee']
     },
 
-    'bump': { options: {
-      pushTo: 'upstream'
+    bump: {
+      options: {
+        pushTo: 'upstream'
+      }
     }
-  }
-  });
+  })
 
   // Load local tasks.
-  grunt.loadTasks('tasks');
+  grunt.loadTasks('tasks')
 
-  grunt.loadNpmTasks('grunt-npm');
-  grunt.loadNpmTasks('grunt-bump');
-  grunt.loadNpmTasks('grunt-auto-release');
+  grunt.loadNpmTasks('grunt-npm')
+  grunt.loadNpmTasks('grunt-bump')
+  grunt.loadNpmTasks('grunt-auto-release')
 
   // Default task.
-  grunt.registerTask('default', 'coffeelint');
+  grunt.registerTask('default', 'coffeelint')
 
-  grunt.registerTask('test', 'coffeelint');
+  grunt.registerTask('test', 'coffeelint')
 
   return grunt.registerTask('release', 'Bump version, push to NPM.', type => grunt.task.run([
     `bump:${type || 'patch'}`,
     'npm-publish'
-  ]));
-};
+  ]))
+}

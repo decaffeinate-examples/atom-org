@@ -1,3 +1,10 @@
+/** @babel */
+/* eslint-disable
+    handle-callback-err,
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,24 +13,24 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let Directory;
-const path = require('path');
+let Directory
+const path = require('path')
 
-const async = require('async');
-const {Emitter, Disposable} = require('event-kit');
-const fs = require('fs-plus');
-const Grim = require('grim');
+const async = require('async')
+const { Emitter, Disposable } = require('event-kit')
+const fs = require('fs-plus')
+const Grim = require('grim')
 
-const File = require('./file');
-const PathWatcher = require('./main');
+const File = require('./file')
+const PathWatcher = require('./main')
 
 // Extended: Represents a directory on disk that can be watched for changes.
 module.exports =
-(Directory = (function() {
+(Directory = (function () {
   Directory = class Directory {
-    static initClass() {
-      this.prototype.realPath = null;
-      this.prototype.subscriptionCount = 0;
+    static initClass () {
+      this.prototype.realPath = null
+      this.prototype.subscriptionCount = 0
     }
 
     /*
@@ -35,32 +42,34 @@ module.exports =
     // * `directoryPath` A {String} containing the absolute path to the directory
     // * `symlink` (optional) A {Boolean} indicating if the path is a symlink.
     //   (default: false)
-    constructor(directoryPath, symlink, includeDeprecatedAPIs) {
-      this.willAddSubscription = this.willAddSubscription.bind(this);
-      this.didRemoveSubscription = this.didRemoveSubscription.bind(this);
-      if (symlink == null) { symlink = false; }
-      this.symlink = symlink;
-      if (includeDeprecatedAPIs == null) { ({
-        includeDeprecatedAPIs
-      } = Grim); }
-      this.emitter = new Emitter;
+    constructor (directoryPath, symlink, includeDeprecatedAPIs) {
+      this.willAddSubscription = this.willAddSubscription.bind(this)
+      this.didRemoveSubscription = this.didRemoveSubscription.bind(this)
+      if (symlink == null) { symlink = false }
+      this.symlink = symlink
+      if (includeDeprecatedAPIs == null) {
+        ({
+          includeDeprecatedAPIs
+        } = Grim)
+      }
+      this.emitter = new Emitter()
 
       if (includeDeprecatedAPIs) {
-        this.on('contents-changed-subscription-will-be-added', this.willAddSubscription);
-        this.on('contents-changed-subscription-removed', this.didRemoveSubscription);
+        this.on('contents-changed-subscription-will-be-added', this.willAddSubscription)
+        this.on('contents-changed-subscription-removed', this.didRemoveSubscription)
       }
 
       if (directoryPath) {
-        directoryPath = path.normalize(directoryPath);
+        directoryPath = path.normalize(directoryPath)
         // Remove a trailing slash
         if ((directoryPath.length > 1) && (directoryPath[directoryPath.length - 1] === path.sep)) {
-          directoryPath = directoryPath.substring(0, directoryPath.length - 1);
+          directoryPath = directoryPath.substring(0, directoryPath.length - 1)
         }
       }
-      this.path = directoryPath;
+      this.path = directoryPath
 
-      if (fs.isCaseInsensitive()) { this.lowerCasePath = this.path.toLowerCase(); }
-      if (Grim.includeDeprecatedAPIs) { this.reportOnDeprecations = true; }
+      if (fs.isCaseInsensitive()) { this.lowerCasePath = this.path.toLowerCase() }
+      if (Grim.includeDeprecatedAPIs) { this.reportOnDeprecations = true }
     }
 
     // Public: Creates the directory on disk that corresponds to `::getPath()` if
@@ -71,25 +80,25 @@ module.exports =
     // Returns a {Promise} that resolves once the directory is created on disk. It
     // resolves to a boolean value that is true if the directory was created or
     // false if it already existed.
-    create(mode) {
-      if (mode == null) { mode = 0o0777; }
+    create (mode) {
+      if (mode == null) { mode = 0o0777 }
       return this.exists().then(isExistingDirectory => {
-        if (isExistingDirectory) { return false; }
+        if (isExistingDirectory) { return false }
 
-        if (this.isRoot()) { throw Error(`Root directory does not exist: ${this.getPath()}`); }
+        if (this.isRoot()) { throw Error(`Root directory does not exist: ${this.getPath()}`) }
 
         return this.getParent().create().then(() => {
           return new Promise((resolve, reject) => {
-            return fs.mkdir(this.getPath(), mode, function(error) {
+            return fs.mkdir(this.getPath(), mode, function (error) {
               if (error) {
-                return reject(error);
+                return reject(error)
               } else {
-                return resolve(true);
+                return resolve(true)
               }
-            });
-          });
-        });
-      });
+            })
+          })
+        })
+      })
     }
     /*
     Section: Event Subscription
@@ -100,26 +109,26 @@ module.exports =
     // * `callback` {Function} to be called when the directory's contents change.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidChange(callback) {
-      this.willAddSubscription();
-      return this.trackUnsubscription(this.emitter.on('did-change', callback));
+    onDidChange (callback) {
+      this.willAddSubscription()
+      return this.trackUnsubscription(this.emitter.on('did-change', callback))
     }
 
-    willAddSubscription() {
-      if (this.subscriptionCount === 0) { this.subscribeToNativeChangeEvents(); }
-      return this.subscriptionCount++;
+    willAddSubscription () {
+      if (this.subscriptionCount === 0) { this.subscribeToNativeChangeEvents() }
+      return this.subscriptionCount++
     }
 
-    didRemoveSubscription() {
-      this.subscriptionCount--;
-      if (this.subscriptionCount === 0) { return this.unsubscribeFromNativeChangeEvents(); }
+    didRemoveSubscription () {
+      this.subscriptionCount--
+      if (this.subscriptionCount === 0) { return this.unsubscribeFromNativeChangeEvents() }
     }
 
-    trackUnsubscription(subscription) {
+    trackUnsubscription (subscription) {
       return new Disposable(() => {
-        subscription.dispose();
-        return this.didRemoveSubscription();
-      });
+        subscription.dispose()
+        return this.didRemoveSubscription()
+      })
     }
 
     /*
@@ -127,31 +136,31 @@ module.exports =
     */
 
     // Public: Returns a {Boolean}, always false.
-    isFile() { return false; }
+    isFile () { return false }
 
     // Public: Returns a {Boolean}, always true.
-    isDirectory() { return true; }
+    isDirectory () { return true }
 
     // Public: Returns a {Boolean} indicating whether or not this is a symbolic link
-    isSymbolicLink() {
-      return this.symlink;
+    isSymbolicLink () {
+      return this.symlink
     }
 
     // Public: Returns a promise that resolves to a {Boolean}, true if the
     // directory exists, false otherwise.
-    exists() {
-      return new Promise(resolve => fs.exists(this.getPath(), resolve));
+    exists () {
+      return new Promise(resolve => fs.exists(this.getPath(), resolve))
     }
 
     // Public: Returns a {Boolean}, true if the directory exists, false otherwise.
-    existsSync() {
-      return fs.existsSync(this.getPath());
+    existsSync () {
+      return fs.existsSync(this.getPath())
     }
 
     // Public: Return a {Boolean}, true if this {Directory} is the root directory
     // of the filesystem, or false if it isn't.
-    isRoot() {
-      return this.getParent().getRealPathSync() === this.getRealPathSync();
+    isRoot () {
+      return this.getParent().getRealPathSync() === this.getRealPathSync()
     }
 
     /*
@@ -162,67 +171,67 @@ module.exports =
     //
     // This may include unfollowed symlinks or relative directory entries. Or it
     // may be fully resolved, it depends on what you give it.
-    getPath() { return this.path; }
+    getPath () { return this.path }
 
     // Public: Returns this directory's completely resolved {String} path.
     //
     // All relative directory entries are removed and symlinks are resolved to
     // their final destination.
-    getRealPathSync() {
+    getRealPathSync () {
       if (this.realPath == null) {
         try {
-          this.realPath = fs.realpathSync(this.path);
-          if (fs.isCaseInsensitive()) { this.lowerCaseRealPath = this.realPath.toLowerCase(); }
+          this.realPath = fs.realpathSync(this.path)
+          if (fs.isCaseInsensitive()) { this.lowerCaseRealPath = this.realPath.toLowerCase() }
         } catch (e) {
-          this.realPath = this.path;
-          if (fs.isCaseInsensitive()) { this.lowerCaseRealPath = this.lowerCasePath; }
+          this.realPath = this.path
+          if (fs.isCaseInsensitive()) { this.lowerCaseRealPath = this.lowerCasePath }
         }
       }
-      return this.realPath;
+      return this.realPath
     }
 
     // Public: Returns the {String} basename of the directory.
-    getBaseName() {
-      return path.basename(this.path);
+    getBaseName () {
+      return path.basename(this.path)
     }
 
     // Public: Returns the relative {String} path to the given path from this
     // directory.
-    relativize(fullPath) {
-      let directoryPath, pathToCheck;
-      if (!fullPath) { return fullPath; }
+    relativize (fullPath) {
+      let directoryPath, pathToCheck
+      if (!fullPath) { return fullPath }
 
       // Normalize forward slashes to back slashes on windows
-      if (process.platform === 'win32') { fullPath = fullPath.replace(/\//g, '\\'); }
+      if (process.platform === 'win32') { fullPath = fullPath.replace(/\//g, '\\') }
 
       if (fs.isCaseInsensitive()) {
-        pathToCheck = fullPath.toLowerCase();
-        directoryPath = this.lowerCasePath;
+        pathToCheck = fullPath.toLowerCase()
+        directoryPath = this.lowerCasePath
       } else {
-        pathToCheck = fullPath;
-        directoryPath = this.path;
+        pathToCheck = fullPath
+        directoryPath = this.path
       }
 
       if (pathToCheck === directoryPath) {
-        return '';
+        return ''
       } else if (this.isPathPrefixOf(directoryPath, pathToCheck)) {
-        return fullPath.substring(directoryPath.length + 1);
+        return fullPath.substring(directoryPath.length + 1)
       }
 
       // Check real path
-      this.getRealPathSync();
+      this.getRealPathSync()
       if (fs.isCaseInsensitive()) {
-        directoryPath = this.lowerCaseRealPath;
+        directoryPath = this.lowerCaseRealPath
       } else {
-        directoryPath = this.realPath;
+        directoryPath = this.realPath
       }
 
       if (pathToCheck === directoryPath) {
-        return '';
+        return ''
       } else if (this.isPathPrefixOf(directoryPath, pathToCheck)) {
-        return fullPath.substring(directoryPath.length + 1);
+        return fullPath.substring(directoryPath.length + 1)
       } else {
-        return fullPath;
+        return fullPath
       }
     }
 
@@ -234,15 +243,15 @@ module.exports =
     //
     // Returns a {String} containing an absolute path or `undefined` if the given
     // URI is falsy.
-    resolve(relativePath) {
-      if (!relativePath) { return; }
+    resolve (relativePath) {
+      if (!relativePath) { return }
 
       if ((relativePath != null ? relativePath.match(/[A-Za-z0-9+-.]+:\/\//) : undefined)) { // leave path alone if it has a scheme
-        return relativePath;
+        return relativePath
       } else if (fs.isAbsolute(relativePath)) {
-        return path.normalize(fs.resolveHome(relativePath));
+        return path.normalize(fs.resolveHome(relativePath))
       } else {
-        return path.normalize(fs.resolveHome(path.join(this.getPath(), relativePath)));
+        return path.normalize(fs.resolveHome(path.join(this.getPath(), relativePath)))
       }
     }
 
@@ -253,8 +262,8 @@ module.exports =
     // Public: Traverse to the parent directory.
     //
     // Returns a {Directory}.
-    getParent() {
-      return new Directory(path.join(this.path, '..'));
+    getParent () {
+      return new Directory(path.join(this.path, '..'))
     }
 
     // Public: Traverse within this Directory to a child File. This method doesn't
@@ -263,8 +272,8 @@ module.exports =
     // * `filename` The {String} name of a File within this Directory.
     //
     // Returns a {File}.
-    getFile(...filename) {
-      return new File(path.join(this.getPath(), ...Array.from(filename)));
+    getFile (...filename) {
+      return new File(path.join(this.getPath(), ...Array.from(filename)))
     }
 
     // Public: Traverse within this a Directory to a child Directory. This method
@@ -274,32 +283,32 @@ module.exports =
     // * `dirname` The {String} name of the child Directory.
     //
     // Returns a {Directory}.
-    getSubdirectory(...dirname) {
-      return new Directory(path.join(this.path, ...Array.from(dirname)));
+    getSubdirectory (...dirname) {
+      return new Directory(path.join(this.path, ...Array.from(dirname)))
     }
 
     // Public: Reads file entries in this directory from disk synchronously.
     //
     // Returns an {Array} of {File} and {Directory} objects.
-    getEntriesSync() {
-      const directories = [];
-      const files = [];
-      for (let entryPath of Array.from(fs.listSync(this.path))) {
-        var stat, symlink;
+    getEntriesSync () {
+      const directories = []
+      const files = []
+      for (const entryPath of Array.from(fs.listSync(this.path))) {
+        var stat, symlink
         try {
-          stat = fs.lstatSync(entryPath);
-          symlink = stat.isSymbolicLink();
-          if (symlink) { stat = fs.statSync(entryPath); }
+          stat = fs.lstatSync(entryPath)
+          symlink = stat.isSymbolicLink()
+          if (symlink) { stat = fs.statSync(entryPath) }
         } catch (error) {}
 
         if (stat != null ? stat.isDirectory() : undefined) {
-          directories.push(new Directory(entryPath, symlink));
+          directories.push(new Directory(entryPath, symlink))
         } else if (stat != null ? stat.isFile() : undefined) {
-          files.push(new File(entryPath, symlink));
+          files.push(new File(entryPath, symlink))
         }
       }
 
-      return directories.concat(files);
+      return directories.concat(files)
     }
 
     // Public: Reads file entries in this directory from disk asynchronously.
@@ -307,31 +316,31 @@ module.exports =
     // * `callback` A {Function} to call with the following arguments:
     //   * `error` An {Error}, may be null.
     //   * `entries` An {Array} of {File} and {Directory} objects.
-    getEntries(callback) {
-      return fs.list(this.path, function(error, entries) {
-        if (error != null) { return callback(error); }
+    getEntries (callback) {
+      return fs.list(this.path, function (error, entries) {
+        if (error != null) { return callback(error) }
 
-        const directories = [];
-        const files = [];
-        const addEntry = function(entryPath, stat, symlink, callback) {
+        const directories = []
+        const files = []
+        const addEntry = function (entryPath, stat, symlink, callback) {
           if (stat != null ? stat.isDirectory() : undefined) {
-            directories.push(new Directory(entryPath, symlink));
+            directories.push(new Directory(entryPath, symlink))
           } else if (stat != null ? stat.isFile() : undefined) {
-            files.push(new File(entryPath, symlink));
+            files.push(new File(entryPath, symlink))
           }
-          return callback();
-        };
+          return callback()
+        }
 
-        const statEntry = (entryPath, callback) => fs.lstat(entryPath, function(error, stat) {
+        const statEntry = (entryPath, callback) => fs.lstat(entryPath, function (error, stat) {
           if ((stat != null ? stat.isSymbolicLink() : undefined)) {
-            return fs.stat(entryPath, (error, stat) => addEntry(entryPath, stat, true, callback));
+            return fs.stat(entryPath, (error, stat) => addEntry(entryPath, stat, true, callback))
           } else {
-            return addEntry(entryPath, stat, false, callback);
+            return addEntry(entryPath, stat, false, callback)
           }
-        });
+        })
 
-        return async.eachLimit(entries, 1, statEntry, () => callback(null, directories.concat(files)));
-      });
+        return async.eachLimit(entries, 1, statEntry, () => callback(null, directories.concat(files)))
+      })
     }
 
     // Public: Determines if the given path (real or symbolic) is inside this
@@ -341,73 +350,73 @@ module.exports =
     // * `pathToCheck` The {String} path to check.
     //
     // Returns a {Boolean} whether the given path is inside this directory.
-    contains(pathToCheck) {
-      let directoryPath;
-      if (!pathToCheck) { return false; }
+    contains (pathToCheck) {
+      let directoryPath
+      if (!pathToCheck) { return false }
 
       // Normalize forward slashes to back slashes on windows
-      if (process.platform === 'win32') { pathToCheck = pathToCheck.replace(/\//g, '\\'); }
+      if (process.platform === 'win32') { pathToCheck = pathToCheck.replace(/\//g, '\\') }
 
       if (fs.isCaseInsensitive()) {
-        directoryPath = this.lowerCasePath;
-        pathToCheck = pathToCheck.toLowerCase();
+        directoryPath = this.lowerCasePath
+        pathToCheck = pathToCheck.toLowerCase()
       } else {
-        directoryPath = this.path;
+        directoryPath = this.path
       }
 
-      if (this.isPathPrefixOf(directoryPath, pathToCheck)) { return true; }
+      if (this.isPathPrefixOf(directoryPath, pathToCheck)) { return true }
 
       // Check real path
-      this.getRealPathSync();
+      this.getRealPathSync()
       if (fs.isCaseInsensitive()) {
-        directoryPath = this.lowerCaseRealPath;
+        directoryPath = this.lowerCaseRealPath
       } else {
-        directoryPath = this.realPath;
+        directoryPath = this.realPath
       }
 
-      return this.isPathPrefixOf(directoryPath, pathToCheck);
+      return this.isPathPrefixOf(directoryPath, pathToCheck)
     }
 
     /*
     Section: Private
     */
 
-    subscribeToNativeChangeEvents() {
+    subscribeToNativeChangeEvents () {
       return this.watchSubscription != null ? this.watchSubscription : (this.watchSubscription = PathWatcher.watch(this.path, eventType => {
         if (eventType === 'change') {
-          if (Grim.includeDeprecatedAPIs) { this.emit('contents-changed'); }
-          return this.emitter.emit('did-change');
+          if (Grim.includeDeprecatedAPIs) { this.emit('contents-changed') }
+          return this.emitter.emit('did-change')
         }
-      }));
+      }))
     }
 
-    unsubscribeFromNativeChangeEvents() {
+    unsubscribeFromNativeChangeEvents () {
       if (this.watchSubscription != null) {
-        this.watchSubscription.close();
-        return this.watchSubscription = null;
+        this.watchSubscription.close()
+        return this.watchSubscription = null
       }
     }
 
     // Does given full path start with the given prefix?
-    isPathPrefixOf(prefix, fullPath) {
-      return (fullPath.indexOf(prefix) === 0) && (fullPath[prefix.length] === path.sep);
+    isPathPrefixOf (prefix, fullPath) {
+      return (fullPath.indexOf(prefix) === 0) && (fullPath[prefix.length] === path.sep)
     }
-  };
-  Directory.initClass();
-  return Directory;
-})());
+  }
+  Directory.initClass()
+  return Directory
+})())
 
 if (Grim.includeDeprecatedAPIs) {
-  const EmitterMixin = require('emissary').Emitter;
-  EmitterMixin.includeInto(Directory);
+  const EmitterMixin = require('emissary').Emitter
+  EmitterMixin.includeInto(Directory)
 
-  Directory.prototype.on = function(eventName) {
+  Directory.prototype.on = function (eventName) {
     if (eventName === 'contents-changed') {
-      Grim.deprecate("Use Directory::onDidChange instead");
+      Grim.deprecate('Use Directory::onDidChange instead')
     } else if (this.reportOnDeprecations) {
-      Grim.deprecate("Subscribing via ::on is deprecated. Use documented event subscription methods instead.");
+      Grim.deprecate('Subscribing via ::on is deprecated. Use documented event subscription methods instead.')
     }
 
-    return EmitterMixin.prototype.on.apply(this, arguments);
-  };
+    return EmitterMixin.prototype.on.apply(this, arguments)
+  }
 }

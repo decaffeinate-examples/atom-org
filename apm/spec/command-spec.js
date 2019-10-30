@@ -1,19 +1,26 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+    no-undef,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const Command = require('../lib/command');
+const Command = require('../lib/command')
 
-describe("Command", () => describe("::spawn", () => it("only calls the callback once if the spawned program fails", function() {
-  let exited = false;
-  let callbackCount = 0;
+describe('Command', () => describe('::spawn', () => it('only calls the callback once if the spawned program fails', function () {
+  let exited = false
+  let callbackCount = 0
 
-  const command = new Command;
-  const child = command.spawn("thisisafakecommand", [], () => callbackCount++);
-  child.once("close", () => exited = true);
+  const command = new Command()
+  const child = command.spawn('thisisafakecommand', [], () => callbackCount++)
+  child.once('close', () => exited = true)
 
-  waitsFor(() => exited);
+  waitsFor(() => exited)
 
-  return runs(() => expect(callbackCount).toEqual(1));
-})));
+  return runs(() => expect(callbackCount).toEqual(1))
+})))

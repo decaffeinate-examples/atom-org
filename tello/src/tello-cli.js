@@ -1,16 +1,22 @@
+/** @babel */
+/* eslint-disable
+    no-multi-str,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-const fs = require('fs');
-const {digest} = require('./digester');
+const fs = require('fs')
+const { digest } = require('./digester')
 
-const getArgs = function() {
+const getArgs = function () {
   const optimist = require('optimist')
-    .usage(`\
+    .usage('\
 Usage: $0 [options] [source_files]\
-`)
+')
     .options('o', {
       alias: 'output-file',
       describe: 'The output directory',
@@ -27,28 +33,28 @@ Usage: $0 [options] [source_files]\
       alias: 'help',
       describe: 'Show the help'
     }
-    );
+    )
   const {
     argv
-  } = optimist;
+  } = optimist
 
   if (argv.h) {
-    return console.log(optimist.help());
+    return console.log(optimist.help())
   } else {
     return {
       input: argv.i,
       output: argv.o
-    };
+    }
   }
-};
+}
 
-const main = function() {
-  let args;
-  if (!(args = getArgs())) { return; }
+const main = function () {
+  let args
+  if (!(args = getArgs())) { return }
 
-  const metadata = JSON.parse(fs.readFileSync(args.input, 'utf8'));
-  const json = digest(metadata);
-  return fs.writeFileSync(args.output, JSON.stringify(json, null, '  '));
-};
+  const metadata = JSON.parse(fs.readFileSync(args.input, 'utf8'))
+  const json = digest(metadata)
+  return fs.writeFileSync(args.output, JSON.stringify(json, null, '  '))
+}
 
-module.exports = {main};
+module.exports = { main }

@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-unused-vars,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS102: Remove unnecessary code created because of implicit returns
@@ -6,26 +12,26 @@
  */
 // Public: The base class for all nodes.
 //
-let Node;
+let Node
 module.exports = (Node = class Node {
-
   // Public: Find an ancestor node by type.
   //
   // type - The type name (a {String})
   // node - The CoffeeScript node to search on (a {Base})
-  findAncestor(type, node) {
-    if (node == null) { ({
-      node
-    } = this); }
+  findAncestor (type, node) {
+    if (node == null) {
+      ({
+        node
+      } = this)
+    }
     if (node.ancestor) {
       if (node.ancestor.constructor.name === type) {
-        return node.ancestor;
+        return node.ancestor
       } else {
-        return this.findAncestor(type, node.ancestor);
+        return this.findAncestor(type, node.ancestor)
       }
-
     } else {
-      return undefined;
+      return undefined
     }
   }
-});
+})

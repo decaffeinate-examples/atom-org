@@ -1,3 +1,9 @@
+/** @babel */
+/* eslint-disable
+    no-return-assign,
+*/
+// TODO: This file was created by bulk-decaffeinate.
+// Fix any style issues and re-enable lint.
 /*
  * decaffeinate suggestions:
  * DS101: Remove unnecessary use of Array.from
@@ -6,29 +12,29 @@
  * DS207: Consider shorter variations of null checks
  * Full docs: https://github.com/decaffeinate/decaffeinate/blob/master/docs/suggestions.md
  */
-let File;
-const crypto = require('crypto');
-const path = require('path');
+let File
+const crypto = require('crypto')
+const path = require('path')
 
-const _ = require('underscore-plus');
-const {Emitter, Disposable} = require('event-kit');
-const fs = require('fs-plus');
-const Grim = require('grim');
+const _ = require('underscore-plus')
+const { Emitter, Disposable } = require('event-kit')
+const fs = require('fs-plus')
+const Grim = require('grim')
 
-let iconv = null; // Defer until used
+let iconv = null // Defer until used
 
-let Directory = null;
-const PathWatcher = require('./main');
+let Directory = null
+const PathWatcher = require('./main')
 
 // Extended: Represents an individual file that can be watched, read from, and
 // written to.
 module.exports =
-(File = (function() {
+(File = (function () {
   File = class File {
-    static initClass() {
-      this.prototype.encoding = 'utf8';
-      this.prototype.realPath = null;
-      this.prototype.subscriptionCount = 0;
+    static initClass () {
+      this.prototype.encoding = 'utf8'
+      this.prototype.realPath = null
+      this.prototype.subscriptionCount = 0
     }
 
     /*
@@ -39,29 +45,31 @@ module.exports =
     //
     // * `filePath` A {String} containing the absolute path to the file
     // * `symlink` (optional) A {Boolean} indicating if the path is a symlink (default: false).
-    constructor(filePath, symlink, includeDeprecatedAPIs) {
-      this.willAddSubscription = this.willAddSubscription.bind(this);
-      this.didRemoveSubscription = this.didRemoveSubscription.bind(this);
-      if (symlink == null) { symlink = false; }
-      this.symlink = symlink;
-      if (includeDeprecatedAPIs == null) { ({
-        includeDeprecatedAPIs
-      } = Grim); }
-      if (filePath) { filePath = path.normalize(filePath); }
-      this.path = filePath;
-      this.emitter = new Emitter;
+    constructor (filePath, symlink, includeDeprecatedAPIs) {
+      this.willAddSubscription = this.willAddSubscription.bind(this)
+      this.didRemoveSubscription = this.didRemoveSubscription.bind(this)
+      if (symlink == null) { symlink = false }
+      this.symlink = symlink
+      if (includeDeprecatedAPIs == null) {
+        ({
+          includeDeprecatedAPIs
+        } = Grim)
+      }
+      if (filePath) { filePath = path.normalize(filePath) }
+      this.path = filePath
+      this.emitter = new Emitter()
 
       if (includeDeprecatedAPIs) {
-        this.on('contents-changed-subscription-will-be-added', this.willAddSubscription);
-        this.on('moved-subscription-will-be-added', this.willAddSubscription);
-        this.on('removed-subscription-will-be-added', this.willAddSubscription);
-        this.on('contents-changed-subscription-removed', this.didRemoveSubscription);
-        this.on('moved-subscription-removed', this.didRemoveSubscription);
-        this.on('removed-subscription-removed', this.didRemoveSubscription);
+        this.on('contents-changed-subscription-will-be-added', this.willAddSubscription)
+        this.on('moved-subscription-will-be-added', this.willAddSubscription)
+        this.on('removed-subscription-will-be-added', this.willAddSubscription)
+        this.on('contents-changed-subscription-removed', this.didRemoveSubscription)
+        this.on('moved-subscription-removed', this.didRemoveSubscription)
+        this.on('removed-subscription-removed', this.didRemoveSubscription)
       }
 
-      this.cachedContents = null;
-      this.reportOnDeprecations = true;
+      this.cachedContents = null
+      this.reportOnDeprecations = true
     }
 
     // Public: Creates the file on disk that corresponds to `::getPath()` if no
@@ -70,17 +78,17 @@ module.exports =
     // Returns a {Promise} that resolves once the file is created on disk. It
     // resolves to a boolean value that is true if the file was created or false if
     // it already existed.
-    create() {
+    create () {
       return this.exists().then(isExistingFile => {
         if (!isExistingFile) {
-          const parent = this.getParent();
+          const parent = this.getParent()
           return parent.create().then(() => {
-            return this.write('').then(() => true);
-          });
+            return this.write('').then(() => true)
+          })
         } else {
-          return false;
+          return false
         }
-      });
+      })
     }
 
     /*
@@ -92,9 +100,9 @@ module.exports =
     // * `callback` {Function} to be called when the file's contents change.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidChange(callback) {
-      this.willAddSubscription();
-      return this.trackUnsubscription(this.emitter.on('did-change', callback));
+    onDidChange (callback) {
+      this.willAddSubscription()
+      return this.trackUnsubscription(this.emitter.on('did-change', callback))
     }
 
     // Public: Invoke the given callback when the file's path changes.
@@ -102,9 +110,9 @@ module.exports =
     // * `callback` {Function} to be called when the file's path changes.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidRename(callback) {
-      this.willAddSubscription();
-      return this.trackUnsubscription(this.emitter.on('did-rename', callback));
+    onDidRename (callback) {
+      this.willAddSubscription()
+      return this.trackUnsubscription(this.emitter.on('did-rename', callback))
     }
 
     // Public: Invoke the given callback when the file is deleted.
@@ -112,9 +120,9 @@ module.exports =
     // * `callback` {Function} to be called when the file is deleted.
     //
     // Returns a {Disposable} on which `.dispose()` can be called to unsubscribe.
-    onDidDelete(callback) {
-      this.willAddSubscription();
-      return this.trackUnsubscription(this.emitter.on('did-delete', callback));
+    onDidDelete (callback) {
+      this.willAddSubscription()
+      return this.trackUnsubscription(this.emitter.on('did-delete', callback))
     }
 
     // Public: Invoke the given callback when there is an error with the watch.
@@ -126,27 +134,27 @@ module.exports =
     //     * `error` {Object} the error object
     //     * `handle` {Function} call this to indicate you have handled the error.
     //       The error will not be thrown if this function is called.
-    onWillThrowWatchError(callback) {
-      return this.emitter.on('will-throw-watch-error', callback);
+    onWillThrowWatchError (callback) {
+      return this.emitter.on('will-throw-watch-error', callback)
     }
 
-    willAddSubscription() {
-      this.subscriptionCount++;
+    willAddSubscription () {
+      this.subscriptionCount++
       try {
-        return this.subscribeToNativeChangeEvents();
+        return this.subscribeToNativeChangeEvents()
       } catch (error) {}
     }
 
-    didRemoveSubscription() {
-      this.subscriptionCount--;
-      if (this.subscriptionCount === 0) { return this.unsubscribeFromNativeChangeEvents(); }
+    didRemoveSubscription () {
+      this.subscriptionCount--
+      if (this.subscriptionCount === 0) { return this.unsubscribeFromNativeChangeEvents() }
     }
 
-    trackUnsubscription(subscription) {
+    trackUnsubscription (subscription) {
       return new Disposable(() => {
-        subscription.dispose();
-        return this.didRemoveSubscription();
-      });
+        subscription.dispose()
+        return this.didRemoveSubscription()
+      })
     }
 
     /*
@@ -154,116 +162,116 @@ module.exports =
     */
 
     // Public: Returns a {Boolean}, always true.
-    isFile() { return true; }
+    isFile () { return true }
 
     // Public: Returns a {Boolean}, always false.
-    isDirectory() { return false; }
+    isDirectory () { return false }
 
     // Public: Returns a {Boolean} indicating whether or not this is a symbolic link
-    isSymbolicLink() {
-      return this.symlink;
+    isSymbolicLink () {
+      return this.symlink
     }
 
     // Public: Returns a promise that resolves to a {Boolean}, true if the file
     // exists, false otherwise.
-    exists() {
+    exists () {
       return new Promise(resolve => {
-        return fs.exists(this.getPath(), resolve);
-      });
+        return fs.exists(this.getPath(), resolve)
+      })
     }
 
     // Public: Returns a {Boolean}, true if the file exists, false otherwise.
-    existsSync() {
-      return fs.existsSync(this.getPath());
+    existsSync () {
+      return fs.existsSync(this.getPath())
     }
 
     // Public: Get the SHA-1 digest of this file
     //
     // Returns a promise that resolves to a {String}.
-    getDigest() {
+    getDigest () {
       if (this.digest != null) {
-        return Promise.resolve(this.digest);
+        return Promise.resolve(this.digest)
       } else {
-        return this.read().then(() => this.digest); // read assigns digest as a side-effect
+        return this.read().then(() => this.digest) // read assigns digest as a side-effect
       }
     }
 
     // Public: Get the SHA-1 digest of this file
     //
     // Returns a {String}.
-    getDigestSync() {
-      if (!this.digest) { this.readSync(); }
-      return this.digest;
+    getDigestSync () {
+      if (!this.digest) { this.readSync() }
+      return this.digest
     }
 
-    setDigest(contents) {
-      return this.digest = crypto.createHash('sha1').update(contents != null ? contents : '').digest('hex');
+    setDigest (contents) {
+      return this.digest = crypto.createHash('sha1').update(contents != null ? contents : '').digest('hex')
     }
 
     // Public: Sets the file's character set encoding name.
     //
     // * `encoding` The {String} encoding to use (default: 'utf8')
-    setEncoding(encoding) {
+    setEncoding (encoding) {
       // Throws if encoding doesn't exist. Better to throw an exception early
       // instead of waiting until the file is saved.
 
-      if (encoding == null) { encoding = 'utf8'; }
+      if (encoding == null) { encoding = 'utf8' }
       if (encoding !== 'utf8') {
-        if (iconv == null) { iconv = require('iconv-lite'); }
-        iconv.getCodec(encoding);
+        if (iconv == null) { iconv = require('iconv-lite') }
+        iconv.getCodec(encoding)
       }
 
-      return this.encoding = encoding;
+      return this.encoding = encoding
     }
 
     // Public: Returns the {String} encoding name for this file (default: 'utf8').
-    getEncoding() { return this.encoding; }
+    getEncoding () { return this.encoding }
 
     /*
     Section: Managing Paths
     */
 
     // Public: Returns the {String} path for the file.
-    getPath() { return this.path; }
+    getPath () { return this.path }
 
     // Sets the path for the file.
-    setPath(path1) {
-      this.path = path1;
-      return this.realPath = null;
+    setPath (path1) {
+      this.path = path1
+      return this.realPath = null
     }
 
     // Public: Returns this file's completely resolved {String} path.
-    getRealPathSync() {
+    getRealPathSync () {
       if (this.realPath == null) {
         try {
-          this.realPath = fs.realpathSync(this.path);
+          this.realPath = fs.realpathSync(this.path)
         } catch (error) {
-          this.realPath = this.path;
+          this.realPath = this.path
         }
       }
-      return this.realPath;
+      return this.realPath
     }
 
     // Public: Returns a promise that resolves to the file's completely resolved {String} path.
-    getRealPath() {
+    getRealPath () {
       if (this.realPath != null) {
-        return Promise.resolve(this.realPath);
+        return Promise.resolve(this.realPath)
       } else {
         return new Promise((resolve, reject) => {
           return fs.realpath(this.path, (err, result) => {
             if (err != null) {
-              return reject(err);
+              return reject(err)
             } else {
-              return resolve(this.realPath = result);
+              return resolve(this.realPath = result)
             }
-          });
-        });
+          })
+        })
       }
     }
 
     // Public: Return the {String} filename without any directory information.
-    getBaseName() {
-      return path.basename(this.path);
+    getBaseName () {
+      return path.basename(this.path)
     }
 
     /*
@@ -271,39 +279,39 @@ module.exports =
     */
 
     // Public: Return the {Directory} that contains this file.
-    getParent() {
-      if (Directory == null) { Directory = require('./directory'); }
-      return new Directory(path.dirname(this.path));
+    getParent () {
+      if (Directory == null) { Directory = require('./directory') }
+      return new Directory(path.dirname(this.path))
     }
 
     /*
     Section: Reading and Writing
     */
 
-    readSync(flushCache) {
+    readSync (flushCache) {
       if (!this.existsSync()) {
-        this.cachedContents = null;
+        this.cachedContents = null
       } else if ((this.cachedContents == null) || flushCache) {
-        const encoding = this.getEncoding();
+        const encoding = this.getEncoding()
         if (encoding === 'utf8') {
-          this.cachedContents = fs.readFileSync(this.getPath(), encoding);
+          this.cachedContents = fs.readFileSync(this.getPath(), encoding)
         } else {
-          if (iconv == null) { iconv = require('iconv-lite'); }
-          this.cachedContents = iconv.decode(fs.readFileSync(this.getPath()), encoding);
+          if (iconv == null) { iconv = require('iconv-lite') }
+          this.cachedContents = iconv.decode(fs.readFileSync(this.getPath()), encoding)
         }
       }
 
-      this.setDigest(this.cachedContents);
-      return this.cachedContents;
+      this.setDigest(this.cachedContents)
+      return this.cachedContents
     }
 
-    writeFileSync(filePath, contents) {
-      const encoding = this.getEncoding();
+    writeFileSync (filePath, contents) {
+      const encoding = this.getEncoding()
       if (encoding === 'utf8') {
-        return fs.writeFileSync(filePath, contents, {encoding});
+        return fs.writeFileSync(filePath, contents, { encoding })
       } else {
-        if (iconv == null) { iconv = require('iconv-lite'); }
-        return fs.writeFileSync(filePath, iconv.encode(contents, encoding));
+        if (iconv == null) { iconv = require('iconv-lite') }
+        return fs.writeFileSync(filePath, iconv.encode(contents, encoding))
       }
     }
 
@@ -313,45 +321,45 @@ module.exports =
     //   a cached copy is acceptable.
     //
     // Returns a promise that resolves to either a {String}, or null if the file does not exist.
-    read(flushCache) {
-      let promise;
+    read (flushCache) {
+      let promise
       if ((this.cachedContents != null) && !flushCache) {
-        promise = Promise.resolve(this.cachedContents);
+        promise = Promise.resolve(this.cachedContents)
       } else {
         promise = new Promise((resolve, reject) => {
-          const content = [];
-          const readStream = this.createReadStream();
+          const content = []
+          const readStream = this.createReadStream()
 
-          readStream.on('data', chunk => content.push(chunk));
+          readStream.on('data', chunk => content.push(chunk))
 
-          readStream.on('end', () => resolve(content.join('')));
+          readStream.on('end', () => resolve(content.join('')))
 
-          return readStream.on('error', function(error) {
+          return readStream.on('error', function (error) {
             if (error.code === 'ENOENT') {
-              return resolve(null);
+              return resolve(null)
             } else {
-              return reject(error);
+              return reject(error)
             }
-          });
-        });
+          })
+        })
       }
 
       return promise.then(contents => {
-        this.setDigest(contents);
-        return this.cachedContents = contents;
-      });
+        this.setDigest(contents)
+        return this.cachedContents = contents
+      })
     }
 
     // Public: Returns a stream to read the content of the file.
     //
     // Returns a {ReadStream} object.
-    createReadStream() {
-      const encoding = this.getEncoding();
+    createReadStream () {
+      const encoding = this.getEncoding()
       if (encoding === 'utf8') {
-        return fs.createReadStream(this.getPath(), {encoding});
+        return fs.createReadStream(this.getPath(), { encoding })
       } else {
-        if (iconv == null) { iconv = require('iconv-lite'); }
-        return fs.createReadStream(this.getPath()).pipe(iconv.decodeStream(encoding));
+        if (iconv == null) { iconv = require('iconv-lite') }
+        return fs.createReadStream(this.getPath()).pipe(iconv.decodeStream(encoding))
       }
     }
 
@@ -360,29 +368,29 @@ module.exports =
     // * `text` The {String} text to write to the underlying file.
     //
     // Returns a {Promise} that resolves when the file has been written.
-    write(text) {
+    write (text) {
       return this.exists().then(previouslyExisted => {
         return this.writeFile(this.getPath(), text).then(() => {
-          this.cachedContents = text;
-          this.setDigest(text);
-          if (!previouslyExisted && this.hasSubscriptions()) { this.subscribeToNativeChangeEvents(); }
-          return undefined;
-        });
-      });
+          this.cachedContents = text
+          this.setDigest(text)
+          if (!previouslyExisted && this.hasSubscriptions()) { this.subscribeToNativeChangeEvents() }
+          return undefined
+        })
+      })
     }
 
     // Public: Returns a stream to write content to the file.
     //
     // Returns a {WriteStream} object.
-    createWriteStream() {
-      const encoding = this.getEncoding();
+    createWriteStream () {
+      const encoding = this.getEncoding()
       if (encoding === 'utf8') {
-        return fs.createWriteStream(this.getPath(), {encoding});
+        return fs.createWriteStream(this.getPath(), { encoding })
       } else {
-        if (iconv == null) { iconv = require('iconv-lite'); }
-        const stream = iconv.encodeStream(encoding);
-        stream.pipe(fs.createWriteStream(this.getPath()));
-        return stream;
+        if (iconv == null) { iconv = require('iconv-lite') }
+        const stream = iconv.encodeStream(encoding)
+        stream.pipe(fs.createWriteStream(this.getPath()))
+        return stream
       }
     }
 
@@ -391,34 +399,34 @@ module.exports =
     // * `text` The {String} text to write to the underlying file.
     //
     // Returns undefined.
-    writeSync(text) {
-      const previouslyExisted = this.existsSync();
-      this.writeFileSync(this.getPath(), text);
-      this.cachedContents = text;
-      this.setDigest(text);
-      if (!previouslyExisted && this.hasSubscriptions()) { this.subscribeToNativeChangeEvents(); }
-      return undefined;
+    writeSync (text) {
+      const previouslyExisted = this.existsSync()
+      this.writeFileSync(this.getPath(), text)
+      this.cachedContents = text
+      this.setDigest(text)
+      if (!previouslyExisted && this.hasSubscriptions()) { this.subscribeToNativeChangeEvents() }
+      return undefined
     }
 
-    writeFile(filePath, contents) {
-      const encoding = this.getEncoding();
+    writeFile (filePath, contents) {
+      const encoding = this.getEncoding()
       if (encoding === 'utf8') {
-        return new Promise((resolve, reject) => fs.writeFile(filePath, contents, {encoding}, function(err, result) {
+        return new Promise((resolve, reject) => fs.writeFile(filePath, contents, { encoding }, function (err, result) {
           if (err != null) {
-            return reject(err);
+            return reject(err)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        }));
+        }))
       } else {
-        if (iconv == null) { iconv = require('iconv-lite'); }
-        return new Promise((resolve, reject) => fs.writeFile(filePath, iconv.encode(contents, encoding), function(err, result) {
+        if (iconv == null) { iconv = require('iconv-lite') }
+        return new Promise((resolve, reject) => fs.writeFile(filePath, iconv.encode(contents, encoding), function (err, result) {
           if (err != null) {
-            return reject(err);
+            return reject(err)
           } else {
-            return resolve(result);
+            return resolve(result)
           }
-        }));
+        }))
       }
     }
 
@@ -426,80 +434,80 @@ module.exports =
     Section: Private
     */
 
-    handleNativeChangeEvent(eventType, eventPath) {
+    handleNativeChangeEvent (eventType, eventPath) {
       switch (eventType) {
         case 'delete':
-          this.unsubscribeFromNativeChangeEvents();
-          return this.detectResurrectionAfterDelay();
+          this.unsubscribeFromNativeChangeEvents()
+          return this.detectResurrectionAfterDelay()
         case 'rename':
-          this.setPath(eventPath);
-          if (Grim.includeDeprecatedAPIs) { this.emit('moved'); }
-          return this.emitter.emit('did-rename');
+          this.setPath(eventPath)
+          if (Grim.includeDeprecatedAPIs) { this.emit('moved') }
+          return this.emitter.emit('did-rename')
         case 'change': case 'resurrect':
-          this.cachedContents = null;
-          return this.emitter.emit('did-change');
+          this.cachedContents = null
+          return this.emitter.emit('did-change')
       }
     }
 
-    detectResurrectionAfterDelay() {
-      return _.delay((() => this.detectResurrection()), 50);
+    detectResurrectionAfterDelay () {
+      return _.delay(() => this.detectResurrection(), 50)
     }
 
-    detectResurrection() {
+    detectResurrection () {
       return this.exists().then(exists => {
         if (exists) {
-          this.subscribeToNativeChangeEvents();
-          return this.handleNativeChangeEvent('resurrect');
+          this.subscribeToNativeChangeEvents()
+          return this.handleNativeChangeEvent('resurrect')
         } else {
-          this.cachedContents = null;
-          if (Grim.includeDeprecatedAPIs) { this.emit('removed'); }
-          return this.emitter.emit('did-delete');
+          this.cachedContents = null
+          if (Grim.includeDeprecatedAPIs) { this.emit('removed') }
+          return this.emitter.emit('did-delete')
         }
-      });
+      })
     }
 
-    subscribeToNativeChangeEvents() {
+    subscribeToNativeChangeEvents () {
       return this.watchSubscription != null ? this.watchSubscription : (this.watchSubscription = PathWatcher.watch(this.path, (...args) => {
-        return this.handleNativeChangeEvent(...Array.from(args || []));
-      }));
+        return this.handleNativeChangeEvent(...Array.from(args || []))
+      }))
     }
 
-    unsubscribeFromNativeChangeEvents() {
+    unsubscribeFromNativeChangeEvents () {
       if (this.watchSubscription != null) {
-        this.watchSubscription.close();
-        return this.watchSubscription = null;
+        this.watchSubscription.close()
+        return this.watchSubscription = null
       }
     }
-  };
-  File.initClass();
-  return File;
-})());
+  }
+  File.initClass()
+  return File
+})())
 
 if (Grim.includeDeprecatedAPIs) {
-  const EmitterMixin = require('emissary').Emitter;
-  EmitterMixin.includeInto(File);
+  const EmitterMixin = require('emissary').Emitter
+  EmitterMixin.includeInto(File)
 
-  File.prototype.on = function(eventName) {
+  File.prototype.on = function (eventName) {
     switch (eventName) {
       case 'contents-changed':
-        Grim.deprecate("Use File::onDidChange instead");
-        break;
+        Grim.deprecate('Use File::onDidChange instead')
+        break
       case 'moved':
-        Grim.deprecate("Use File::onDidRename instead");
-        break;
+        Grim.deprecate('Use File::onDidRename instead')
+        break
       case 'removed':
-        Grim.deprecate("Use File::onDidDelete instead");
-        break;
+        Grim.deprecate('Use File::onDidDelete instead')
+        break
       default:
         if (this.reportOnDeprecations) {
-          Grim.deprecate("Subscribing via ::on is deprecated. Use documented event subscription methods instead.");
+          Grim.deprecate('Subscribing via ::on is deprecated. Use documented event subscription methods instead.')
         }
     }
 
-    return EmitterMixin.prototype.on.apply(this, arguments);
-  };
+    return EmitterMixin.prototype.on.apply(this, arguments)
+  }
 } else {
-  File.prototype.hasSubscriptions = function() {
-    return this.subscriptionCount > 0;
-  };
+  File.prototype.hasSubscriptions = function () {
+    return this.subscriptionCount > 0
+  }
 }
