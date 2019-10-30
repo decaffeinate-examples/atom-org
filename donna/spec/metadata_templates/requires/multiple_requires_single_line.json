@@ -1,0 +1,66 @@
+{
+  "files": {
+    "multiple_requires_single_line.coffee": {
+      "objects": {
+        "0": {
+          "1": {
+            "type": "import",
+            "range": [
+              [
+                0,
+                1
+              ],
+              [
+                0,
+                3
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "kaz",
+            "name": "faz",
+            "exportsProperty": "faz"
+          },
+          "6": {
+            "type": "import",
+            "range": [
+              [
+                0,
+                6
+              ],
+              [
+                0,
+                8
+              ]
+            ],
+            "bindingType": "variable",
+            "module": "kaz",
+            "name": "baz",
+            "exportsProperty": "baz"
+          }
+        },
+        "2": {
+          "0": {
+            "type": "class",
+            "name": "Bar",
+            "superClass": null,
+            "bindingType": null,
+            "classProperties": [],
+            "prototypeProperties": [],
+            "doc": null,
+            "range": [
+              [
+                2,
+                0
+              ],
+              [
+                2,
+                8
+              ]
+            ]
+          }
+        }
+      },
+      "exports": {}
+    }
+  }
+}

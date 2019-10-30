@@ -1,0 +1,28 @@
+{
+  "main": "./lib/main.js",
+  "name": "cached-run-in-this-context",
+  "description": "An alternative to vm.runInThisContext that allows to pass a cache to speed up future compilations.",
+  "version": "0.5.0",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/as-cii/cached-run-in-this-context/raw/master/LICENSE.md"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/as-cii/cached-run-in-this-context.git"
+  },
+  "bugs": {
+    "url": "https://github.com/as-cii/cached-run-in-this-context/issues"
+  },
+  "scripts": {
+    "test": "jasmine-tagged --captureExceptions spec"
+  },
+  "devDependencies": {
+    "jasmine-tagged": "^1.1"
+  },
+  "dependencies": {
+    "nan": "^2.10.0"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "atom-trello",
+  "main": "./lib/atom-trello",
+  "version": "0.5.1",
+  "description": "View Trello Boards, Swim Lanes, and Cards from within Atom",
+  "keywords": [
+    "trello"
+  ],
+  "repository": "https://github.com/sgengler/atom-trello",
+  "license": "MIT",
+  "engines": {
+    "atom": ">=1.0.0 <2.0.0"
+  },
+  "dependencies": {
+    "node-trello": "latest",
+    "space-pen": "~5.1",
+    "atom-space-pen-views": "~2.1.0",
+    "oauth": "latest",
+    "html-entities": "latest",
+    "marked": "latest",
+    "pygmentize-bundled": "latest"
+  }
+}

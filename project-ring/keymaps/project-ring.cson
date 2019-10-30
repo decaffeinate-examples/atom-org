@@ -1,0 +1,6 @@
+'atom-workspace ':
+	'alt-shift-\\': 'project-ring:add-project'
+	'alt-shift-/': 'project-ring:rename-current-project'
+	'alt-\\': 'project-ring:toggle'
+	'alt-shift-.': 'project-ring:open-project-files'
+	'ctrl-shift-/': 'project-ring:delete-current-project'

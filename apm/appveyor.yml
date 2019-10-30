@@ -1,0 +1,21 @@
+version: "{build}"
+
+image: Visual Studio 2015
+
+platform:
+  - x86
+  - x64
+
+environment:
+  nodejs_version: "10.2.1"
+
+install:
+  - ps: Install-Product node $env:nodejs_version $env:platform
+  - npm install -g npm
+  - npm install
+
+build: off
+
+test: off
+
+deploy: off

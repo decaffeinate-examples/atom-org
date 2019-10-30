@@ -1,0 +1,54 @@
+#!/bin/bash
+
+set -e
+
+initialCwd=`pwd -P`
+scriptDir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+apmPath=$0
+builtin cd "`dirname "$apmPath"`"
+binDir=`basename "$apmPath"`
+
+# Detect node binary name
+osName=`uname -s`
+if [ "${osName:0:10}" == 'MINGW32_NT' ]; then
+  nodeBin="node.exe"
+elif [[ $(uname -r) == *-Microsoft ]]; then
+  nodeBin="node.exe"
+else
+  nodeBin="node"
+fi
+
+while [ -L "$binDir" ]
+do
+  binDir=`readlink "$binDir"`
+  builtin cd "`dirname "$binDir"`"
+  binDir=`basename "$binDir"`
+done
+
+binDir=`pwd -P`
+
+# Force npm to use its builtin node-gyp
+unset npm_config_node_gyp
+
+export ATOM_APM_ORIGINAL_PYTHON="${PYTHON:-}"
+
+# Assumption: env iterates through environment variables in the same order that
+# process.env iterates through properties within npm. So, we take the last match.
+for var in $(env | grep -i ^npm_config_python=)
+do
+  ATOM_APM_ORIGINAL_PYTHON="${var#*=}"
+  unset ${var%%=*}
+done
+
+export npm_config_python="${binDir}/python-interceptor.sh"
+
+cliPath="$binDir/../lib/cli.js"
+if [[ $(uname -r) == *-Microsoft ]]; then
+  cliPath="$(echo $cliPath | sed 's/\/mnt\/\([a-z]*\)\(.*\)/\1:\2/')"
+  cliPath="${cliPath////\\}"
+else
+  builtin cd "$initialCwd"
+fi
+
+"$binDir/$nodeBin" "$cliPath" "$@"

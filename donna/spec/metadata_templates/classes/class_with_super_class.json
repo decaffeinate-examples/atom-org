@@ -1,0 +1,30 @@
+{
+  "files": {
+    "class_with_super_class.coffee": {
+      "objects": {
+        "4": {
+          "0": {
+            "type": "class",
+            "name": "TextBuffer",
+            "superClass": "String",
+            "bindingType": "exports",
+            "classProperties": [],
+            "prototypeProperties": [],
+            "doc": " Public: A mutable text container with undo/redo support and the ability to\nannotate logical regions in the text.\n\n ",
+            "range": [
+              [
+                4,
+                0
+              ],
+              [
+                4,
+                30
+              ]
+            ]
+          }
+        }
+      },
+      "exports": 4
+    }
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "vim-mode",
+  "main": "./lib/vim-mode",
+  "version": "0.66.0",
+  "description": "Deprecated - please install vim-mode-plus instead",
+  "license": "MIT",
+  "private": true,
+  "repository": "https://github.com/atom/vim-mode",
+  "engines": {
+    "atom": ">=1.13.0"
+  },
+  "dependencies": {
+    "event-kit": "^0.7.2",
+    "grim": "^1.4.1",
+    "underscore-plus": "1.x"
+  },
+  "consumedServices": {
+    "status-bar": {
+      "versions": {
+        "^1.0.0": "consumeStatusBar"
+      }
+    }
+  },
+  "providedServices": {
+    "vim-mode": {
+      "description": "",
+      "versions": {
+        "0.1.0": "provideVimMode"
+      }
+    }
+  },
+  "devDependencies": {
+    "coffeelint": "^1.10.1"
+  }
+}

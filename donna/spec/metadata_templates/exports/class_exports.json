@@ -1,0 +1,30 @@
+{
+  "files": {
+    "class_exports.coffee": {
+      "objects": {
+        "1": {
+          "0": {
+            "type": "class",
+            "name": "Foo",
+            "superClass": null,
+            "bindingType": "exports",
+            "classProperties": [],
+            "prototypeProperties": [],
+            "doc": null,
+            "range": [
+              [
+                1,
+                0
+              ],
+              [
+                1,
+                8
+              ]
+            ]
+          }
+        }
+      },
+      "exports": 1
+    }
+  }
+}

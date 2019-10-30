@@ -1,0 +1,45 @@
+{
+  "name": "atomdoc",
+  "version": "1.2.0",
+  "description": "An atomdoc parser",
+  "main": "./src/atomdoc.js",
+  "scripts": {
+    "lint": "standard src/*.js spec/*.js",
+    "prepublish": "npm run lint",
+    "test": "npm run lint && jasmine-focused --captureExceptions spec/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atom/atomdoc.git"
+  },
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/atom/atomdoc/raw/master/LICENSE.md"
+    }
+  ],
+  "bugs": {
+    "url": "https://github.com/atom/atomdoc/issues"
+  },
+  "homepage": "http://atom.github.io/atomdoc",
+  "dependencies": {
+    "marked": "^0.6.2"
+  },
+  "devDependencies": {
+    "dedent": "^0.7.0",
+    "jasmine-focused": "1.x",
+    "jasmine-json": "~0.0",
+    "standard": "^10.0.3"
+  },
+  "standard": {
+    "env": {
+      "atomtest": true,
+      "browser": true,
+      "jasmine": true,
+      "node": true
+    },
+    "globals": [
+      "atom"
+    ]
+  }
+}

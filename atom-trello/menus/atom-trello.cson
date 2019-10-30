@@ -1,0 +1,22 @@
+# See https://atom.io/docs/latest/hacking-atom-package-word-count#menus for more details
+'context-menu':
+  'atom-text-editor': [
+    {
+      'label': 'Trello View'
+      'command': 'atom-trello:toggle'
+    }
+  ]
+'menu': [
+  {
+    'label': 'Packages'
+    'submenu': [
+      'label': 'Trello'
+      'submenu': [
+        {
+          'label': 'Toggle'
+          'command': 'atom-trello:toggle'
+        }
+      ]
+    ]
+  }
+]

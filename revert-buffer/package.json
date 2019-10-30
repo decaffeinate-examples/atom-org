@@ -1,0 +1,15 @@
+{
+  "name": "revert-buffer",
+  "main": "./lib/revert-buffer",
+  "version": "0.6.0",
+  "description": "Revert a buffer to its on-disk contents",
+  "repository": "https://github.com/atom/revert-buffer",
+  "license": "MIT",
+  "engines": {
+    "atom": ">0.39.0"
+  },
+  "dependencies": {
+    "fs-plus": "^2",
+    "temp": "0.6.0"
+  }
+}
